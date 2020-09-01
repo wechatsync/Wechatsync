@@ -1,0 +1,301 @@
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function getChildren(obj, count) {
+  count++
+  if (count > 4) return null
+  if (obj.children().length > 1) return obj
+  return getChildren(obj.children().eq(0), count)
+}
+
+function CodeBlockToPlainTextOther(pre) {
+  var text = []
+  var minSub = getChildren(pre, 0)
+  var lines = minSub.children()
+  for (let index = 0; index < lines.length; index++) {
+    const element = lines.eq(index)
+    const codeStr = element.text()
+    text.push('<code>' + escapeHtml(codeStr) + '</code>')
+  }
+  return text.join('\n')
+}
+
+function CodeBlockToPlainText(pre) {
+  var text = []
+  var minSub = getChildren(pre, 0)
+  var lines = pre.find('code')
+  if (lines.length > 1) {
+    return CodeBlockToPlainTextOther(pre)
+  }
+
+  for (let index = 0; index < lines.length; index++) {
+    const element = lines.eq(index)
+    const codeStr = element[0].innerText
+    console.log('codeStr', codeStr)
+    var codeLines = codeStr.split('\n')
+    codeLines.forEach((codeLine) => {
+      text.push('<code>' + escapeHtml(codeLine) + '</code>')
+    })
+  }
+  return text.join('\n')
+}
+
+export default class ZhiHuDriver {
+  constructor() {
+    this.skipReadImage = true
+    this.version = '0.0.1'
+    this.name = 'zhihu'
+  }
+
+  async getMetaData() {
+    var res = await $.ajax({
+      url:
+        'https://www.zhihu.com/api/v4/me?include=account_status%2Cis_bind_phone%2Cis_force_renamed%2Cemail%2Crenamed_fullname',
+    })
+    // console.log(res);
+    return {
+      uid: res.uid,
+      title: res.name,
+      avatar: res.avatar_url,
+      supportTypes: ['html'],
+      type: 'zhihu',
+      displayName: '知乎',
+      home: 'https://www.zhihu.com/settings/account',
+      icon: 'https://static.zhihu.com/static/favicon.ico',
+    }
+  }
+
+  async addPost(post) {
+    var res = await $.ajax({
+      url: 'https://zhuanlan.zhihu.com/api/articles/drafts',
+      type: 'POST',
+      dataType: 'JSON',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        title: post.post_title,
+        // content: post.post_content
+      }),
+    })
+    console.log(res)
+    return {
+      status: 'success',
+      post_id: res.id,
+    }
+    //
+  }
+
+  async editPost(post_id, post) {
+    console.log('editPost', post.post_thumbnail)
+    var res = await $.ajax({
+      url: 'https://zhuanlan.zhihu.com/api/articles/' + post_id + '/draft',
+      type: 'PATCH',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        title: post.post_title,
+        content: post.post_content,
+        isTitleImageFullScreen: false,
+        titleImage: 'https://pic1.zhimg.com/' + post.post_thumbnail + '.png',
+      }),
+    })
+
+    return {
+      status: 'success',
+      post_id: post_id,
+      draftLink: 'https://zhuanlan.zhihu.com/p/' + post_id + '/edit',
+    }
+    // https://zhuanlan.zhihu.com/api/articles/68769713/draft
+  }
+
+  untiImageDone(image_id) {
+    return new Promise((resolve, reject) => {
+      ;(async function loop() {
+        var imgDetail = await $.ajax({
+          url: 'https://api.zhihu.com/images/' + image_id,
+          type: 'GET',
+        })
+        if (imgDetail.status != 'processing') {
+          resolve(imgDetail)
+        } else {
+          setTimeout(loop, 300)
+        }
+      })()
+    })
+  }
+
+  async uploadFile(file) {
+    var src = file.src
+    var res = await $.ajax({
+      url: 'https://zhuanlan.zhihu.com/api/uploaded_images',
+      type: 'POST',
+      headers: {
+        accept: '*/*',
+        'x-requested-with': 'fetch',
+      },
+      data: {
+        url: src,
+        source: 'article',
+      },
+    })
+
+    return [
+      {
+        id: res.hash,
+        object_key: res.hash,
+        url: res.src,
+      },
+    ]
+  }
+
+  async uploadFileRaw(file) {
+    var fileResp = await $.ajax({
+      url: 'https://api.zhihu.com/images',
+      type: 'POST',
+      dataType: 'JSON',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        image_hash: md5(file.bits),
+        source: 'article',
+      }),
+    })
+
+    var upload_file = fileResp.upload_file
+    if (fileResp.upload_file.state == 1) {
+      var imgDetail = await this.untiImageDone(upload_file.image_id)
+      console.log('imgDetail', imgDetail)
+      upload_file.object_key = imgDetail.original_hash
+    } else {
+      var token = fileResp.upload_token
+      let client = new OSS({
+        endpoint: 'https://zhihu-pics-upload.zhimg.com',
+        accessKeyId: token.access_id,
+        accessKeySecret: token.access_key,
+        stsToken: token.access_token,
+        cname: true,
+        bucket: 'zhihu-pics',
+      })
+      var finalUrl = await client.put(
+        upload_file.object_key,
+        new Blob([file.bits])
+      )
+      console.log(client, finalUrl)
+    }
+
+    console.log(file, fileResp)
+    return [
+      {
+        id: upload_file.object_key,
+        object_key: upload_file.object_key,
+        url: 'https://pic1.zhimg.com/80/' + upload_file.object_key + '_hd.png',
+      },
+    ]
+  }
+
+  async preEditPost(post) {
+    var div = $('<div>')
+    $('body').append(div)
+
+    // post.content = post.content.replace(/\>\s+\</g,'');
+
+    div.html(post.content)
+
+    // var org = $(post.content);
+    // var doc = $('<div>').append(org.clone());
+    var doc = div
+    var pres = doc.find('pre')
+    console.log('find code blocks', pres.length, post)
+    for (let mindex = 0; mindex < pres.length; mindex++) {
+      const pre = pres.eq(mindex)
+      try {
+        var newHtml = CodeBlockToPlainText(pre, 0)
+        if (newHtml) {
+          console.log(newHtml)
+          pre.html(newHtml)
+        }
+      } catch (e) {}
+    }
+
+    var processEmptyLine = function (idx, el) {
+      var $obj = $(this)
+      var originalText = $obj.text()
+      var img = $obj.find('img')
+      var brs = $obj.find('br')
+      if (originalText == '') {
+        ;(function () {
+          if (img.length) return
+          if (!brs.length) return
+          $obj.remove()
+        })()
+      }
+
+      // try to replace as h2;
+      var strongTag = $obj.find('strong').eq(0)
+      var childStrongText = strongTag.text()
+      if (originalText == childStrongText) {
+        var strongSize = null
+        var tagStart = strongTag
+        var align = null
+        for (let index = 0; index < 4; index++) {
+          var fontSize = tagStart.css('font-size')
+          var textAlign = tagStart.css('text-align')
+          if (fontSize) {
+            strongSize = fontSize
+          }
+          if (textAlign) {
+            align = textAlign
+          }
+          if (align && strongSize) break
+          if (tagStart == $obj) {
+            console.log('near top')
+            break
+          }
+          tagStart = tagStart.parent()
+        }
+        if (strongSize) {
+          var theFontSize = parseInt(strongSize)
+          if (theFontSize > 17 && align == 'center') {
+            var newTag = $('<h2></h2>').append($obj.html())
+            $obj.after(newTag).remove()
+          }
+        }
+      }
+    }
+
+    // remove empty break line
+    doc.find('p').each(processEmptyLine)
+    doc.find('section').each(processEmptyLine)
+
+    var processBr = function (idx, el) {
+      var $obj = $(this)
+      if (!$obj.next().length) {
+        $obj.remove()
+      }
+    }
+    doc.find('br').each(processBr)
+    // table {
+    //     margin-bottom: 10px;
+    //     border-collapse: collapse;
+    //     display: table;
+    //     width: 100%!important;
+    // }
+    // td, th {
+    //     word-wrap: break-word;
+    //     word-break: break-all;
+    //     padding: 5px 10px;
+    //     border: 1px solid #DDD;
+    // }
+
+    // console.log('found table', doc.find('table'))
+    var tempDoc = $('<div>').append(doc.clone())
+    post.content =
+      tempDoc.children('div').length == 1
+        ? tempDoc.children('div').html()
+        : tempDoc.html()
+    // div.remove();
+  }
+}

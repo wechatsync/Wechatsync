@@ -1,0 +1,889 @@
+<div style="display: block; unicode-bidi: embed; font-weight: 400;">
+  <h2
+    style="display: block; unicode-bidi: embed; margin: .75em 0; font-weight: bold; font-size: 1.125em;"
+  >
+    背景
+  </h2>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >随着美团点评业务越来越多，研发团队越来越庞大，对测试手机的需求显著增长。这对公司来说是一笔不小的开支，但现有测试手机资源分配不均，利用率也非常有限，导致各个团队开发、测试过程中都很难做到多机型覆盖。怎么样合理、高效利用这些测试手机资源，是摆在我们面前的一道难题。</span
+    >
+  </p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    现有的方案
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >为了解决这些问题，业内也出现了一些手机管理和在线调试使用的工具或平台，比较常见的有:</span
+    >
+  </p>
+  <ul
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; margin-left: 40px;"
+  >
+    <li style="display: list-item;">OpenSTF</li>
+    <li style="display: list-item;">百度MTC的远程真机调试</li>
+    <li style="display: list-item;">Testin的云真机</li>
+    <li style="display: list-item;">腾讯WeTest的云真机</li>
+    <li style="display: list-item;">阿里MQC的远程真机租用</li>
+  </ul>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >其中OpenSTF是开源项目，其他的平台大多也都是基于OpenSTF原理实现的。因此，我们对OpenSTF项目进行了深入研究。</span
+    >
+  </p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    遇到的问题
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >我们首先按照OpenSTF官方的方案进行了搭建，并进行了小规模的应用，但渐渐的我们发现了它的一些问题：</span
+    >
+  </p>
+  <ul
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; margin-left: 40px;"
+  >
+    <li style="display: list-item;">
+      模块过多而且耦合紧密，解耦难度较大，每次修改需要更新所有模块，难以快速迭代开发。
+    </li>
+    <li style="display: list-item;">
+      部分技术选型落后。由于OpenSTF出现的时间比较早，部分技术已经落后于目前的主流。例如OpenSTF前端选用AngularJS
+      1.0进行开发，在生态链方面已经落后于其他流行的框架；数据库方面选用非关系型数据库RethinkDB，在数据计算和性能方面弱于MySQL等关系型数据库，同时RethinkDB资料较少，不便于开发与维护。
+    </li>
+    <li style="display: list-item;">
+      OpenSTF屏幕图像传输采用图片单张传输的方式进行，而且画质不能由用户来调节，实际应用中占用带宽很高，在网络比较差的情况下会有严重的卡顿现象，体验很差。
+    </li>
+  </ul>
+  <h2
+    style="display: block; unicode-bidi: embed; margin: .75em 0; font-weight: bold; font-size: 1.125em;"
+  >
+    我们的方案
+  </h2>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    架构设计
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >根据业务场景的需要，并吸取了OpenSTF结构优点，我们采用Agent/Server模型的模块化设计方案。下面分别介绍主要模块的功能：</span
+    >
+  </p>
+  <ul
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; margin-left: 40px;"
+  >
+    <li style="display: list-item;">
+      Agent模块。Agent模块与OpenSTF的provider类似，部署在服务器上或者用户的电脑上，Agent连接真实的手机，并且将手机的屏幕图像通过Websocket动态代理到Websocket服务器上，然后通过消息中心来进行消息的传递。
+    </li>
+    <li style="display: list-item;">
+      Server模块。Server用来集中管理和调度手机，与OpenSTF结构不同的是，我们的Server端包含Web服务器、Websocket服务器、动态代理以及消息处理服务等部分，Server将用户的访问动态代理到对应的Web服务器和Websocket服务器上，并通过消息处理模块向消息中心传递消息，实现用户与Agent端手机的交互。
+    </li>
+    <li style="display: list-item;">
+      数据存储模块。数据存储模块用来保存整个平台的数据，例如手机的状态、用户使用记录等。数据存储模块由MySQL数据库和一个RPC服务组成，Server不再直接读写数据库，而是通过一个RPC服务来进行数据的读写操作。
+    </li>
+    <li style="display: list-item;">
+      消息中心。与OpenSTF的triproxy功能类似，是连接手机和Server的枢纽，消息中心主要处理屏幕的操作以及手机的状态变更等消息。
+    </li>
+  </ul>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >通过模块化设计，项目结构比OpenSTF更加清晰。下面是整个系统的设计图：</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <img
+      src="https://p1.meituan.net/travelcube/31faa082917a3fc19b23b7d109ceae88136393.png"
+      alt
+      style
+    />
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    架构的优势
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >Agent模块我们直接复用了OpenSTF的provider大部分功能，包括minicap、minitouch等。在此基础上，我们也扩展了一部分OpenSTF缺失的功能，比如：</span
+    >
+  </p>
+  <ul
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; margin-left: 40px;"
+  >
+    <li style="display: list-item;">
+      在provider的基础上进行了二次开发，使其支持画质/帧率调节（下文会有详细说明）。
+    </li>
+    <li style="display: list-item;">
+      加入健康检测功能，检测手机网络是否正常、是否设置了网络代理等。
+    </li>
+    <li style="display: list-item;">
+      加入Inspector功能，方便获取UI控件树（下文会有详细说明）。
+    </li>
+    <li style="display: list-item;">
+      对Agent进行了版本区分，便于Web端根据不同的Agent版本对相应的功能展示和隐藏。
+    </li>
+  </ul>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >在Server模块中，我们引入了动态代理的机制，并且重新开发了Web部分，采用了Vue
+      2.0 + iView来实现，数据库采用了MySQL。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span>相比OpenSTF原生架构，总结下来有以下优势：</span>
+  </p>
+  <ul
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; margin-left: 40px;"
+  >
+    <li style="display: list-item;">
+      模块耦合程度低，开发和部署更方便。OpenSTF各个功能模块不仅数量多而且代码耦合紧密，在此基础上进行二次开发和部署非常困难。而我们将整个项目分为Server、Agent、消息中心、数据存储四个模块，四个模块功能和代码都是独立的，基本上没有耦合关系，支持快速迭代开发，部署也很方便。
+    </li>
+    <li style="display: list-item;">
+      前端框架更主流，开发和维护成本低。OpenSTF前端是使用AngularJS
+      1.0实现的，AngularJS
+      1.0已经处于废弃阶段，各种第三方组件基本已经停止支持，AngularJS
+      2.0的社区和生态并未成熟，而我们采用了Vue 2.0前端框架，Vue
+      2.0相对已经成熟，在美团侧也已经有大量应用，能够快速开发高质量的Web功能。
+    </li>
+    <li style="display: list-item;">
+      数据库性能强，设计灵活、维护方便。OpenSTF使用RethikDB作为数据库，RethikDB是一个NoSQL型数据库，它有非常多的缺点，比如处理大量数据时的性能很差，资料非常匮乏，排查问题和数据库维护都非常困难。而我们采用了MySQL数据库，很好的解决了这些问题，并且实现了Server模块与数据读写的分离，这样在更新数据库表结构的时候无须同时修改Server端的代码，只要保证RPC服务的接口格式一致即可，开发和维护更加方便。
+    </li>
+  </ul>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >除了这些基础的功能之外，我们还开发了一些特色的功能，下面我们来详细介绍。</span
+    >
+  </p>
+  <h2
+    style="display: block; unicode-bidi: embed; margin: .75em 0; font-weight: bold; font-size: 1.125em;"
+  >
+    特色功能
+  </h2>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    与客户端自动化相结合
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >为了合理、高效利用测试手机资源，我们与客户端自动化进行了结合，主要有两个方面：</span
+    >
+  </p>
+  <ul
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; margin-left: 40px;"
+  >
+    <li style="display: list-item;">
+      与集团内部的云测平台深度融合。在云测平台的服务器节点上部署Agent代码，为云测平台自动化任务创建者提供自动化过程展示和远程调试功能，同时将云测平台空闲的手机开放给更多人使用。
+    </li>
+    <li style="display: list-item;">
+      开放API。我们开放了一些API给普通用户，供用户查询手机状态、占用手机、连接adb调试等，用户可以使用脚本调用API，然后直接在平台的手机上进行自动化测试。
+    </li>
+  </ul>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <img
+      src="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2018a/f758f573.png"
+      alt
+      style
+    />
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    预约功能
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >当一台手机处于繁忙状态时，用户必须要等待手机空闲后才能使用，由于手机空闲时间不确定，就会给用户带来很大的不便。为了解决这个问题，我们开发了手机预约的功能，用户可以预约处于繁忙状态的手机，当手机空闲时，自动帮预约用户占用15分钟，并通过即时通讯工具通知预约人。</span
+    >
+  </p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    画质调节
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >远程调试平台的核心是实时获取屏幕图像，由于屏幕传输需要比较大的网络带宽，在网络不佳的情况下就会出现卡顿现象。因此，我们针对不同的网络做了一些流畅度的优化，下面来介绍一下其中的细节。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >屏幕获取的原理是通过minicap来高速截图，每秒最高可达60张，然后将这些截图显示在Web上。因此，我们考虑从两个方面来优化网络带宽的占用，<strong
+        style="font-weight: bolder;"
+        >第一个是调节截图的质量</strong
+      >，minicap本身支持调节画质（OpenSTF固定设置了80%的压缩比），关键代码如下：</span
+    >
+  </p>
+  <pre
+    style="display: block; unicode-bidi: embed; font-family: monospace; white-space: pre;"
+  ><code style="font-family: monospace;"><span><span>var</span></span> rate =  <span><span>Number</span></span>(match[<span><span>6</span></span>])
+    <span><span>if</span></span> (rate &gt; <span><span>2</span></span> &amp;&amp; rate &lt; <span><span>100</span></span>) {
+      log.info(rate)
+      <span><span>if</span></span> (rate &gt; <span><span>30</span></span>) {
+        options.screenJpegQuality = <span><span>80</span></span>
+      }<span><span>else</span></span> <span><span>if</span></span> (rate &gt; <span><span>15</span></span>) {
+        options.screenJpegQuality = <span><span>50</span></span>
+      }<span><span>else</span></span> {
+        options.screenJpegQuality = <span><span>20</span></span>
+      }
+
+      frameProducer.restart()
+      framerate = rate
+    }
+</code></pre>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      ><strong style="font-weight: bolder;"
+        >第二个是调节每秒发送的图片张数</strong
+      >，也就是帧率，我们可以在Agent端控制发送图片的数量，关键代码如下：</span
+    >
+  </p>
+  <pre
+    style="display: block; unicode-bidi: embed; font-family: monospace; white-space: pre;"
+  ><code style="font-family: monospace;"># 首先修改帧率发送部分：
+<span><span><span><span>function</span></span></span><span> </span><span><span><span>wsFrameNotifier</span></span></span><span>(</span><span><span><span>frame</span></span></span><span>) </span></span>{  
+  <span><span>if</span></span> (latesenttime == <span><span>0</span></span> || <span><span>Date</span></span>.now()-latesenttime &gt; <span><span>1000</span></span>/framerate) {  
+    latesenttime = <span><span>Date</span></span>.now()  
+    <span><span>return</span></span> send(frame, {  
+      binary: <span><span>true</span></span>  
+    })  
+  }  
+}
+# 再加入调整帧率的代码：
+<span><span>case</span></span> <span><span>'rate'</span></span>:  
+  <span><span>var</span></span> rate =  <span><span>Number</span></span>(match[<span><span>6</span></span>])  
+  <span><span>if</span></span> (rate &gt; <span><span>2</span></span> &amp;&amp; rate &lt; <span><span>100</span></span>) {  
+    framerate = rate  
+  }  
+  <span><span>break</span></span>
+</code></pre>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >那么，帧率和图片压缩比调节到多少才能满足不同网络环境的需要呢？我们先来看一组数据：</span
+    >
+  </p>
+  <table style="display: table; border-spacing: 2px;">
+    <thead style="display: table-header-group; vertical-align: middle;">
+      <tr style="display: table-row; vertical-align: inherit;">
+        <th
+          align="center"
+          style="display: table-cell; font-weight: bolder; text-align: center; vertical-align: inherit;"
+        >
+          图片压缩比
+        </th>
+        <th
+          align="center"
+          style="display: table-cell; font-weight: bolder; text-align: center; vertical-align: inherit;"
+        >
+          图片尺寸
+        </th>
+      </tr>
+    </thead>
+    <tbody style="display: table-row-group; vertical-align: middle;">
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          100%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          69.82KB
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          80%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          46.78KB
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          50%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          41.87KB
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          20%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          37.84KB
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          10%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          35.84KB
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >表中是使用minicap做的图片压缩实验，从数据中我们可以看到当图片质量降低到80%时图片大小降低比较明显，而图片质量并没有明显的下降。继续降低图片质量，图片大小降低有限。我们再来看另外一组数据：</span
+    >
+  </p>
+  <table style="display: table; border-spacing: 2px;">
+    <thead style="display: table-header-group; vertical-align: middle;">
+      <tr style="display: table-row; vertical-align: inherit;">
+        <th
+          align="center"
+          style="display: table-cell; font-weight: bolder; text-align: center; vertical-align: inherit;"
+        >
+          帧率
+        </th>
+        <th
+          align="center"
+          style="display: table-cell; font-weight: bolder; text-align: center; vertical-align: inherit;"
+        >
+          图片压缩比
+        </th>
+        <th
+          align="center"
+          style="display: table-cell; font-weight: bolder; text-align: center; vertical-align: inherit;"
+        >
+          实际流量
+        </th>
+      </tr>
+    </thead>
+    <tbody style="display: table-row-group; vertical-align: middle;">
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          60
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          100%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          4.02M/S
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          60
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          80%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          2.74M/S
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          60
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          50%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          2.41M/S
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          30
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          80%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          1.43M/S
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          30
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          50%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          1.22M/S
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          30
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          20%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          1.10M/S
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          15
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          50%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          0.63M/S
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          15
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          20%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          0.55M/S
+        </td>
+      </tr>
+      <tr style="display: table-row; vertical-align: inherit;">
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          15
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          10%
+        </td>
+        <td
+          align="center"
+          style="display: table-cell; vertical-align: inherit;"
+        >
+          0.52M/S
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span>表中是各种帧率和压缩比组合产生的实际流量数据。</span>
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >从数据中我们可以看到最高帧率和压缩比的组合下，流量达到了4M/S，而80%压缩比时流量减小到了2.7M/S，降低非常明显。考虑到实际网络情况，我们将<strong
+        style="font-weight: bolder;"
+        >60帧、80%压缩作为了高画质选项</strong
+      >。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >而图片质量从80%降低到50%时图片大小下降并不明显，此时降低帧率就成了很好的选择。当帧率降低到30帧时流量降低了一半，1.2M/S的流量能够满足大部分网络状况使用，30帧也能保证操作的流畅度，于是<strong
+        style="font-weight: bolder;"
+        >30帧、50%压缩比成为了中画质的选项</strong
+      >。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >低画质主要是为了保证在较差的网络环境能够正常使用，500K/S的流量是红线。我们将<strong
+        style="font-weight: bolder;"
+        >15帧、20%压缩比作为低画质选项</strong
+      >，此时图片质量和帧率较低，但能够保证基本的使用体验。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <img
+      src="https://p0.meituan.net/travelcube/1117886e62eb3250ea119f93c5127e5c1424831.gif"
+      alt
+      style
+    />
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >除了通过降低图片质量和帧率来减小手机屏幕图像传输的流量外，将图像使用H264等编码压缩成视频传输也是一种有效降低流量的办法，相对于图片，图像的压缩率将会更高，用户的操作体验也会更好。但是图像压缩编码原理比较复杂，相关技术我们还在研究当中。</span
+    >
+  </p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    App Mock
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >在做App测试过程中经常需要抓包，一般情况下，我们通过修改WiFi的代理然后用抓包工具就可以实现。但是这样做的效率比较低，多个工具切换也非常不便。借助集团的Mock平台，我们开发了一键Mock功能，能够快速完成相应App的Mock操作。带来的好处是我们可以一边操作App，一边查看App发出的请求，大大提高了测试的效率。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <img
+      src="https://p1.meituan.net/travelcube/1a3e2f96e45da20e8138a7b73306edac1958659.gif"
+      alt
+      style
+    />
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    App Inspector
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >App
+      Inspector功能可以让用户在平台上使用真机的同时查看页面控件树及页面元素，并且支持Xpath，更加方便高效的查找页面元素，给UI自动化测试提供了很大便利。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <img
+      src="https://p0.meituan.net/travelcube/ab6f5f79b8386c3eba8cbda5933f5d0d1540232.gif"
+      alt
+      style
+    />
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >这个功能我们是借助Uiautomator实现的。基本原理是写一个Uiautomator用例，用来获取当前页面的Hierarchy，然后将用例打包成一个JAR放到Agent端。当在Web端触发获取控件树时，Agent将JAR包推送到手机上并运行，此时会在手机端生成一个XML文件。然后再使用cat命令获取XML内容并在前端解析。用例核心代码如下：</span
+    >
+  </p>
+  <pre
+    style="display: block; unicode-bidi: embed; font-family: monospace; white-space: pre;"
+  ><code style="font-family: monospace;">public <span><span><span><span>class</span></span></span><span> </span><span><span><span>launch</span></span></span><span> </span><span><span><span>extends</span></span></span><span> </span><span><span><span>UiAutomatorTestCase</span></span></span><span> </span></span>{
+
+    public void testDumpHierarchy() <span><span>throws</span></span> <span><span>UiObjectNotFoundException</span></span> {
+        <span><span>File</span></span> file = <span><span>new</span></span> <span><span>File</span></span>(<span><span>"/data/local/tmp/local/tmp/uidump.xml"</span></span>);
+        <span><span>UiDevice</span></span> uiDevice = getUiDevice();
+        <span><span>String</span></span> filename = <span><span>"uidump.xml"</span></span>;
+        uiDevice.dumpWindowHierarchy(filename);
+    } }
+</code></pre>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span>当然，你也可以用adb命令来获取Hierarchy：</span>
+  </p>
+  <pre
+    style="display: block; unicode-bidi: embed; font-family: monospace; white-space: pre;"
+  ><code style="font-family: monospace;">adb <span><span>shell</span></span><span><span> uiautomator dump /data/</span><span><span><span>local</span></span></span><span>/tmp/uidump.xml
+</span></span></code></pre>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span>但这种方式不能获取动态页面，比如视频播放页面。</span>
+  </p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    数据报表
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >为了更好的了解平台的运营情况，我们做了详细的数据统计，主要从使用次数、使用时间、设备数量、使用分布等方面进行统计。目前我们管理的手机近300台，平均每个月有超过500名研发人员在使用我们的平台，每天的使用次数达到280次，每天总使用时长超过60小时。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <img
+      src="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2018a/60ad3843.png"
+      alt
+      style
+    />
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <img
+      src="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2018a/51955031.png"
+      alt
+      style
+    />
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    其他小功能
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >除了以上几个比较大的功能点，我们也做了一些贴心的小功能，比如：检测手机网络是否设置代理、检测手机已安装的应用版本及安装时间、快速安装最新版本的测试包、支持App内的Schema跳转等等。这些小功能为研发人员节省了很多时间，提升了他们的工作效率。</span
+    >
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <img
+      src="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2018a/be217e10.png"
+      alt
+      style
+    />
+  </p>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  ></p>
+  <h2
+    style="display: block; unicode-bidi: embed; margin: .75em 0; font-weight: bold; font-size: 1.125em;"
+  >
+    未来规划
+  </h2>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    iOS手机支持
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >目前，云真机平台只支持Android手机，对iOS手机的支持正在进行中。我们已经初步完成了主要功能的开发，预计很快将与大家见面。</span
+    >
+  </p>
+  <h3
+    style="display: block; unicode-bidi: embed; margin: .83em 0; font-weight: bold; font-size: 1.05em;"
+  >
+    产品优化
+  </h3>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >我们计划继续扩展产品功能，比如支持Log日志展示和性能数据采集等。目前云真机平台已经在美团点评内部平稳运行超过两年，我们会继续不断迭代版本、打磨产品，提供更好的使用体验。</span
+    >
+  </p>
+  <h2
+    style="display: block; unicode-bidi: embed; margin: .75em 0; font-weight: bold; font-size: 1.125em;"
+  >
+    作者简介
+  </h2>
+  <ul
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; margin-left: 40px;"
+  >
+    <li style="display: list-item;">
+      东初，大众点评平台质量工具组负责人。7年互联网行业测试、开发经验，2015年加入原大众点评。先后主导了云真机平台、单元测试平台、web安全实验平台等项目的开发，致力于用工具来提升研发团队的工作效率。
+    </li>
+    <li style="display: list-item;">
+      李帅，大众点评高级测试开发工程师。2015年加入原大众点评，主要负责云真机平台的开发以及客户端底层组件的测试。热衷于钻研测试领域的前沿技术，并推动了多项新技术落地。
+    </li>
+  </ul>
+  <h2
+    style="display: block; unicode-bidi: embed; margin: .75em 0; font-weight: bold; font-size: 1.125em;"
+  >
+    招聘信息
+  </h2>
+  <p
+    style="display: block; unicode-bidi: embed; margin: 1.12em 0; color: rgb(68, 68, 68); font-size: 16px;"
+  >
+    <span
+      >点评平台－平台质量中心，Base上海，主要负责大众点评平台入口和基础功能的质量保障。平台包括大众点评App、大众点评微信小程序、PC站：www.dianping.com、
+      M站：m.dianping.com；主要业务涵盖：账号、POI、评价、视频、文章、会员社区、问答、运营活动、搜索推荐、通信链路、运营活动等基础业务。热忱期待各位QA、开发、算法人才加入点评平台技术部。联系邮箱：wenjie.pan#dianping.com。</span
+    >
+  </p>
+</div>

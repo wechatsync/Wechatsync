@@ -1,0 +1,8 @@
+export declare const THIS = 'this'
+export declare const MODULE = 'module'
+export declare const EXPORTS = 'exports'
+export declare const REQUIRE = 'require'
+export declare const UNDEFINED = 'undefined'
+export declare const ARGUMENTS = 'arguments'
+export declare const NEW = 'new'
+export declare const ANONYMOUS = 'anonymous'

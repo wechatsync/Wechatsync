@@ -1,0 +1,8 @@
+build
+bundle
+logo
+tests
+
+# Ignore all HTML files:
+*.html
+*.min.js
