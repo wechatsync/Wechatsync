@@ -13,17 +13,17 @@
 
 ![](snapshots/wechatsync.png)
 
-#### 正文提取
+<!-- #### 正文提取
 
 ![](snapshots/raw.png)
 
 ![](snapshots/reader.png)
 
-![](snapshots/sample.png)
+![](snapshots/sample.png) -->
 
-#### 同步详情
+<!-- #### 同步详情
 
-![](snapshots/detail.png)
+![](snapshots/detail.png) -->
 
 #### Markdown 编辑器
 
