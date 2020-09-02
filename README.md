@@ -1,8 +1,8 @@
 # 文章同步助手
 
-![](https://img.shields.io/github/v/release/lljxx1/WechatSync.svg)
-![](https://img.shields.io/github/last-commit/lljxx1/WechatSync)
-![](https://img.shields.io/github/issues/lljxx1/WechatSync)
+![](https://img.shields.io/github/v/release/wechatsync/Wechatsync.svg)
+![](https://img.shields.io/github/last-commit/wechatsync/Wechatsync)
+![](https://img.shields.io/github/issues/wechatsync/Wechatsync)
 
 还在为一次编辑，N 个平台需多次排版上传脑壳疼吧？
 为广大自媒体朋友撸了个提高生产力的小工具、可以做到的在多个内容平台无缝同步。
