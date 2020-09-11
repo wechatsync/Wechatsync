@@ -277,6 +277,6 @@ if (isEditorPage) {
   script.type = 'text/javascript'
   script.src = chrome.extension.getURL('autoformat.js')
   script.setAttribute('data-url', chrome.runtime.getURL('templates.html'))
-  document.head.appendChild(script)
+  // document.head.appendChild(script)
   // document.head.removeChild(script);
 }
