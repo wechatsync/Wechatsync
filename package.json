@@ -3,20 +3,13 @@
   "version": "0.0.7",
   "description": "",
   "main": "index.js",
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "**/*": "prettier --write --ignore-unknown"
-  },
+ 
   "scripts": {
-    "test": "set WECHAT_ENV=testing&& mocha-webpack --timeout 1000000 --webpack-config webpack.config.js --require tests/setup.js \"tests/**/*.spec.js\"",
-    "testfile": "set WECHAT_ENV=testing&& mocha-webpack --timeout 1000000 --webpack-config webpack.config.js --require tests/setup.js ",
-    "start": "set WECHAT_ENV=development&& webpack --watch",
-    "build": "set WECHAT_ENV=production&& webpack",
-    "driver": "set WECHAT_ENV=production&& webpack --config webpack.driver.js"
+    "test": "cross-env WECHAT_ENV=testing mocha-webpack --timeout 1000000 --webpack-config webpack.config.js --require tests/setup.js \"tests/**/*.spec.js\"",
+    "testfile": "cross-env WECHAT_ENV=testing mocha-webpack --timeout 1000000 --webpack-config webpack.config.js --require tests/setup.js ",
+    "start": "cross-env WECHAT_ENV=development webpack --watch",
+    "build": "cross-env WECHAT_ENV=production webpack",
+    "driver": "cross-env WECHAT_ENV=production webpack --config webpack.driver.js"
   },
   "author": "fun",
   "license": "ISC",
@@ -54,6 +47,7 @@
     "babel-preset-stage-3": "^6.24.1",
     "chai": "^4.1.2",
     "copy-webpack-plugin": "^4.5.2",
+    "cross-env": "^7.0.2",
     "css-loader": "^0.28.11",
     "extract-text-webpack-plugin": "^3.0.2",
     "file-loader": "^1.1.11",

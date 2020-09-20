@@ -98,13 +98,13 @@
             <li v-for="account in accounts">
               <a :href="account.home" target="_blank">
                 <img
-                  :src="account.icon ? account.icon : 'images/wordpress.ico'"
+                  :src="account.icon ? account.icon : '/images/wordpress.ico'"
                   class="icon"
                   height="20"
                 />
                 {{ account.title }}
               </a>
-              <!-- <img src="images/arrow-right-light.png" style="float: right;"> -->
+              <!-- <img src="/images/arrow-right-light.png" style="float: right;"> -->
             </li>
 
             <li v-if="loading">数据加载中...</li>
@@ -264,12 +264,13 @@
           <a
             href="https://www.wechatsync.com/?utm_source=extension_about"
             target="_blank"
-            ><img src="images/logo.png" height="60" /> <br />
+            ><img src="/images/logo.png" height="60" /> <br />
             <p style="font-size: 22px; color: #222">文章同步助手</p></a
           >
           <div style="color: #777; margin-top: 80px">
             <p>插件版本： {{ currentVersion }}</p>
             <p v-if="driverVersion">内核版本： {{ driverVersion.version }}</p>
+            <p>Github: <a href="https://github.com/wechatsync/Wechatsync" target="_blank">wechatsync/Wechatsync</a></p>
           </div>
         </div>
       </section>
@@ -289,17 +290,10 @@ var checker = new VersionChecker()
 
 if (userInfo == null) {
   console.log('start login')
-  loginForm = new AuthingForm({
-    // host: {
-    //   user: "https://users.authing.co/graphql",
-    //   oauth: "https://oauth.authing.co/graphql"
-    // },
-    logo: 'images/logo.png',
-    clientId: '5cece8a899346457833c189c',
-    timestamp: Math.round(new Date() / 1000),
-    nonce: Math.ceil(Math.random() * Math.pow(10, 6)),
+  loginForm = new Guard('5cece8a899346457833c189c', {
     title: '微信同步助手',
-  })
+    logo: '/images/logo.png',
+  });
   loginForm.on('login', function (userInfo) {
     localStorage.setItem('userInfo', JSON.stringify(userInfo))
     localStorage.setItem('token', JSON.stringify(userInfo.token))
@@ -332,22 +326,22 @@ export default {
       reachLimit: localStorage.getItem('reachLimit') || false,
       tabs: [
         {
-          icon: 'images/progress.svg',
+          icon: '/images/progress.svg',
           tab: 'tool',
           name: '状态',
         },
         {
-          icon: 'images/user-circle.svg',
+          icon: '/images/user-circle.svg',
           tab: 'account',
           name: '账号',
         },
         {
-          icon: 'images/setting.svg',
+          icon: '/images/setting.svg',
           tab: 'about',
           name: '关于',
         },
         // {
-        //     icon: 'images/setting.png',
+        //     icon: '/images/setting.png',
         //     tab: 'setting',
         //     name: '设置'
         // },

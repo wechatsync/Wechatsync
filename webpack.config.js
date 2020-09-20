@@ -8,19 +8,9 @@ const CopyWebpackPlugin = require('copy-webpack-plugin')
 const nodeExternals = require('webpack-node-externals')
 const Dotenv = require('dotenv-webpack')
 
-console.log(
-  process.env.WECHAT_ENV,
-  'production',
-  process.env.WECHAT_ENV == 'production'
-)
-console.log(
-  JSON.stringify({
-    env: process.env.WECHAT_ENV,
-  })
-)
-
 const production = process.env.WECHAT_ENV == 'production'
-if (!process.env.WECHAT_ENV) production = true
+console.log('production', production)
+// if (!process.env.WECHAT_ENV) production = true
 const vueAlias = `vue/dist/vue${production ? '.min' : ''}.js`
 
 const devPlugins = [

@@ -2,7 +2,7 @@
   <section id="main-section">
     <header class="float-section-header">
       <a view-ref="back" @click="$router.back()" class="back-btn">
-        <img src="images/arrow-left.png" style="vertical-align: 0px" />
+        <img src="/images/arrow-left.png" style="vertical-align: 0px" />
       </a>
       添加账号
     </header>
@@ -13,12 +13,12 @@
           <a :href="driver.home" target="_blank">登陆{{ driver.name }}</a>
         </span>
         <span v-if="!driver.home">{{ driver.name }}</span>
-        <img src="images/arrow-right-light.png" style="float: right" />
+        <img src="/images/arrow-right-light.png" style="float: right" />
       </li>
       <!-- <li @click="add('typecho')">
-        <img src="images/typecho.ico" class="icon" height="20">
+        <img src="/images/typecho.ico" class="icon" height="20">
         添typecho账号
-        <img src="images/arrow-right-light.png" style="float: right;">
+        <img src="/images/arrow-right-light.png" style="float: right;">
       </li>-->
     </ul>
     <p v-if="!type" class="mt-2 ml-3">
@@ -30,8 +30,8 @@
       class="add-account-form"
     >
       <div style="text-align: center; margin-bottom: 15px">
-        <img src="images/wordpress-logo.svg" v-if="type == 'wordpress'" />
-        <img src="images/typecho-logo.svg" v-if="type == 'typecho'" />
+        <img src="/images/wordpress-logo.svg" v-if="type == 'wordpress'" />
+        <img src="/images/typecho-logo.svg" v-if="type == 'typecho'" />
       </div>
       <div class="form-group">
         <label for="exampleInputEmail1">博客地址</label>
@@ -89,12 +89,12 @@ export default {
       drivers: [
         {
           type: 'wordpress',
-          icon: 'images/wordpress.ico',
+          icon: '/images/wordpress.ico',
           name: '添加Wordpress账号',
         },
         {
           type: 'typecho',
-          icon: 'images/typecho.ico',
+          icon: '/images/typecho.ico',
           name: '添加typecho账号',
         },
         {
