@@ -153,6 +153,8 @@ export default class ZhiHuDriver {
   }
 
   async uploadFile(file) {
+    // todo 检查是否是GIF _uploadFile
+
     var fileResp = await $.ajax({
       url: 'https://api.zhihu.com/images',
       type: 'POST',
