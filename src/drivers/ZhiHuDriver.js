@@ -128,7 +128,7 @@ export default class ZhiHuDriver {
     })
   }
 
-  async uploadFile(file) {
+  async _uploadFile(file) {
     var src = file.src
     var res = await $.ajax({
       url: 'https://zhuanlan.zhihu.com/api/uploaded_images',
@@ -152,7 +152,7 @@ export default class ZhiHuDriver {
     ]
   }
 
-  async uploadFileRaw(file) {
+  async uploadFile(file) {
     var fileResp = await $.ajax({
       url: 'https://api.zhihu.com/images',
       type: 'POST',
@@ -185,13 +185,13 @@ export default class ZhiHuDriver {
       )
       console.log(client, finalUrl)
     }
-
     console.log(file, fileResp)
     return [
       {
         id: upload_file.object_key,
         object_key: upload_file.object_key,
-        url: 'https://pic1.zhimg.com/80/' + upload_file.object_key + '_hd.png',
+        url: 'https://pic4.zhimg.com/' + upload_file.object_key,
+        // url: 'https://pic1.zhimg.com/80/' + upload_file.object_key + '_hd.png',
       },
     ]
   }
@@ -201,7 +201,6 @@ export default class ZhiHuDriver {
     $('body').append(div)
 
     // post.content = post.content.replace(/\>\s+\</g,'');
-
     div.html(post.content)
 
     // var org = $(post.content);
