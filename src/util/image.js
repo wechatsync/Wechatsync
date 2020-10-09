@@ -1,3 +1,6 @@
+
+import { readFileToBase64 } from './file'
+
 function getDataUrl(srcUrl, cb) {
   var canvas = document.createElement('canvas'),
     context
@@ -49,43 +52,56 @@ export function upImage(driver, src, postId, name) {
           }
         )
     } else {
-      getDataUrl(src, function (bUrl) {
-        console.log('upImage', src, bUrl)
-        var baseCode = bUrl.replace('data:image/png;base64,', '')
-        driver
-          .uploadFile({
+      (async () => {
+
+        try {
+          var dataURL = await readFileToBase64(src)
+          var dataURLPairs = dataURL.split(',')
+          var fileType = dataURLPairs[0].replace('data:', '').split(';')[0]
+          var baseCode = dataURLPairs[1]
+          var uploadData = {
             post_id: postId + '',
             name: name,
-            type: 'image/png',
+            type: fileType || 'image/png',
             bits: $.xmlrpc.binary.fromBase64(baseCode),
             overwrite: true,
             src: src,
-          })
-          .then(
-            function (res, status, xhr) {
-              console.log({
-                res,
-                status,
-                xhr,
-              })
-              if (status == 'success' || res) {
-                var object = res[0]
-                resolve(object)
-                // img.attr('src', object.url);
-              } else {
-                reject()
+          }
+
+          console.log('upImage.readFileToBase64', src, fileType, uploadData)
+          driver
+            .uploadFile(uploadData)
+            .then(
+              function(res, status, xhr) {
+                console.log(res)
+                if (status == 'success' || res) {
+                  var object = res[0]
+                  resolve(object)
+                  // img.attr('src', object.url);
+                } else {
+                  reject()
+                }
+              },
+              function(xhr, status, error) {
+                console.log(arguments)
+                if (error) {
+                  reject(error)
+                } else {
+                  reject(xhr)
+                }
               }
-            },
-            function (xhr, status, error) {
-              console.log(arguments)
-              if (error) {
-                reject(error)
-              } else {
-                reject(xhr)
-              }
-            }
-          )
-      })
+            )
+            .catch(function(e) {
+              console.log('uploadFile', e)
+            })
+        } catch (e) {
+          console.log('uploadFile', e)
+        }
+      })();
+      // getDataUrl(src, function (bUrl) {
+      //   console.log('upImage', src, bUrl)
+      //   var baseCode = bUrl.replace('data:image/png;base64,', '')
+      // })
     }
   })
 }

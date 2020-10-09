@@ -3,7 +3,6 @@
   "version": "0.0.7",
   "description": "",
   "main": "index.js",
- 
   "scripts": {
     "test": "cross-env WECHAT_ENV=testing mocha-webpack --timeout 1000000 --webpack-config webpack.config.js --require tests/setup.js \"tests/**/*.spec.js\"",
     "testfile": "cross-env WECHAT_ENV=testing mocha-webpack --timeout 1000000 --webpack-config webpack.config.js --require tests/setup.js ",
@@ -23,6 +22,7 @@
     "element-ui": "^2.12.0",
     "extension-streams": "^1.0.7",
     "googleapis": "^47.0.0",
+    "html-to-draftjs": "^1.5.0",
     "juice": "^6.0.0",
     "mavon-editor": "^2.7.6",
     "mint-ui": "^2.2.13",

@@ -1,4 +1,6 @@
 
+const axios = require('axios')
+
 export function readFileToBase64(url) {
   return new Promise((resolve, reject) => {
     ;(async () => {
@@ -14,7 +16,7 @@ export function readFileToBase64(url) {
         reader.readAsDataURL(body)
         reader.onloadend = function () {
           var base64data = reader.result
-          resolve(base64data.split(',')[1])
+          resolve(base64data)
         }
         reader.onerror = function (e) {
           reject(e)

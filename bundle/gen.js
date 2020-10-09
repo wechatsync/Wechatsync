@@ -8,3 +8,12 @@ fs.writeFileSync(
     ) +
     ""
 );
+
+fs.writeFileSync(
+  '../src/copied/driver.js',
+  'window.driver = ' +
+    JSON.stringify(
+      `let modules =` + code + `for (var k in modules) exports[k] = modules[k];`
+    ) +
+    ''
+)

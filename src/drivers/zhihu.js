@@ -48,7 +48,7 @@ function CodeBlockToPlainText(pre) {
 
 export default class ZhiHuDriver {
   constructor() {
-    this.skipReadImage = true
+    // this.skipReadImage = true
     this.version = '0.0.1'
     this.name = 'zhihu'
   }
@@ -113,18 +113,25 @@ export default class ZhiHuDriver {
   }
 
   untiImageDone(image_id) {
-    return new Promise((resolve, reject) => {
-      ;(async function loop() {
-        var imgDetail = await $.ajax({
-          url: 'https://api.zhihu.com/images/' + image_id,
-          type: 'GET',
-        })
-        if (imgDetail.status != 'processing') {
-          resolve(imgDetail)
-        } else {
-          setTimeout(loop, 300)
-        }
-      })()
+    return new Promise(function(resolve, reject) {
+      function waitToNext() {
+        console.log('untiImageDone', image_id);
+        (async () => {
+          var imgDetail = await $.ajax({
+            url: 'https://api.zhihu.com/images/' + image_id,
+            type: 'GET',
+          })
+          console.log('imgDetail', imgDetail)
+          if (imgDetail.status != 'processing') {
+            console.log('all done')
+            resolve(imgDetail)
+          } else {
+            // console.log('go next', waitToNext)
+            setTimeout(waitToNext, 300)
+          }
+        })()
+      }
+      waitToNext()
     })
   }
 
@@ -153,18 +160,21 @@ export default class ZhiHuDriver {
   }
 
   async uploadFile(file) {
-    // todo 检查是否是GIF _uploadFile
-
+    console.log('ZhiHuDriver.uploadFile', file, md5)
+    var updateData = JSON.stringify({
+      image_hash: md5(file.bits),
+      source: 'article',
+    })
+    console.log('upload', updateData)
     var fileResp = await $.ajax({
       url: 'https://api.zhihu.com/images',
       type: 'POST',
       dataType: 'JSON',
       contentType: 'application/json',
-      data: JSON.stringify({
-        image_hash: md5(file.bits),
-        source: 'article',
-      }),
+      data: updateData,
     })
+
+    console.log('upload', fileResp)
 
     var upload_file = fileResp.upload_file
     if (fileResp.upload_file.state == 1) {

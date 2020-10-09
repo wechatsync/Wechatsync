@@ -7,13 +7,15 @@ import { initliazeDriver } from './vm/vm'
 var axios = require('axios')
 var juice = require('juice/client')
 
+var localDriver = require('./drivers/driver')
+
 window.axios = axios
 window.juice = juice
 var service = analytics.getService('syncer')
 var tracker = service.getTracker('UA-48134052-13')
 
-let getDriver = null
-let getPublicAccounts = null
+let getDriver = localDriver.getDriver
+let getPublicAccounts = localDriver.getPublicAccounts
 
 async function loadDriver() {
   try {
@@ -45,7 +47,11 @@ async function loadDriver() {
 }
 
 ;(async () => {
-  loadDriver()
+  // if (process.env.WECHAT_ENV == 'production') {
+    loadDriver()
+  // } else {
+  //   console.log('dvelopment driver')
+  // }
 })()
 
 var publicAccounts = []

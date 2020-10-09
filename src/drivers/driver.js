@@ -1,14 +1,14 @@
-import JianShuDriver from './JianShuDriver'
-import ZhiHuDriver from './ZhiHuDriver'
-import WordpressDriver from './WordpressDriver'
-import ToutiaoDriver from './ToutiaoDriver'
-import Weibo from './Weibo'
-import Segmentfault from './Segmentfault'
-import Juejin from './Juejin'
-import CSDN from './CSDN'
-import Cnblog from './Cnblog'
-import Weixin from './WeixinDriver'
-import YiDian from './YiDian'
+import JianShuDriver from './jianshu'
+import ZhiHuDriver from './zhihu'
+import WordpressDriver from './wordpress'
+import ToutiaoDriver from './toutiao'
+import Weibo from './weibo'
+import Segmentfault from './segmentfault'
+import Juejin from './juejin'
+import CSDN from './csdn'
+import Cnblog from './cnblog'
+import Weixin from './weixin'
+import YiDian from './yidian'
 
 export function getDriver(account) {
   if (account.type == 'wordpress') {
@@ -99,8 +99,8 @@ export async function getPublicAccounts() {
 
 export function getMeta() {
   return {
-    version: '0.0.6',
-    versionNumber: 6,
+    version: '0.0.7',
+    versionNumber: 7,
     log: '',
   }
 }

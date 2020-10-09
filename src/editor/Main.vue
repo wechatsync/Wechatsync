@@ -101,7 +101,7 @@ var service = analytics.getService('syncer')
 var tracker = service.getTracker('UA-48134052-13')
 
 var axios = require('axios')
-import Juejin from '../drivers/Juejin'
+import Juejin from '../drivers/juejin'
 
 export default {
   name: '',

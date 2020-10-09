@@ -64,7 +64,8 @@ export default class Segmentfault {
       displayName: 'Segmentfault',
       supportTypes: ['markdown', 'html'],
       home: 'https://segmentfault.com/user/draft',
-      icon: 'https://static.segmentfault.com/v-5d8c9d24/global/img/favicon.ico',
+      icon:
+        'https://assets.segmentfault.com/v-5f7db51e/global/img/static/touch-icon.png',
     }
   }
 

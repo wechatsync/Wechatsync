@@ -21,6 +21,7 @@ export function getDriverProvider(code) {
     axios: axios,
     Blob: Blob,
     Promise: Promise,
+    md5: md5,
     juice: juice,
     //   window: window
   }

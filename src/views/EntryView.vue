@@ -279,13 +279,13 @@
 </template>
 <script>
 var userInfo = localStorage.getItem('userInfo')
-import WordpressDriver from '../drivers/WordpressDriver'
+import WordpressDriver from '../drivers/wordpress'
 import VersionChecker from './versionCheckver'
 import { initliazeDriver, getDriverProvider } from '../vm/vm'
 var compareVer = require('compare-ver')
 
 var loginForm
-var currentVersion = '1.0.2'
+var currentVersion = '1.0.3'
 var checker = new VersionChecker()
 
 if (userInfo == null) {
@@ -407,7 +407,10 @@ export default {
         }
 
         script.src = nextVersionFile
-        document.body.appendChild(script)
+
+        setTimeout(() => {
+          document.body.appendChild(script)
+        }, 2000)
         // var remoteDriver = getDriverProvider(window.remoteDriver);
         // var driverMeta = remoteDriver.getMeta();
         // var hasNew = compareVer.gt(driverMeta.version, driverVersion.version);
