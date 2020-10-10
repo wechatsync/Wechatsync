@@ -47,11 +47,13 @@ async function loadDriver() {
 }
 
 ;(async () => {
-  // if (process.env.WECHAT_ENV == 'production') {
+  console.log('WECHAT_ENV', process.env.WECHAT_ENV)
+  if (process.env.WECHAT_ENV == 'production') {
     loadDriver()
-  // } else {
-  //   console.log('dvelopment driver')
-  // }
+  } else {
+    afterDriver()
+    console.log('dvelopment driver')
+  }
 })()
 
 var publicAccounts = []

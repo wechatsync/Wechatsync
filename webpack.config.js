@@ -134,7 +134,7 @@ module.exports = {
     new IgnoreEmitPlugin(/\.omit$/),
     new CopyWebpackPlugin([`./src/copied`]),
     new Dotenv({
-      path: './.env',
+      path: !production ? './.env.development' : './.env.production',
       safe: true,
     }),
   ].concat(productionPlugins),

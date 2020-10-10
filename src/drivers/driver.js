@@ -9,6 +9,7 @@ import CSDN from './csdn'
 import Cnblog from './cnblog'
 import Weixin from './weixin'
 import YiDian from './yidian'
+import Douban from './douban'
 
 export function getDriver(account) {
   if (account.type == 'wordpress') {
@@ -67,6 +68,10 @@ export function getDriver(account) {
     return new YiDian(account)
   }
 
+  if(account.type == 'douban') {
+    return new Douban(account)
+  }
+
   throw Error('not supprt account type')
 }
 
@@ -83,6 +88,7 @@ export async function getPublicAccounts() {
     new ToutiaoDriver(),
     new Weixin(),
     new YiDian(),
+    new Douban(),
   ]
   var users = []
   for (let index = 0; index < drivers.length; index++) {

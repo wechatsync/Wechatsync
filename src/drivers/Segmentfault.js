@@ -5,10 +5,12 @@ var segIframe = null
 var abb = {}
 
 window.onmessage = (e) => {
-  var action = JSON.parse(e.data)
-  if (action.eventId && abb[action.eventId]) {
-    abb[action.eventId](action.err, action.data)
-  }
+  try {
+    var action = JSON.parse(e.data)
+    if (action.eventId && abb[action.eventId]) {
+      abb[action.eventId](action.err, action.data)
+    }
+  } catch (e) {}
 }
 
 function requestFrameMethod(d) {

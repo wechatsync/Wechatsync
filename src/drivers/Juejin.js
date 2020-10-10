@@ -44,7 +44,6 @@ export default class Juejin {
 
     var markdown = turndownService.turndown(post.post_content)
     console.log(markdown)
-
     var res = await $.ajax({
       url: 'https://post-storage-api-ms.juejin.im/v1/draftStorage',
       type: 'POST',
