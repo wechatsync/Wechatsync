@@ -1,643 +1,180 @@
 {
-    "blocks": [
-      {
-        "key": "c4t59",
-        "text": "",
-        "type": "unstyled",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [],
-        "data": {
-          "text-align": "center"
-        }
-      },
-      {
-        "key": "58lmb",
-        "text": " 出海创投周报是36氪出海的固定栏目，为出海创投圈读者梳理一周创投热点。我们整理了本周最值得关注的Top5新闻、精品文章以及投融资事件。\n",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [
-          {
-            "offset": 1,
-            "length": 67,
-            "style": "fontsize-16"
-          },
-          {
-            "offset": 1,
-            "length": 67,
-            "style": "fontsize-14"
-          }
-        ],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 0
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "1is17",
-        "text": "\n",
-        "type": "unstyled",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [],
-        "data": {
-          "text-align": "right"
-        }
-      },
-      {
-        "key": "akr8t",
-        "text": " \n来源 | 36氪出海（ID：wow36krchuhai）文 | 郭沉@36氪出海编辑 | 赵小纯@36氪出海图片来源 | Pexels\n",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [
-          {
-            "offset": 2,
-            "length": 5,
-            "style": "BOLD"
-          },
-          {
-            "offset": 30,
-            "length": 4,
-            "style": "BOLD"
-          },
-          {
-            "offset": 42,
-            "length": 5,
-            "style": "BOLD"
-          },
-          {
-            "offset": 56,
-            "length": 7,
-            "style": "BOLD"
-          },
-          {
-            "offset": 2,
-            "length": 67,
-            "style": "color-rgb(102,102,102)"
-          },
-          {
-            "offset": 2,
-            "length": 67,
-            "style": "fontsize-13"
-          }
-        ],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 1
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "dodi4",
-        "text": " 本周出海新闻 Top 536Kr Global 旗下 KrASIA 与印尼本地科技媒体 DailySocial.id 达成战略合作。11月4日，36氪海外业务集团公司 36Kr Global 旗下英文科技媒体 KrASIA 与印尼语科技媒体 DailySocial.id 正式建立战略合作伙伴关系，双方将在科技内容发布和创新平台建设等方面进行深度合作。（推荐阅读：36Kr Global 旗下英文媒体KrASIA与印尼本地科技媒体DailySocial.id达成战略合作。）腾讯加注印度市场。ET 获悉，目前，腾讯与印度教育科技初创 Doubtnut 、自主出版平台 Pratilipi 已进入谈判后期，欲领投 Doubtnut 规模约1200-1500万美元的融资轮，并已为 Pratilipi 规模约1000-2000万美元的融资轮列出投资条款清单，同时还在接触约6家印度初创。消息人士称，字节跳动也对 Doubtnut 有很强的投资意愿，但腾讯有可能已经定下来这笔投资。滴滴计划将旗下送餐服务（Didi Food）引入墨西哥城，进一步与Uber竞争。据 KrASIA 报道，Didi Food 已于今年4月在墨西哥第二大城市瓜达拉哈拉开展服务，并于今年10月进入了墨西哥第三大城市蒙特雷。报道称，Didi 的举动将直接挑战 Uber Eats。谷歌、红杉和 Accel 领投印度 SaaS 独角兽 Freshworks 1.5亿美元融资，后者计划在纳斯达克上市。据 Inc42 报道，该轮融资后，Freshworks 的估值为35亿美元。一位知情人士表示，此轮融资是 Freshworks 的 pre-IPO 。在本轮融资之前，该公司已从 Tiger Global 和红杉等投资者那里筹集了2.5亿美元。小米臧智渊回应“小米2020年进入日本智能手机市场”：是的。36氪获悉，据日经新闻报道，小米将在2020年进入日本智能手机市场。对此，小米手机产品市场总监臧智渊在微博转发这一消息并确认小米将在2020年进入日本智能手机市场。\n",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [
-          {
-            "offset": 1,
-            "length": 12,
-            "style": "fontsize-17"
-          },
-          {
-            "offset": 1,
-            "length": 66,
-            "style": "BOLD"
-          },
-          {
-            "offset": 238,
-            "length": 9,
-            "style": "BOLD"
-          },
-          {
-            "offset": 439,
-            "length": 40,
-            "style": "BOLD"
-          },
-          {
-            "offset": 576,
-            "length": 59,
-            "style": "BOLD"
-          },
-          {
-            "offset": 756,
-            "length": 30,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1,
-            "length": 12,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 13,
-            "length": 164,
-            "style": "fontsize-15"
-          },
-          {
-            "offset": 238,
-            "length": 630,
-            "style": "fontsize-15"
-          },
-          {
-            "offset": 177,
-            "length": 61,
-            "style": "color-rgb(102,102,102)"
-          },
-          {
-            "offset": 177,
-            "length": 61,
-            "style": "fontsize-14"
-          },
-          {
-            "offset": 178,
-            "length": 60,
-            "style": "fontfamily-mp-quote, -apple-system-font, BlinkMacSystemFont, \"Helvetica Neue\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", Arial, sans-serif"
-          },
-          {
-            "offset": 183,
-            "length": 54,
-            "style": "UNDERLINE"
-          }
-        ],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 2
-          },
-          {
-            "offset": 183,
-            "length": 53,
-            "key": 3
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "4eb6o",
-        "text": " 出海圈精品文章推荐\n孵化非洲又一程？非程创新获戈壁创投、传音控股战略投资如果非洲不能简单地看作一个统一的市场，这还是一个值得大家关注的大机会吗？国内的出海团队需要本地合伙人级别的人才，怎样引入这样的本地基因？我们采访了定位第一家中非孵化器的非程创新，解读更为真实的非洲创投生态。非洲货运平台Lori Systems完成近3千万美元A轮融资，清流资本和高瓴资本共同领投传统模式下，非洲货运行业需求侧货主痛在管理成本高、运得慢，供给侧车队和货车司机则面临没钱运、周转慢的问题。面对非洲货运市场的顽疾， Lori 给出了“车货信息匹配平台+一站式服务”的解决方案。3分钟的阅读时间，走近货运变革者 Lori 。\n",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [
-          {
-            "offset": 1,
-            "length": 9,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 1,
-            "length": 9,
-            "style": "fontsize-17"
-          },
-          {
-            "offset": 1,
-            "length": 9,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1,
-            "length": 9,
-            "style": "fontfamily-mp-quote, -apple-system-font, BlinkMacSystemFont, \"Helvetica Neue\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", Arial, sans-serif"
-          },
-          {
-            "offset": 11,
-            "length": 26,
-            "style": "UNDERLINE"
-          },
-          {
-            "offset": 140,
-            "length": 44,
-            "style": "UNDERLINE"
-          },
-          {
-            "offset": 11,
-            "length": 292,
-            "style": "fontsize-15"
-          }
-        ],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 4
-          },
-          {
-            "offset": 11,
-            "length": 26,
-            "key": 5
-          },
-          {
-            "offset": 140,
-            "length": 44,
-            "key": 6
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "3qsna",
-        "text": " 投融资事件以下是本周值得关注的投融资事件东南亚菲律宾电子制造商 Cal-Comp 再次推迟其规模为2.1亿美元的首次公开募股(IPO)。据 DealStreetAsia 报道，这是该公司第二次决定撤回其计划在当地交易所进行的 IPO 。据悉， Cal-Comp 曾于去年9月推迟了 IPO 时间。Grab 和 Gojek 的合作伙伴、印尼国有电子钱包平台 LinkAja 计划今年年底前完成 A2 轮融资。据 DealStreetAsia 报道，负责运营 LinkAja 的公司 Fintek Karya Nusantara 计划在今年年底前完成 A2 轮融资，将会有7-8家国有企业参与此轮融资。印度还未正式上线的印度数字零售银行 Amica Financial Technologies 已筹集2400万美元。据 ET Tech 报道，参与本轮融资的有：风险投资基金红杉资本、 经纬创投 、德国的 Rocket Internet 和印度风投 3one4 Capital 等等。据悉，Amica Financial Technologies 是由 Citrus Pay 联合创始人 Jitendra Gupta（PayU 印度前董事总经理）创立的，其首轮融资已获得2400万美元。Amica 仍处于“隐身模式”（预计将于明年2月或3月启动运营），预计将估值7000万美元，这是该国市场上最大的首轮融资之一。印度互联网公司 Times Internet 投资印度考试准备平台 Gradeup 700万美元A轮融资。据 ET Tech 报道，这是该初创公司的第二次筹款，迄今为止已筹集了总计1000万美元。据悉，除直播课堂外， Gradeup 还提供考试的介绍、在线报名，以及专供老师和应试生沟通的考试专区。红杉资本投资的印度家具零售商 Urban Ladder 完成200万美元融资。据 KrASIA 报道，现有投资者 SAIF Partners ，红杉资本和 Steadview Capital 各出资近70万美元。截至今日该公司已筹资1.05亿美元。此前，该公司经历了一系列高管离职，还于今年第一季度解雇了40%的员工以降低成本。拉美德国 Rocket Internet 支持的风投公司 Global Founders Capital（GFC）领投巴西汽车租赁平台 Kovi 3000万美元的A轮融资。据 Contxto 报道，这家2018年成立的公司，截至目前已经筹集了4050万美元。Kovi 计划将此次筹集的资金用于雇用更多的员工，并将其车辆储备扩大到3000辆。高通风投领投巴西监管科技（regtech）创业公司 idwall 1000万美元融资。据 Contxto 报道，高通风投专注于新兴的 AI 技术，其1亿美元的 AI 投资基金于2018年11月启动。idwall 已完成三轮融资，募资总额约为1270万美元。该公司成立于2016年，致力于为企业提供文档验证，背景调查以及身份验证解决方案和服务。满帮集团投资“巴西版满帮” TruckPad 。36氪独家获悉，满帮集团已完成对巴西车货匹配平台 Truckpad Tecnologia e Logistica S.A. （TruckPad）的战略投资，满帮还将输出其运营经验和技术，推动 TruckPad 在拉美地区的业务发展。中东Uber 现有投资者 First Round Capital 领投巴基斯坦公交车预定平台 Airlift 1200万美元融资。据 DealStreetAsia 报道，跟投方包括 Fatima Gobi Ventures 和印度河谷资本。非洲非洲货运平台 Lori Systems 完成近3000万美元 A 轮融资。36氪获悉，本轮融资由清流资本和高瓴资本共同领投，跟投方包括 DST 旗下 Apoletto 基金、  EchoVC  、 Timon Capital 、 Raba VC 、 Endeavor Catalyst 、 Flexport CEO 与尼日利亚金融科技公司 Flutterwave 创始人。定位非洲第一家中非孵化器的“非程创新”获戈壁创投、传音控股战略投资。据介绍，本轮融资将用于项目孵化支持，办公空间建设和企业服务业务搭建等。行研考察、企业服务和早期投资是非程创新当前的三大业务板块。南非 Hlayisani Capital 旗下 Hlayisani Growth Fund 在2019年投资了6家公司，总价值达2亿南非兰特（约合1350万美元）。据 Disrupt Africa 报道， Hlayisani Growth Fund 自2019年初开始运作，主要投资农业创新、信息技术、制造业、教育和电子医疗领域。其他以色列 SaaS 平台 Namogoo 完成4000万美元 C 轮融资。据36氪援引 Techcrunch 报道，本轮融资由英国风投 Oak HC/FT 领投。据悉，目前该公司的总融资额已达到6900万美元。 Namogoo 成立于2014年，旨在通过其技术，识别并阻止未经允许的广告自动弹出。",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [
-          {
-            "offset": 1,
-            "length": 5,
-            "style": "fontsize-17"
-          },
-          {
-            "offset": 1,
-            "length": 68,
-            "style": "BOLD"
-          },
-          {
-            "offset": 149,
-            "length": 55,
-            "style": "BOLD"
-          },
-          {
-            "offset": 300,
-            "length": 58,
-            "style": "BOLD"
-          },
-          {
-            "offset": 605,
-            "length": 53,
-            "style": "BOLD"
-          },
-          {
-            "offset": 754,
-            "length": 39,
-            "style": "BOLD"
-          },
-          {
-            "offset": 918,
-            "length": 86,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1088,
-            "length": 43,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1259,
-            "length": 24,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1399,
-            "length": 65,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1519,
-            "length": 39,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1707,
-            "length": 34,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1805,
-            "length": 82,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1970,
-            "length": 2,
-            "style": "BOLD"
-          },
-          {
-            "offset": 1,
-            "length": 5,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 21,
-            "length": 3,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 300,
-            "length": 2,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 918,
-            "length": 2,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 1399,
-            "length": 2,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 1519,
-            "length": 2,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 1970,
-            "length": 2,
-            "style": "color-rgb(72,91,247)"
-          },
-          {
-            "offset": 1,
-            "length": 5,
-            "style": "fontfamily-mp-quote, -apple-system-font, BlinkMacSystemFont, \"Helvetica Neue\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", Arial, sans-serif"
-          },
-          {
-            "offset": 6,
-            "length": 2070,
-            "style": "fontsize-15"
-          },
-          {
-            "offset": 2077,
-            "length": 42,
-            "style": "fontsize-15"
-          }
-        ],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 7
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "7j8qi",
-        "text": " ",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 8
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "a0809",
-        "text": " ",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 9
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "5f3b9",
-        "text": "",
-        "type": "unstyled",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [],
-        "data": {
-          "text-align": "center"
-        }
-      },
-      {
-        "key": "cd2lu",
-        "text": " ",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 10
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "ajog0",
-        "text": "",
-        "type": "unstyled",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [],
-        "data": {
-          "text-align": "center"
-        }
-      },
-      {
-        "key": "7qesg",
-        "text": " ",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 11
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "18li7",
-        "text": " \n",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 12
-          }
-        ],
-        "data": {}
-      },
-      {
-        "key": "5d5oa",
-        "text": "",
-        "type": "unstyled",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [],
-        "data": {
-          "text-align": "center"
-        }
-      },
-      {
-        "key": "bhkvr",
-        "text": " ",
-        "type": "atomic",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [
-          {
-            "offset": 0,
-            "length": 1,
-            "key": 13
-          }
-        ],
-        "data": {}
+  "entityMap": {
+    "0": {
+      "type": "IMAGE",
+      "mutability": "IMMUTABLE",
+      "data": {
+        "caption": "",
+        "src": "https://img9.doubanio.com/view/note/l/ZNAU1rSCdvoZ8fvMS-bcFg/52076105/x76654665.jpg",
+        "thumb": "https://img9.doubanio.com/view/note/l/ZNAU1rSCdvoZ8fvMS-bcFg/52076105/x76654665.jpg"
       }
-    ],
-    "entityMap": {
-      "0": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img2.doubanio.com/view/note/l/3Ca8sjUmjdFI3EMyY5vUwQ/52076105/x76645623.jpg",
-          "alt": "",
-          "height": "auto",
-          "width": "677px"
-        }
-      },
-      "1": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img9.doubanio.com/view/note/l/6Z809iLAAwGTnUlJOJt58Q/52076105/x76645624.jpg",
-          "alt": "",
-          "height": "auto",
-          "width": "622px"
-        }
-      },
-      "2": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img9.doubanio.com/view/note/l/VkAYXcgAC7qg_jAxJL84qw/52076105/x76645625.jpg",
-          "alt": "",
-          "height": "auto",
-          "width": "677px"
-        }
-      },
-      "3": {
-        "type": "LINK",
-        "mutability": "MUTABLE",
-        "data": {
-          "url": "https://mp.weixin.qq.com/s?__biz=MzU5NTY4NjI2NQ==&mid=2247487840&idx=1&sn=185b9f4bcbcd7c17965bb50e2bfb0435&scene=21#wechat_redirect",
-          "title": "<span style=\"font-size: 14px;color: rgb(102, 102, 102);\">36Kr Global 旗下英文媒体KrASIA与印尼本地科技媒体DailySocial.id达成战略合作</span>",
-          "targetOption": "_blank"
-        }
-      },
-      "4": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img9.doubanio.com/view/note/l/vlkEJJ2340jEF-ZHZibWqw/52076105/x76645626.jpg",
-          "alt": "",
-          "height": "auto",
-          "width": "677px"
-        }
-      },
-      "5": {
-        "type": "LINK",
-        "mutability": "MUTABLE",
-        "data": {
-          "url": "https://mp.weixin.qq.com/s?__biz=MzU5NTY4NjI2NQ==&mid=2247487847&idx=1&sn=0d9cdcd864fffadf75c57ae6739871e9&scene=21#wechat_redirect",
-          "title": "<span style=\"font-size: 15px;\">孵化非洲又一程？非程创新获戈壁创投、传音控股战略投资</span>",
-          "targetOption": "_blank"
-        }
-      },
-      "6": {
-        "type": "LINK",
-        "mutability": "MUTABLE",
-        "data": {
-          "url": "https://mp.weixin.qq.com/s?__biz=MzU5NTY4NjI2NQ==&mid=2247487894&idx=1&sn=241d1f166e0337d30f8bb27efd652686&scene=21#wechat_redirect",
-          "title": "<span style=\"font-size: 15px;\">非洲货运平台Lori Systems完成近3千万美元A轮融资，清流资本和高瓴资本共同领投</span>",
-          "targetOption": "_blank"
-        }
-      },
-      "7": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img1.doubanio.com/view/note/l/5YRVc5nG_tIbNpxFGWFCVg/52076105/x76645627.jpg",
-          "alt": "",
-          "height": "auto",
-          "width": "677px"
-        }
-      },
-      "8": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img1.doubanio.com/view/note/l/8AgnM5eDZKMOONSeB6dUYw/52076105/x76645628.jpg",
-          "alt": "",
-          "height": "276.467px",
-          "width": "645px"
-        }
-      },
-      "9": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img1.doubanio.com/view/note/l/rQtJdhM6KSHkYQ6XtpJk4A/52076105/x76645629.jpg",
-          "alt": "",
-          "height": "45.3926px",
-          "width": "645px"
-        }
-      },
-      "10": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img3.doubanio.com/view/note/l/n91pb__vixAynKih7pbpnA/52076105/x76645630.jpg",
-          "alt": "",
-          "height": "87.78px",
-          "width": "677px"
-        }
-      },
-      "11": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img3.doubanio.com/view/note/l/AgG8N8StlC5FOKfgJo5qrA/52076105/x76645632.jpg",
-          "alt": "",
-          "height": "350.241px",
-          "width": "677px"
-        }
-      },
-      "12": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img2.doubanio.com/view/note/l/nWQ-CriQrQEm06pEMlsvDQ/52076105/x76645633.jpg",
-          "alt": "",
-          "height": "562.942px",
-          "width": "677px"
-        }
-      },
-      "13": {
-        "type": "IMAGE",
-        "mutability": "MUTABLE",
-        "data": {
-          "src": "https://img9.doubanio.com/view/note/l/rBG7dydiU2zIKGTL5h8LYw/52076105/x76645634.jpg",
-          "alt": "",
-          "height": "105.618px",
-          "width": "677px"
-        }
+    },
+    "1": {
+      "type": "IMAGE",
+      "mutability": "IMMUTABLE",
+      "data": {
+        "caption": "",
+        "src": "https://img9.doubanio.com/view/note/l/iOdNPGGZ4leFJPWozY8PBQ/52076105/x76654666.jpg",
+        "thumb": "https://img9.doubanio.com/view/note/l/iOdNPGGZ4leFJPWozY8PBQ/52076105/x76654666.jpg"
+      }
+    },
+    "3": {
+      "type": "IMAGE",
+      "mutability": "IMMUTABLE",
+      "data": {
+        "caption": "",
+        "src": "https://img1.doubanio.com/view/note/l/Xl8Wu72mF8HlSQYLd7p5kw/52076105/x76654667.jpg",
+        "thumb": "https://img1.doubanio.com/view/note/l/Xl8Wu72mF8HlSQYLd7p5kw/52076105/x76654667.jpg"
+      }
+    },
+    "4": {
+      "type": "IMAGE",
+      "mutability": "IMMUTABLE",
+      "data": {
+        "caption": "",
+        "src": "https://img1.doubanio.com/view/note/l/eZJu_mCi-9re5wJw0OKmHA/52076105/x76654668.jpg",
+        "thumb": "https://img1.doubanio.com/view/note/l/eZJu_mCi-9re5wJw0OKmHA/52076105/x76654668.jpg"
+      }
+    },
+    "5": {
+      "type": "IMAGE",
+      "mutability": "IMMUTABLE",
+      "data": {
+        "caption": "",
+        "src": "https://img3.doubanio.com/view/note/l/_vL6_KV63y1J7Zx3W2m8TA/52076105/x76654670.jpg",
+        "thumb": "https://img3.doubanio.com/view/note/l/_vL6_KV63y1J7Zx3W2m8TA/52076105/x76654670.jpg"
       }
     }
-  }
+  },
+  "blocks": [
+    {
+      "depth": 0,
+      "type": "atomic",
+      "entityRanges": [
+        {
+          "offset": 0,
+          "length": 1,
+          "key": 0
+        }
+      ],
+      "text": " "
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "自2017年以来，36氪已经布局了东南亚站 KrASIA、日文站 36Kr Japan 和印度站 36Kr India。",
+      "entityRanges": [],
+      "inlineStyleRanges": []
+    },
+    {
+      "depth": 0,
+      "type": "atomic",
+      "entityRanges": [
+        {
+          "offset": 0,
+          "length": 1,
+          "key": 1
+        }
+      ],
+      "text": " "
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "文 | 36氪出海",
+      "entityRanges": [],
+      "inlineStyleRanges": [
+        {
+          "offset": 0,
+          "length": 3,
+          "style": "BOLD"
+        }
+      ]
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "10月5日，36氪正式对外发布设立于香港的海外业务集团公司 36Kr Global Holdings。这是继今年5月与日本经济新闻 Nikkei 成为全球战略合作伙伴之后，36氪又一重大的海外战略布局。",
+      "entityRanges": [],
+      "inlineStyleRanges": []
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "目前，36氪的海外版图已经覆盖了东南亚、日本和印度。自2017年36氪第一家海外公司 KrASIA 在新加坡成立以来，至今产出了超过3000篇的英文作品，其中关于中国企业的报道深受东南亚以及美国等英语系地区读者的关注和欢迎，全网累计流量超过1000万。",
+      "entityRanges": [],
+      "inlineStyleRanges": []
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "2018年，36Kr Japan 在日本东京成立，旨在打破中日企业间的信息交流障碍，增进企业间的跨国合作。时至今日，36Kr Japan 已经成为日本市场最受关注的中国新经济新闻网站。此外，36氪还在今年5月，与 Nikkei 日本经济新闻社正式结为全球战略合作伙伴，共同推动科技交流与创新，为中国企业出海助力。",
+      "entityRanges": [],
+      "inlineStyleRanges": []
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "2019年4月份，36Kr India 正式落地印度的班加罗尔。近年来，印度是中国公司最热门的出海目的地市场之一，有大量中国公司涌入印度并和当地企业结成了良好的合作和投资关系。36氪希望借助媒体的力量，更好地促进中印市场的交流和开拓。",
+      "entityRanges": [],
+      "inlineStyleRanges": []
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "因此，36Kr Global Holding 应运而生。36Kr Global 将整合中国、东南亚、印度以及日本四大亚洲地区资源，构建真正的跨国企业合作、交流以及投资的综合服务平台。目前，36Kr Global 的团队已经落地亚洲超过十个国家及地区，希望将我们的服务和资源带给更多需要支持的创业者和创新者。",
+      "entityRanges": [],
+      "inlineStyleRanges": []
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "在扎根亚洲创新市场的同时，36Kr Global 也将目光瞄准了全球创新的发展。未来将陆续在全球各个地区，通过合作以及自营的方式，搭建全球创新的网络和平台。",
+      "entityRanges": [],
+      "inlineStyleRanges": []
+    },
+    {
+      "depth": 0,
+      "type": "unstyled",
+      "text": "36氪总裁冯大刚表示：“36Kr Global的设立是我们继与日经的全球战略合作之后，再次迈出的重要一步。从2017年36氪启动海外市场战略，至今覆盖了亚洲的核心市场东南亚、印度以及日本。此次海外业务集团化，将加速提升36氪在全球市场的内容布局以及品牌的影响力，提高中国企业在全球的影响力，也更好地实现自身连接中国创新与世界价值的使命。”",
+      "entityRanges": [],
+      "inlineStyleRanges": []
+    },
+    {
+      "depth": 0,
+      "type": "atomic",
+      "entityRanges": [
+        {
+          "offset": 0,
+          "length": 1,
+          "key": 3
+        }
+      ],
+      "text": " "
+    },
+    {
+      "depth": 0,
+      "type": "atomic",
+      "entityRanges": [
+        {
+          "offset": 0,
+          "length": 1,
+          "key": 4
+        }
+      ],
+      "text": " "
+    },
+    {
+      "depth": 0,
+      "type": "atomic",
+      "entityRanges": [
+        {
+          "offset": 0,
+          "length": 1,
+          "key": 5
+        }
+      ],
+      "text": " "
+    }
+  ]
+}

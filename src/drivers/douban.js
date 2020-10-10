@@ -143,19 +143,28 @@ export default class Douban {
             type: 'IMAGE',
             mutability: 'IMMUTABLE',
             data: {
-              src: item.src
-            }
+              caption: '',
+              src: item.src,
+              thumb: item.src,
+              url: item.url
+            },
           }
           return {
-            type: "atomic",
+            type: 'atomic',
             blockEntities: blockEntities,
-            entityRanges: [{
-              offset:  0,
-              length: 1,
-              key: key
-            }],
-            text: ''
-          };
+            inlineStyleRanges: [],
+            // "data": {
+            //     "page": 0
+            // },
+            entityRanges: [
+              {
+                offset: 0,
+                length: 1,
+                key: key,
+              },
+            ],
+            text: ' ',
+          }
         }
       },
       blockEntities: {
