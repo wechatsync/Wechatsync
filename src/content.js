@@ -277,6 +277,131 @@ if (isEditorPage) {
   script.type = 'text/javascript'
   script.src = chrome.extension.getURL('autoformat.js')
   script.setAttribute('data-url', chrome.runtime.getURL('templates.html'))
-  // document.head.appendChild(script)
+  document.head.appendChild(script)
   // document.head.removeChild(script);
+
+  function getAllCheckedAccounts() {
+    var listAccount = $('input[name="submit_check"]')
+    var saccounts = []
+    for (let index = 0; index < listAccount.length; index++) {
+      const element = listAccount[index]
+      if (element.checked) {
+        var aa = accounts.filter(t => {
+          return t.uid == element.value
+        })
+        console.log(accounts, element.value)
+        saccounts.push(aa[0])
+      }
+    }
+    // if (!saccounts.length) {
+    //   alert('请选择账号')
+    //   return e.stopPropagation()
+    // }
+    return saccounts;
+  }
+
+  function prepairSubmitTask() {
+    const allChecked = getAllCheckedAccounts()
+    console.log('prepairSubmitTask', 'syncform-selectbox', allChecked)
+  }
+
+  const observer = new MutationObserver(onMutation)
+  observer.observe(document, {
+    childList: true,
+    subtree: true,
+  })
+
+  function onMutation(mutations) {
+    const found = []
+    for (const { addedNodes } of mutations) {
+      for (const node of addedNodes) {
+        if (!node.tagName) continue // not an element
+        if (node.classList.contains('mass-send__list')) {
+          found.push(node)
+        } else if (node.firstElementChild) {
+          found.push(...node.getElementsByClassName('mass-send__list'))
+        }
+      }
+    }
+
+    if (found.length) {
+      console.log('onMutation.found', found)
+      initSyncForm()
+    }
+    // found.forEach(processFilter)
+  }
+
+  var _isInted = false
+  function initSyncForm() {
+
+    function afterGet() {
+    var html = `
+        <h6 style="margin-bottom: 12px">同步助手</h6> <div id="syncform-selectbox" style="padding-left: 5px">`
+    accounts = allAccounts
+    var supportAccounts = allAccounts.filter((item) => {
+      if (!item.supportTypes) return true
+      return item.supportTypes.indexOf('html') > -1
+    })
+
+    supportAccounts.forEach((account, index) => {
+      html +=
+        `
+            <div class="form-check mb-1">
+  <input class="form-check-input" type="checkbox" value="` +
+        account.uid +
+        `" name="submit_check" id="defaultCheck` +
+        index +
+        `">
+  <label class="form-check-label" for="defaultCheck` +
+        index +
+        `">
+  <img src="` +
+        (account.icon
+          ? account.icon
+          : chrome.extension.getURL('images/wordpress.ico')) +
+        `" class="icon" height="18" style="height: 20px !important"> 
+  ` +
+        account.title +
+        `
+  </label>
+</div>
+            `
+    })
+
+
+    $('.mass-send__form').append(html + '</div>')
+    console.log('html', html)
+  }
+
+     getAccounts(() => {
+       afterGet()
+       setTimeout(() => {
+         $('.mass-send__footer .weui-desktop-btn_primary').click(() => {
+           console.log('clicked');
+           (function waitUntil() {
+            const confirmDialogs = $('.weui-desktop-dialog__wrp')
+               .filter(function() {
+                 return (
+                   $(this)
+                     .text()
+                     .indexOf('开始群发后无法撤销') > -1
+                 )
+               })
+               if(confirmDialogs.length) {
+                  confirmDialogs.find('.weui-desktop-btn_primary').click(() => {
+                    console.log('btn clicked')
+                    prepairSubmitTask()
+                  })
+                 return;
+               }
+                setTimeout(waitUntil, 300)
+           })();
+          
+         })
+       }, 100);
+     })
+
+    
+    console.log('initSyncForm', allAccounts)
+  }
 }

@@ -463,8 +463,46 @@ function intiEditor() {
 
 console.log('intiEditor', $, document.currentScript)
 pageURL = document.currentScript.getAttribute('data-url')
-try {
-  intiEditor()
-} catch (e) {
-  console.log('intiEditor', e)
-}
+
+// try {
+//   intiEditor()
+// } catch (e) {
+//   console.log('intiEditor', e)
+// }
+
+
+// mass-send__list
+console.log('wechat autosend logic')
+
+// 
+
+// const observer = new MutationObserver(onMutation)
+// observer.observe(document, {
+//   childList: true,
+//   subtree: true,
+// })
+
+// function onMutation(mutations) {
+//   const found = []
+//   for (const { addedNodes } of mutations) {
+//     for (const node of addedNodes) {
+//       if (!node.tagName) continue // not an element
+//       if (node.classList.contains('mass-send__list')) {
+//         found.push(node)
+//       } else if (node.firstElementChild) {
+//         found.push(...node.getElementsByClassName('mass-send__list'))
+//       }
+//     }
+//   }
+
+//   if (found.length) {
+//     console.log('onMutation.found', found)
+//     initSyncForm();
+//   }
+//   // found.forEach(processFilter)
+// }
+
+// var _isInted = false;
+// function initSyncForm() {
+  
+// }
