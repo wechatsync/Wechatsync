@@ -119,19 +119,18 @@ export default class Douban {
 
   async editPost(post_id, post) {
     // console.log('editPost', post.post_thumbnail)
-
     var turndownService = new TurndownService()
-    turndownService.addRule('codefor', {
-      filter: ['pre'],
-      replacement: function (content) {
-        // content = content.replace(new RegExp("` ", "g"), "\n");
-        // content = content.replace(new RegExp("`", "g"), "");
-        return ['```', content, '```'].join('\n')
-      },
-    })
 
     var markdown = turndownService.turndown(post.post_content)
-    console.log(markdown)
+    console
+      .log(markdown)
+
+    // 保证图片换行
+    markdown = markdown.split("\n").map(_ => {
+      const imageBlocks = _.split('![]');
+      return imageBlocks.length > 1 ? imageBlocks.join('\n![]') : _
+    }).join("\n");
+
     const draftjsState = JSON.stringify(markdownToDraft(markdown, {
       remarkablePlugins: [imageBlock],
       blockTypes: {
