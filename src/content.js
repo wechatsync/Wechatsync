@@ -21,6 +21,13 @@ function getPost() {
   return post
 }
 
+function extractUrlValue(key, url) {
+  if (typeof url === 'undefined') url = window.location.href
+  var match = url.match('[?&]' + key + '=([^&]+)')
+  return match ? match[1] : null
+}
+
+
 var isSinglePage = window.location.href.indexOf('mp.weixin.qq.com/s') > -1
 if (isSinglePage) {
   //   setTimeout(() => {
@@ -303,6 +310,32 @@ if (isEditorPage) {
   function prepairSubmitTask() {
     const allChecked = getAllCheckedAccounts()
     console.log('prepairSubmitTask', 'syncform-selectbox', allChecked)
+    chrome.extension.sendMessage(
+      {
+        action: 'parseArticle',
+        account: {
+          type: 'weixin',
+        },
+        data: {
+          msgId: extractUrlValue('appmsgid'),
+        },
+      },
+      function(resp) {
+        chrome.extension.sendMessage(
+          {
+            action: 'addTask',
+            task: {
+              post: resp.article,
+              accounts: allChecked,
+            },
+          },
+          function(resp) {
+            console.log('addTask return', resp)
+          }
+        )
+        console.log('parseArticle return', resp)
+      }
+    )
   }
 
   const observer = new MutationObserver(onMutation)
@@ -405,3 +438,5 @@ if (isEditorPage) {
     console.log('initSyncForm', allAccounts)
   }
 }
+
+

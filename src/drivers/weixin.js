@@ -47,6 +47,43 @@ export default class WeixinDriver {
     }
   }
 
+  async getArticle(data) {
+    var token = weixinMetaCache.token || '442135330'
+    const tempRespone = await $.get(
+      `https://mp.weixin.qq.com/cgi-bin/appmsg?action=get_temp_url&appmsgid=${data.msgId}&itemidx=1&token=${token}&lang=zh_CN&f=json&ajax=1`
+    )
+    const { temp_url } = tempRespone
+    const htmlData = await $.get(temp_url)
+    const doc = $(htmlData)
+    console.log('htmlData', htmlData)
+    var post = {}
+
+    const allMetas = doc
+      .filter(function(index, el) {
+        return $(el).attr('property') && $(el).attr('content')
+      })
+      .map(function() {
+        return {
+          name: $(this).attr('property'),
+          content: $(this).attr('content'),
+        }
+      })
+      .toArray()
+
+    const metaObj = {}
+    allMetas.forEach(obj => {
+      metaObj[obj.name] = obj.content
+    })
+
+    post.title = metaObj['og:title']
+    post.content = doc.find('#js_content').html()
+    post.thumb = metaObj['og:image']
+    post.desc = metaObj['og:description'] 
+    post.link = metaObj['og:url'];
+    console.log('post', post, doc)
+    return post
+  }
+
   async editPost(post_id, post) {
     console.log('editPost', post.post_thumbnail)
     var res = await $.ajax({

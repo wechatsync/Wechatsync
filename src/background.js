@@ -23,10 +23,10 @@ async function loadDriver() {
     window.currentDriver = driver
     window.driverMeta = driver.getMeta()
     getDriver = window.currentDriver.getDriver
-    getPublicAccounts = async function () {
+    getPublicAccounts = async function() {
       var users = await window.currentDriver.getPublicAccounts()
       try {
-        users.forEach((publicAccount) => {
+        users.forEach(publicAccount => {
           console.log('tracker', publicAccount)
           tracker.sendEvent(
             'user',
@@ -81,7 +81,7 @@ function getCookie(name, cookieStr) {
 }
 
 function wait(ms) {
-  return new Promise((resolve) => setTimeout(() => resolve(), ms))
+  return new Promise(resolve => setTimeout(() => resolve(), ms))
 }
 
 class Syner {
@@ -95,7 +95,7 @@ class Syner {
   modifyHeaderIfNecessary() {
     console.log('modifyHeaderIfNecessary')
     chrome.webRequest.onBeforeSendHeaders.addListener(
-      function (details) {
+      function(details) {
         console.log('details.requestHeaders', details, details.url)
         // WEIBO API
         try {
@@ -148,7 +148,7 @@ class Syner {
 
           //  zhihu xsrf token
           if (details.url.indexOf('zhuanlan.zhihu.com/api') > -1) {
-            var cookieHeader = details.requestHeaders.filter((h) => {
+            var cookieHeader = details.requestHeaders.filter(h => {
               return h.name.toLowerCase() == 'cookie'
             })
 
@@ -193,7 +193,7 @@ class Syner {
   listenRequest() {
     var self = this
 
-    chrome.runtime.onMessage.addListener(function (
+    chrome.runtime.onMessage.addListener(function(
       request,
       sender,
       sendResponseA
@@ -222,7 +222,7 @@ class Syner {
             'title',
             [
               request.task.post.title,
-              newTask.accounts.map((account) => {
+              newTask.accounts.map(account => {
                 return [account.type, account.uid, account.title].join('-')
               }),
             ].join(';;')
@@ -230,6 +230,22 @@ class Syner {
         } catch (e) {
           console.log(e)
         }
+      }
+
+      if (request.action && request.action == 'parseArticle') {
+        console.log(request)
+        ;(async () => {
+          var driver = getDriver(request.account)
+          try {
+            var article = await driver.getArticle(request.data)
+            sendResponseA({
+              article: article,
+            })
+          } catch (e) {
+            console.log(e)
+          }
+        })()
+        return true
       }
     })
   }
@@ -242,7 +258,7 @@ class Syner {
       tasks.forEach((t, tid) => {
         t.tid = tid
       })
-      var notDone = tasks.filter((t) => {
+      var notDone = tasks.filter(t => {
         return t.status == 'wait'
       })
 
@@ -252,11 +268,11 @@ class Syner {
         })
       } catch (e) {}
 
-      var timeOut = tasks.filter((t) => {
+      var timeOut = tasks.filter(t => {
         return t.status == 'uploading'
       })
 
-      timeOut.forEach((t) => {
+      timeOut.forEach(t => {
         // db.editTask(t.tid, {
         //   status: "failed",
         //   msg: "超时"
@@ -289,11 +305,11 @@ class Syner {
                   message: currentTask.post.title + ' >> ' + account.title,
                   iconUrl: 'images/logo.png',
                 },
-                function () {
-                  window.setTimeout(function () {
+                function() {
+                  window.setTimeout(function() {
                     chrome.notifications.clear(
                       'sync_sucess_' + currentTask.tid,
-                      function () {}
+                      function() {}
                     )
                   }, 4000)
                 }
@@ -320,11 +336,11 @@ class Syner {
                   message: msgErro,
                   iconUrl: 'images/logo.png',
                 },
-                function () {
-                  window.setTimeout(function () {
+                function() {
+                  window.setTimeout(function() {
                     chrome.notifications.clear(
                       'sync_error_' + currentTask.tid,
-                      function () {}
+                      function() {}
                     )
                   }, 4000)
                 }
@@ -481,7 +497,9 @@ class Syner {
     }
 
     console.log('upload images done')
-    postContent.content = $('<div>').append(doc.clone()).html()
+    postContent.content = $('<div>')
+      .append(doc.clone())
+      .html()
 
     // 设置缩略图
     var post_thumbnail = null
@@ -553,7 +571,7 @@ function createSharedContextmenu() {
       id: 'getAttrile',
       title: '提取文章并同步',
       contexts: ['all'],
-      onclick: function (info, tab) {
+      onclick: function(info, tab) {
         // var text = info.selectionText;
         // text = text || tab.title;
         var link = info.linkUrl || info.frameUrl || info.pageUrl
