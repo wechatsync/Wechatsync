@@ -287,6 +287,8 @@ if (isEditorPage) {
   document.head.appendChild(script)
   // document.head.removeChild(script);
 
+  const editorStatusBar = buildStatusContainer()
+
   function getAllCheckedAccounts() {
     var listAccount = $('input[name="submit_check"]')
     var saccounts = []
@@ -321,6 +323,8 @@ if (isEditorPage) {
         },
       },
       function(resp) {
+        editorStatusBar.show();
+        $('#syncd-users').html('等待发布...')
         chrome.extension.sendMessage(
           {
             action: 'addTask',
@@ -440,3 +444,30 @@ if (isEditorPage) {
 }
 
 
+function buildStatusContainer() {
+  const template = `<div class="weui-desktop-dialog" style="position: fixed;
+    right: -25px;
+    top: 25px;
+    min-width: 350px;
+    width: 350px;
+    z-index: 99999;">
+    <div class="weui-desktop-dialog__hd" style="
+    line-height: 50px;
+    height: 50px;
+">
+  <h3 class="weui-desktop-dialog__title">同步助手</h3> 
+    <button class="weui-desktop-icon-btn weui-desktop-dialog__close-btn"><svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path d="M10.01 8.996l7.922-7.922c.086-.086.085-.21.008-.289l-.73-.73c-.075-.074-.208-.075-.29.007L9 7.984 1.077.062C.995-.02.863-.019.788.055l-.73.73c-.078.078-.079.203.007.29l7.922 7.92-7.922 7.922c-.086.086-.085.212-.007.29l.73.73c.075.074.207.074.29-.008l7.92-7.921 7.922 7.921c.082.082.215.082.29.008l.73-.73c.077-.078.078-.204-.008-.29l-7.921-7.921z"></path></svg></button></div>
+    <div style="    width: 100%;
+    min-height: 300px;
+    background: white;">
+      <div id="syncd-users" style="padding: 0 32px"></div>
+    </div>
+  </div>`
+  const wrapper = $(template)
+  $('body').append(wrapper)
+  wrapper.hide();
+  wrapper.find('.weui-desktop-dialog__close-btn').click(() => {
+    wrapper.hide();
+  })
+  return wrapper;
+}
