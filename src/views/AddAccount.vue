@@ -211,6 +211,7 @@ export default {
           }
         )
         .catch((er) => {
+          alert(er.toString())
           console.log('error')
         })
     },

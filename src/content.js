@@ -103,6 +103,7 @@ if (isSinglePage) {
     $('#exampleModalCenter .modal-body').html('')
     $('#exampleModalCenter .modal-body').append(con)
     console.log('clicka')
+    restoreAndAutodCheckd();
   }
   div.click(function () {
     getAccounts(() => {
@@ -224,18 +225,19 @@ function buildStatusHtml(taskStatus) {
 }
 
 $('#exampleModalCenter .btn-primary').click(function (e) {
-  var listAccount = $('input[name="submit_check"]')
-  var saccounts = []
-  for (let index = 0; index < listAccount.length; index++) {
-    const element = listAccount[index]
-    if (element.checked) {
-      var aa = accounts.filter((t) => {
-        return t.uid == element.value
-      })
-      console.log(accounts, element.value)
-      saccounts.push(aa[0])
-    }
-  }
+  // var listAccount = $('input[name="submit_check"]')
+  // var saccounts = []
+  // for (let index = 0; index < listAccount.length; index++) {
+  //   const element = listAccount[index]
+  //   if (element.checked) {
+  //     var aa = accounts.filter((t) => {
+  //       return t.uid == element.value
+  //     })
+  //     console.log(accounts, element.value)
+  //     saccounts.push(aa[0])
+  //   }
+  // }
+  const saccounts = getAllCheckedAccounts()
 
   if (!saccounts.length) {
     alert('请选择账号')
@@ -274,6 +276,57 @@ function getAccounts(cb) {
   )
 }
 
+function saveCheckdStatus(accounts) {
+  try {
+    localStorage.setItem('_sync_checked_all', JSON.stringify(accounts))
+  } catch (e) {
+
+  }
+}
+
+function restoreCheckedState() {
+  if (localStorage.getItem('_sync_checked_all')) {
+    const checkedAccounts = JSON.parse(localStorage.getItem('_sync_checked_all'));
+    return checkedAccounts;
+  }
+  return [];
+}
+
+function restoreAndAutodCheckd() {
+  var listAccount = $('input[name="submit_check"]')
+  var checkedAccounts = restoreCheckedState()
+  for (let index = 0; index < listAccount.length; index++) {
+    const element = listAccount[index]
+    var cAccounts = checkedAccounts.filter(t => {
+      return t.uid == element.value
+    })
+    if (cAccounts.length) {
+      element.checked = true
+    }
+  }
+}
+
+function getAllCheckedAccounts() {
+  var listAccount = $('input[name="submit_check"]')
+  var saccounts = []
+  for (let index = 0; index < listAccount.length; index++) {
+    const element = listAccount[index]
+    if (element.checked) {
+      var aa = accounts.filter(t => {
+        return t.uid == element.value
+      })
+      console.log(accounts, element.value)
+      saccounts.push(aa[0])
+    }
+  }
+  // if (!saccounts.length) {
+  //   alert('请选择账号')
+  //   return e.stopPropagation()
+  // }
+  saveCheckdStatus(saccounts)
+  return saccounts
+}
+
 // getAccounts();
 
 var isEditorPage =
@@ -289,25 +342,7 @@ if (isEditorPage) {
 
   const editorStatusBar = buildStatusContainer()
 
-  function getAllCheckedAccounts() {
-    var listAccount = $('input[name="submit_check"]')
-    var saccounts = []
-    for (let index = 0; index < listAccount.length; index++) {
-      const element = listAccount[index]
-      if (element.checked) {
-        var aa = accounts.filter(t => {
-          return t.uid == element.value
-        })
-        console.log(accounts, element.value)
-        saccounts.push(aa[0])
-      }
-    }
-    // if (!saccounts.length) {
-    //   alert('请选择账号')
-    //   return e.stopPropagation()
-    // }
-    return saccounts;
-  }
+  
 
   function prepairSubmitTask() {
     const allChecked = getAllCheckedAccounts()
@@ -407,6 +442,7 @@ if (isEditorPage) {
 
 
     $('.mass-send__form').append(html + '</div>')
+    restoreAndAutodCheckd()
     console.log('html', html)
   }
 
@@ -415,24 +451,26 @@ if (isEditorPage) {
        setTimeout(() => {
          $('.mass-send__footer .weui-desktop-btn_primary').click(() => {
            console.log('clicked');
+           getAllCheckedAccounts();
            (function waitUntil() {
-            const confirmDialogs = $('.weui-desktop-dialog__wrp')
-               .filter(function() {
+             const confirmDialogs = $('.weui-desktop-dialog__wrp').filter(
+               function() {
                  return (
                    $(this)
                      .text()
                      .indexOf('开始群发后无法撤销') > -1
                  )
-               })
-               if(confirmDialogs.length) {
-                  confirmDialogs.find('.weui-desktop-btn_primary').click(() => {
-                    console.log('btn clicked')
-                    prepairSubmitTask()
-                  })
-                 return;
                }
-                setTimeout(waitUntil, 300)
-           })();
+             )
+             if (confirmDialogs.length) {
+               confirmDialogs.find('.weui-desktop-btn_primary').click(() => {
+                 console.log('btn clicked')
+                 prepairSubmitTask()
+               })
+               return
+             }
+             setTimeout(waitUntil, 300)
+           })()
           
          })
        }, 100);
