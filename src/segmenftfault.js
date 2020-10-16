@@ -8,7 +8,7 @@ function testFunc() {
       if (action.type == 'sendPost') {
         ;(async () => {
           try {
-            window.webpackJsonp[0][1][0](window, this)
+            // window.webpackJsonp[0][1][0](window, this)
             var a = new FormData()
             for (var k in action.data) {
               a.append(k, action.data[k])

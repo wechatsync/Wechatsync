@@ -23,6 +23,8 @@ export function getDriverProvider(code) {
     Promise: Promise,
     md5: md5,
     juice: juice,
+    initliazeFrame: initliazeFrame,
+    requestFrameMethod: requestFrameMethod,
     //   window: window
   }
 
@@ -52,4 +54,42 @@ export function initliazeDriver() {
     })
     // return driver;
   })
+}
+
+
+var segIframe = null
+var abb = {}
+var frameStack = {}
+
+window.onmessage = e => {
+  try {
+    var action = JSON.parse(e.data)
+    if (action.eventId && abb[action.eventId]) {
+      abb[action.eventId](action.err, action.data)
+    }
+  } catch (e) {}
+}
+
+function requestFrameMethod(d) {
+  return new Promise((resolve, reject) => {
+    var evtId = Date.now() + Math.random()
+    d.eventId = evtId
+    abb[evtId] = function(err, data) {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(data)
+      }
+    }
+
+    segIframe.contentWindow.postMessage(JSON.stringify(d), '*')
+  })
+}
+
+function initliazeFrame(src, type) {
+  if (!frameStack[type]) {
+    rameStack[type] = document.createElement('iframe')
+    rameStack[type].src = src || 'https://segmentfault.com/write?freshman=1' 
+    document.body.append(rameStack[type])
+  }
 }

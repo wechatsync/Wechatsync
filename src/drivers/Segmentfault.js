@@ -1,33 +1,6 @@
 const { processDocCode, makeImgVisible } = require('./tools/code')
 import TurndownService from 'turndown'
 
-var segIframe = null
-var abb = {}
-
-window.onmessage = (e) => {
-  try {
-    var action = JSON.parse(e.data)
-    if (action.eventId && abb[action.eventId]) {
-      abb[action.eventId](action.err, action.data)
-    }
-  } catch (e) {}
-}
-
-function requestFrameMethod(d) {
-  return new Promise((resolve, reject) => {
-    var evtId = Date.now() + Math.random()
-    d.eventId = evtId
-    abb[evtId] = function (err, data) {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(data)
-      }
-    }
-
-    segIframe.contentWindow.postMessage(JSON.stringify(d), '*')
-  })
-}
 
 export default class Segmentfault {
   constructor() {
@@ -52,11 +25,12 @@ export default class Segmentfault {
       link.style['background-image'].replace('url("', '').replace('")', '')
     )
 
-    if (!segIframe) {
-      segIframe = document.createElement('iframe')
-      segIframe.src = 'https://segmentfault.com/write?freshman=1'
-      document.body.append(segIframe)
-    }
+    // if (!segIframe) {
+    //   segIframe = document.createElement('iframe')
+    //   segIframe.src = 'https://segmentfault.com/write?freshman=1'
+    //   document.body.append(segIframe)
+    // }
+    initliazeFrame('https://segmentfault.com/write?freshman=1', 'segment')
 
     return {
       uid: uid,
@@ -72,7 +46,7 @@ export default class Segmentfault {
   }
 
   async addPost(post) {
-    console.log('addPost', segIframe)
+    // console.log('addPost', segIframe)
 
     var turndownService = new TurndownService()
     turndownService.addRule('codefor', {
