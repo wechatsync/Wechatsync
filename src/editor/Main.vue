@@ -4,12 +4,13 @@
       <el-popover
         placement="top-start"
         width="500"
-        title="发布到"
+        v-model="visible"
+        :title="submitting ? '发布中' : '发布到'"
         trigger="click"
       >
         <div>
           <hr />
-          <div class="all-pubaccounts">
+          <div class="all-pubaccounts" v-if="!submitting">
             <div class="account-item" v-for="account in allAccounts">
               <el-checkbox v-model="account.checked">
                 <img
@@ -22,10 +23,60 @@
               </el-checkbox>
             </div>
           </div>
+           <div class="all-pubaccounts" v-if="submitting && taskStatus">
+              <p v-if="!taskStatus.accounts">等待发布..</p>
+              <div
+                class="account-item taskStatus"
+                v-for="account in taskStatus.accounts"
+              >
+                <img
+                  :src="account.icon ? account.icon : ''"
+                  class="icon"
+                  height="20"
+                  style="vertical-align: -6px; height: 20px !important"
+                />
+                <span class="name-block">{{ account.title }}</span>
+                <span
+                  style="margin-left: 15px"
+                  :class="account.status + ' message'"
+                >
+                  <template v-if="account.status == 'uploading'">
+                    <div class="lds-dual-ring"></div>
+                    {{ account.msg || '发布中' }}
+                  </template>
+
+                  <template v-if="account.status == 'failed'">
+                    同步失败, 错误内容：{{ account.error }}
+                  </template>
+
+                  <template v-if="account.status == 'done' && account.editResp">
+                    同步成功
+                    <a
+                      :href="account.editResp.draftLink"
+                      v-if="account.type != 'wordpress' && account.editResp"
+                      style="margin-left: 5px"
+                      target="_blank"
+                      >查看草稿</a
+                    >
+                  </template>
+                </span>
+              </div>
+            </div>
           <hr />
-          <el-button size="small" type="primary" @click="doSubmit"
-            >发布</el-button
-          >
+          <el-button
+              size="small"
+              v-if="!submitting"
+              type="primary"
+              @click="doSubmit"
+              >同步</el-button
+            >
+          <el-button
+              size="small"
+              v-if="submitting"
+              type="primary"
+              @click="submitting = false"
+              >关闭</el-button
+            >
         </div>
         <el-button slot="reference" size="small" type="primary">发布</el-button>
       </el-popover>
@@ -153,6 +204,8 @@ export default {
   },
   data() {
     return {
+      visible: false,
+      submitting: false,
       list: [
         // {
         //   id: 0,
@@ -171,6 +224,7 @@ export default {
       value: '',
       allAccounts: [],
       currentArtitle: {},
+      taskStatus: {},
       markdownOption: {
         // boxShadow: false
       },
@@ -191,6 +245,21 @@ export default {
     this.loadDoc()
     this.loadAccounts()
     tracker.sendAppView('MainView')
+
+    const self = this
+
+    chrome.runtime.onMessage.addListener(function (request, sender, sendResponseA) {
+      console.log('content.js revice', request)
+      try {
+        console.log('revice', request)
+        if (request.method == 'taskUpdate') {
+          // buildStatusHtml(request.task)
+          self.taskStatus = request.task
+        }
+      } catch (e) {
+        console.log(e)
+      }
+    })
   },
   methods: {
     loadAccounts() {
@@ -233,6 +302,7 @@ export default {
 
       // console.log(selectedAc, this.$refs.editor.d_render);
       // return;
+      this.$message('准备同步')
       chrome.extension.sendMessage(
         {
           action: 'addTask',
@@ -243,6 +313,9 @@ export default {
         },
         function (resp) {}
       )
+
+      this.submitting = true
+      this.taskStatus = {}
     },
 
     async createExampleDoc() {
