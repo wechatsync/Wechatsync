@@ -1,4 +1,8 @@
-console.log('page.js', ReaderArticleFinderJS)
+
+const Mercury = require('@postlight/mercury-parser');
+
+console.log('page.js', ReaderArticleFinderJS, 'Mercury', Mercury)
+
 function initPageFetch(isForceShow) {
   if ($('#syncd-pannel').length == 0)
     $('body').append(`
@@ -199,7 +203,45 @@ display: none;">
         }
       )
     } else {
-      alert('无法识别到文章')
+      // Mercury.parse().then((article) => {
+      //   console.log('article', article)
+      // })
+      const artitleDoms = $('article');
+      if(artitleDoms.length) {
+
+        function allocate() {
+          var thePageData = {
+            article: artitleDoms[0].outerHTML,
+            url: window.location.href,
+            leadingImage: artitleDoms.find('img').attr('src'),
+            mainImage: artitleDoms.find('img').attr('src'),
+            pageNumber: 1,
+            description: $('meta[name=description]').attr('content'),
+            nextPage: 0,
+            title: document.title,
+            rtl: false,
+          }
+          console.log(
+            '',
+            $widgetPage,
+            $widgetPage[0],
+            thePageData
+          )
+          $widgetPage[0].contentWindow.postMessage(JSON.stringify(thePageData), '*')
+          widgetDomMain.css('display', 'block')
+          $widgetPage[0].contentWindow.postMessage(
+            JSON.stringify({ method: 'openPannel' }),
+            '*'
+          )
+        }
+
+        setTimeout(() => {
+          allocate();
+        }, 1000);
+      } else {
+        alert('无法识别到文章')
+      }
+      
     }
   } else {
     $('#syncd-pannel').show()

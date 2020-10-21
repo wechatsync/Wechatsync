@@ -235,7 +235,9 @@ export default {
             self.loadAccounts()
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log('revice error', e, evt)
+      }
     }
 
     window.addEventListener('scroll', () => {

@@ -186,6 +186,46 @@ export default class WeixinDriver {
   }
 
   async uploadFile(file) {
+    var formdata = new FormData()
+    var blob = new Blob([file.bits], {
+        type: file.type
+    });
+
+    formdata.append('type', blob.type)
+    formdata.append('id', new Date().getTime())
+    formdata.append('name', new Date().getTime() + '.jpg')
+    formdata.append('lastModifiedDate', new Date().toString())
+    formdata.append('size', blob.size)
+    formdata.append('file', blob, new Date().getTime() + '.jpg')
+    
+    var ticket_id = this.meta.commonData.data.user_name,
+      ticket = this.meta.commonData.data.ticket,
+      svr_time =  this.meta.commonData.data.time,
+      token = this.meta.commonData.data.t,
+      seq = new Date().getTime();
+
+    var res = await axios({
+      url: `https://mp.weixin.qq.com/cgi-bin/filetransfer?action=upload_material&f=json&scene=8&writetype=doublewrite&groupid=1&ticket_id=${ticket_id}&ticket=${ticket}&svr_time=${svr_time}&token=${token}&lang=zh_CN&seq=${seq}&t=` + Math.random(),
+      method: 'post',
+      data: formdata,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    var url = res.data.cdn_url
+    if(res.data.base_resp.err_msg != 'ok') {
+      console.log(res.data);
+      throw new Error('upload failed')
+    }
+    //  return url;
+    return [
+      {
+        id: res.data.content,
+        object_key: res.data.content,
+        url: url,
+      },
+    ]
+  }
+
+  async uploadFileBySource(file) {
     var src = file.src
     var res = await $.ajax({
       url:
