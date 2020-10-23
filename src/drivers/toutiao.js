@@ -91,7 +91,6 @@ export default class ToutiaoDriver {
     })
 
     // throw new Error('fuck');
-
     if (res.images && !res.images.length) {
       throw new Error('图片上传失败 ' + src)
     }
@@ -99,6 +98,33 @@ export default class ToutiaoDriver {
     // http only
     console.log('uploadFile', res)
     return [res]
+  }
+
+  async uploadFileByForm(file) {
+    var src = file.src
+    var uploadUrl = 'https://mp.toutiao.com/mp/agw/article_material/photo/upload_picture?type=ueditor&pgc_watermark=1&action=uploadimage&encode=utf-8'
+    var blob = new Blob([file.bits], {
+      type: file.type
+    });
+    var formdata = new FormData()
+    formdata.append('upfile', blob, new Date().getTime() + '.jpg')
+    var res = await axios({
+      url: uploadUrl,
+      method: 'post',
+      data: formdata,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    if (res.data.state != 'SUCCESS') {
+      throw new Error('图片上传失败 ' + src)
+    }
+    // http only
+    console.log('uploadFile', res)
+    return [{
+      id: res.data.original,
+      object_key: res.data.original,
+      url: res.data.url
+    }]
   }
 
   async preEditPost(post) {

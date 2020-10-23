@@ -125,7 +125,6 @@ export default class Segmentfault {
       // post.content = post.content.replace(/\>\s+\</g,'');
       console.log('zihu.Juejin')
       div.html(post.content)
-
       // var org = $(post.content);
       // var doc = $('<div>').append(org.clone());
       var doc = div

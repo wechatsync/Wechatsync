@@ -117,6 +117,40 @@ export default class JianShuDriver {
     }
   }
 
+  async uploadFileByFile(file) {
+    const tokenReq = await axios.get('https://www.jianshu.com/upload_images/token.json?filename='+ new Date().getTime() +'.png')
+    if(tokenReq.data.token) {
+      var blob = new Blob([file.bits], {
+        type: file.type
+      });
+      var formdata = new FormData()
+      formdata.append('token', tokenReq.data.token)
+      formdata.append('key', tokenReq.data.key)
+      formdata.append('x:protocol', 'https')
+      formdata.append('file', blob, new Date().getTime() + '.jpg')
+      var res = await axios({
+        url: 'https://upload.qiniup.com/',
+        method: 'post',
+        data: formdata,
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+
+      if(!res.data.url) {
+        console.log(res.data);
+        throw new Error('upload failed')
+      }
+      var url = res.data.url
+      return [
+        {
+          id: tokenReq.data.key,
+          object_key: tokenReq.data.key,
+          url: url
+        }
+      ]
+    }
+    throw new Error('upload failed')
+  }
+
   async uploadFile(file) {
     var src = file.src
     try {

@@ -217,7 +217,7 @@ export default class WeiboDriver {
     })
   }
 
-  async uploadFile(file) {
+  async uploadFileByUrl(file) {
     var src = file.src
     var res = await $.ajax({
       url:
@@ -244,17 +244,18 @@ export default class WeiboDriver {
     ]
   }
 
-  async uploadFileOld(file) {
+  async uploadFile(file) {
     var blob = new Blob([file.bits])
     console.log('uploadFile', file, blob)
+    var uploadurl1 = `https://picupload.weibo.com/interface/pic_upload.php?app=miniblog&s=json&p=1&data=1&url=&markpos=1&logo=0&nick=&file_source=4`
+    var uploadurl2 = 'https://picupload.weibo.com/interface/pic_upload.php?app=miniblog&s=json&p=1&data=1&url=&markpos=1&logo=0&nick='
     var fileResp = await $.ajax({
       url:
-        'https://picupload.weibo.com/interface/pic_upload.php?app=miniblog&s=json&p=1&data=1&url=&markpos=1&logo=0&nick=',
+      uploadurl1,
       type: 'POST',
       processData: false,
       data: new Blob([file.bits]),
     })
-
     console.log(file, fileResp)
     return [
       {
