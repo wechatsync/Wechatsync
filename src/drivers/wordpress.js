@@ -42,6 +42,7 @@ export default class WordpressDriver {
       methodName: 'wp.getUsersBlogs',
       params: params,
     })
+    console.log('end');
     res.icon = chrome.extension.getURL('images/wordpress.ico')
     return res
   }

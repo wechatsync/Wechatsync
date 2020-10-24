@@ -339,14 +339,15 @@ if (isEditorPage) {
   script.setAttribute('data-url', chrome.runtime.getURL('templates.html'))
   document.head.appendChild(script)
   // document.head.removeChild(script);
-
   const editorStatusBar = buildStatusContainer()
-
-  
 
   function prepairSubmitTask() {
     const allChecked = getAllCheckedAccounts()
     console.log('prepairSubmitTask', 'syncform-selectbox', allChecked)
+    if (!allChecked.length) {
+      console.log('selected', 0)
+      return
+    }
     chrome.extension.sendMessage(
       {
         action: 'parseArticle',

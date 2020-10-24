@@ -1,7 +1,7 @@
 
-const Mercury = require('@postlight/mercury-parser');
+// const Mercury = require('@postlight/mercury-parser');
 
-console.log('page.js', ReaderArticleFinderJS, 'Mercury', Mercury)
+console.log('page.js', ReaderArticleFinderJS, 'Mercury')
 
 function initPageFetch(isForceShow) {
   if ($('#syncd-pannel').length == 0)

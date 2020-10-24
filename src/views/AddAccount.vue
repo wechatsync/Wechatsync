@@ -67,7 +67,8 @@
         />
       </div>
       <button type="submit" class="btn btn-primary" @click="create">
-        添加
+        <template v-if="checking">登陆中...</template>
+        <template v-if="!checking">添加</template>
       </button>
     </div>
   </section>
@@ -86,6 +87,7 @@ export default {
       wpUrl: '',
       wpUser: '',
       wpPwd: '',
+      checking: false,
       drivers: [
         {
           type: 'wordpress',
@@ -173,7 +175,8 @@ export default {
         },
       })
 
-      var resp = await driver.getMetaData()
+      this.checking = true
+      // var resp = await driver.getMetaData()
       driver
         .getMetaData()
         .then(
@@ -191,29 +194,31 @@ export default {
               title: blogMeta.blogName,
             })
             alert('添加成功->' + blogMeta.blogName)
+            self.checking = false
             self.$router.back()
           },
           function (jqXHR, status, error) {
-            if (status == 'parsererror') {
-              if (error.code == 403) {
+            self.checking = false
+            console.log('getMetaData', error, arguments)
+            if (jqXHR.status == 'parsererror') {
+              if (jqXHR.error.code == 403) {
                 alert('账号或密码错误')
               } else {
                 alert(error.msg)
               }
             } else {
-              if (error == 'Not Found') {
+              if (jqXHR.error == 'Not Found') {
                 alert('地址不对，非WordPress网站')
               } else {
-                alert(error)
+                alert(JSON.stringify(jqXHR.error))
               }
             }
-            console.log(error, arguments)
           }
         )
-        .catch((er) => {
-          alert(er.toString())
-          console.log('error')
-        })
+        // .catch((er) => {
+        //   alert(er.toString())
+        //   console.log('error')
+        // })
     },
   },
 }

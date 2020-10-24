@@ -410,7 +410,7 @@ export default {
 
         setTimeout(() => {
           document.body.appendChild(script)
-        }, 2000)
+        }, 5000)
         // var remoteDriver = getDriverProvider(window.remoteDriver);
         // var driverMeta = remoteDriver.getMeta();
         // var hasNew = compareVer.gt(driverMeta.version, driverVersion.version);
