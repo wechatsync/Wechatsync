@@ -1,6 +1,6 @@
 export default class ToutiaoDriver {
   constructor() {
-    this.skipReadImage = true
+    // this.skipReadImage = true
     this.name = 'toutiao'
   }
 
@@ -76,7 +76,7 @@ export default class ToutiaoDriver {
     }
   }
 
-  async uploadFile(file) {
+  async uploadFileBySrc(file) {
     var src = file.src
     var res = await $.ajax({
       url: 'https://mp.toutiao.com/tools/catch_picture/',
@@ -100,14 +100,17 @@ export default class ToutiaoDriver {
     return [res]
   }
 
-  async uploadFileByForm(file) {
+  async uploadFile(file) {
     var src = file.src
     var uploadUrl = 'https://mp.toutiao.com/mp/agw/article_material/photo/upload_picture?type=ueditor&pgc_watermark=1&action=uploadimage&encode=utf-8'
-    var blob = new Blob([file.bits], {
+    // var blob = new Blob([file.bits], {
+    //   type: file.type
+    // });
+    var file = new File([file.bits], 'temp', {
       type: file.type
     });
     var formdata = new FormData()
-    formdata.append('upfile', blob, new Date().getTime() + '.jpg')
+    formdata.append('upfile', file)
     var res = await axios({
       url: uploadUrl,
       method: 'post',

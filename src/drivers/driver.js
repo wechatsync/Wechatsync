@@ -105,8 +105,8 @@ export async function getPublicAccounts() {
 
 export function getMeta() {
   return {
-    version: '0.0.7',
-    versionNumber: 7,
+    version: '0.0.8',
+    versionNumber: 8,
     log: '',
   }
 }

@@ -105,6 +105,11 @@ class Syner {
               origin: 'https://mp.weixin.qq.com',
               referer: 'https://mp.weixin.qq.com/cgi-bin/appmsg',
             },
+            {
+              prefix: 'mp.toutiao.com/mp',
+              origin: 'https://mp.toutiao.com',
+              referer: 'https://mp.toutiao.com/profile_v4/graphic/publish',
+            },
           ]
 
           for (let index = 0; index < modifRules.length; index++) {
@@ -125,6 +130,8 @@ class Syner {
                 })
               }
               console.log('details.requestHeaders', modifRule, details)
+            } else {
+              // console.log('rule not macth', modifRule.prefix, details.url)
             }
           }
 
@@ -173,6 +180,7 @@ class Syner {
       },
       {
         urls: [
+          '*://mp.toutiao.com/mp*',
           '*://card.weibo.com/*',
           '*://mp.weixin.qq.com/*',
           '*://zhuanlan.zhihu.com/api/*',

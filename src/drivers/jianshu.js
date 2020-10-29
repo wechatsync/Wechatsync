@@ -117,7 +117,7 @@ export default class JianShuDriver {
     }
   }
 
-  async uploadFileByFile(file) {
+  async uploadFile(file) {
     const tokenReq = await axios.get('https://www.jianshu.com/upload_images/token.json?filename='+ new Date().getTime() +'.png')
     if(tokenReq.data.token) {
       var blob = new Blob([file.bits], {
@@ -151,7 +151,7 @@ export default class JianShuDriver {
     throw new Error('upload failed')
   }
 
-  async uploadFile(file) {
+  async uploadFileBySrc(file) {
     var src = file.src
     try {
       // jianshu not support webp
