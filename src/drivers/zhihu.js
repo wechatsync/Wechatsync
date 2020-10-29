@@ -198,6 +198,11 @@ export default class ZhiHuDriver {
       console.log(client, finalUrl)
     }
     console.log(file, fileResp)
+
+    if (file.type === 'image/gif') {
+      // add extension for gif
+      upload_file.object_key = upload_file.object_key + '.gif';
+    }
     return [
       {
         id: upload_file.object_key,
