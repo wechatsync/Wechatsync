@@ -120,7 +120,6 @@ export default class Douban {
   async editPost(post_id, post) {
     // console.log('editPost', post.post_thumbnail)
     var turndownService = new TurndownService()
-
     var markdown = turndownService.turndown(post.post_content)
     console
       .log(markdown)
@@ -138,15 +137,21 @@ export default class Douban {
           console.log('image_open', 'blockTypes', item)
           var key = generateUniqueKey()
           var blockEntities = {}
+          // ?#
+          var sourcePair =  item.src.split("?#")
+          var rawSrc = sourcePair[0]
+          var sourceId = sourcePair[1]
+          var imageTemplate = {
+            id: sourceId,
+            src:  item.src,
+            thumb: item.src,
+            url: item.src,
+          }
+
           blockEntities[key] = {
             type: 'IMAGE',
             mutability: 'IMMUTABLE',
-            data: {
-              caption: '',
-              src: item.src,
-              thumb: item.src,
-              url: item.url
-            },
+            data: imageTemplate,
           }
           return {
             type: 'atomic',
@@ -199,12 +204,15 @@ export default class Douban {
         ck: this.meta.form.ck
       },
     })
-
     return {
       status: 'success',
       post_id: this.meta.form.note_id,
       draftLink: 'https://www.douban.com/note/create',
     }
+  }
+
+  editImg(img, source) {
+    img.attr('raw-data', JSON.stringify(source.raw))
   }
 
   async uploadFile(file) {
@@ -233,7 +241,8 @@ export default class Douban {
       {
         id: res.data.photo.id,
         object_key: res.data.photo.id,
-        url: url,
+        url: url + "?#" + res.data.photo.id,
+        raw: res.data
       },
     ]
   }
