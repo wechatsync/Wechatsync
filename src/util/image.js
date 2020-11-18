@@ -53,9 +53,9 @@ export function upImage(driver, src, postId, name) {
         )
     } else {
       (async () => {
-
         try {
-          var dataURL = await readFileToBase64(src)
+          var sourceIsBase64 = src.indexOf(';base64,') > -1;
+          var dataURL = sourceIsBase64 ? src : await readFileToBase64(src)
           var dataURLPairs = dataURL.split(',')
           var fileType = dataURLPairs[0].replace('data:', '').split(';')[0]
           var baseCode = dataURLPairs[1]

@@ -255,6 +255,38 @@ class Syner {
         })()
         return true
       }
+
+      if (request.action && request.action == 'callDriverMethod') {
+        console.log(request)
+        ;(async () => {
+          var driver = getDriver(request.data.account )
+          var methodName = request.methodName
+          try {
+            if (methodName === 'uploadImage') {
+              var postId = Math.floor(Math.random() * 100000)
+              var imgSRC = request.data.src;
+              var result = await upImage(
+                driver,
+                imgSRC,
+                postId,
+                postId + '.png'
+              )
+              sendResponseA({
+                result: result,
+              })
+            } else {
+              var driverFunc = driver[methodName]
+              var article = await driverFunc(request.data)
+              sendResponseA({
+                article: article,
+              })
+            }
+          } catch (e) {
+            console.log(e)
+          }
+        })()
+        return true
+      }
     })
   }
 
@@ -369,7 +401,7 @@ class Syner {
               )
 
               tracker.sendEvent(
-                'sync-' + driverMeta.versionNumber,
+                'sync-' + window.driverMeta.versionNumber,
                 'error',
                 msgErro
               )
@@ -414,7 +446,7 @@ class Syner {
         {
           post_title: postContent.title,
           post_author: account.params ? account.params.wpUser : '',
-          post_content: postContent.content,
+          post_content:  postContent[`content_${account.type}`] ?  postContent[`content_${account.type}`] : postContent.content,
         },
         postContent
       ),
@@ -513,7 +545,9 @@ class Syner {
     var post_thumbnail = null
     var editInput = {
       post_title: postContent.title,
-      post_content: postContent.content,
+      post_content: postContent[`content_${account.type}`]
+        ? postContent[`content_${account.type}`]
+        : postContent.content,
     }
 
     if (postContent.thumb) {
