@@ -2,12 +2,15 @@ import Store from './db/store'
 import { upImage } from './util/image'
 
 import { getGuid } from './util/util'
-import { initliazeDriver } from './vm/vm'
+import { initliazeDriver, getDriverProvider } from './vm/vm'
 
 var axios = require('axios')
 var juice = require('juice/client')
-
+var draftJs = require('draft-js')
 var localDriver = require('./drivers/driver')
+
+window.htmlToDraft = require('html-to-draftjs').default
+window.draftJs = draftJs;
 
 window.axios = axios
 window.juice = juice
@@ -51,6 +54,7 @@ async function loadDriver() {
   if (process.env.WECHAT_ENV == 'production') {
     loadDriver()
   } else {
+    window.driverMeta = localDriver.getMeta()
     afterDriver()
     console.log('dvelopment driver')
   }
@@ -59,6 +63,7 @@ async function loadDriver() {
 var publicAccounts = []
 
 function afterDriver() {
+ 
   window.getPublicAccounts = getPublicAccounts
   ;(async () => {
     publicAccounts = await getPublicAccounts()
@@ -252,6 +257,51 @@ class Syner {
           } catch (e) {
             console.log(e)
           }
+        })()
+        return true
+      }
+      
+      if (request.action && request.action == 'updateDriver') {
+        console.log('updateDriver', request);
+        (async () => {
+
+          try {
+            var newDriver = getDriverProvider(request.data.code)
+            var newDriverMeta = newDriver.getMeta()
+            console.log('new version found', newDriverMeta)
+            if (newDriverMeta.versionNumber > window.driverMeta.versionNumber) {
+              chrome.storage.local.set(
+                {
+                  driver: request.data.code,
+                },
+                function() {
+                  console.log('driver seted')
+                  loadDriver()
+                }
+              )
+              console.log('is new driver')
+              sendResponseA({
+                result: {
+                status: 1
+              },
+              })
+            } else {
+              sendResponseA({
+                result: {
+                status: 0
+              },
+              })
+            }
+
+          } catch (e) {
+            sendResponseA({
+              result: {
+                status: 0,
+                error: e.toString()
+              },
+            })
+          }
+          
         })()
         return true
       }

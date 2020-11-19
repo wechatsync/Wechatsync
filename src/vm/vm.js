@@ -11,9 +11,14 @@ export function getDriverProvider(code) {
 
   var axios = require('axios')
   var juice = require('juice/client')
+  var draftJs = require('draft-js')
+  var htmlToDraft = require('html-to-draftjs').default
+  // window.draftJs = draftJs
 
   const interpreter = new Sval(options)
   const sanbox = {
+    draftJs: draftJs,
+    htmlToDraft: htmlToDraft,
     console: console,
     $: $,
     DOMParser: DOMParser,

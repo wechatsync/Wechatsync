@@ -4,9 +4,10 @@ import TurndownService from 'turndown'
 // import { markdownToDraft } from 'markdown-draft-js';
 import markdownToDraft from './tools/mtd'
 // const axios = require('axios');
-const convertToRaw = require('draft-js').convertToRaw
-const htmlToDraft = require('html-to-draftjs').default
-const ContentState = require( 'draft-js').ContentState
+const draftJs = window.draftJs;
+// const convertToRaw = draftJs.convertToRaw
+// const htmlToDraft = require('html-to-draftjs').default
+// const ContentState = draftJs.ContentState
 
 
 const ImageRegexp = /^!\[([^\]]*)]\s*\(([^)"]+)( "([^)"]+)")?\)/

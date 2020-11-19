@@ -47,6 +47,16 @@ function testFunc() {
     )
   }
 
+  poster.updateDriver = function(data, cb) {
+    callFunc(
+      {
+        method: 'updateDriver',
+        data: data,
+      },
+      cb
+    )
+  }
+
   poster.uploadImage = function(data, cb) {
     callFunc(
       {
@@ -80,7 +90,7 @@ function testFunc() {
 setTimeout(function () {
   var script = document.createElement('script')
   script.type = 'text/javascript'
-  script.innerHTML = testFunc.toString() + '; testFunc();'
+  script.innerHTML = testFunc.toString() + '; ' + testFunc.name + '();'
   document.head.appendChild(script)
   document.head.removeChild(script)
   console.log('injject')
@@ -167,8 +177,24 @@ window.addEventListener('message', function (evt) {
              })
            }
          )
-        //  var timeOut = 
        }
+
+       if (action.method == 'updateDriver') {
+         chrome.extension.sendMessage(
+           {
+             action: 'updateDriver',
+             data: action.data,
+           },
+           function(resp) {
+             sendToWindow({
+               eventID: action.eventID,
+               result: resp,
+             })
+           }
+         )
+       }
+
+       
     } catch (e) {}
   // }
 })
