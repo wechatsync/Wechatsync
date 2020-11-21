@@ -583,6 +583,7 @@ body,
   transition: top 0.5s ease-in-out 0.2s;
   margin-left: 350px;
   height: 100%;
+  z-index: 3;
 }
 
 .article-item {
@@ -775,7 +776,7 @@ body,
   position: absolute;
   right: 15px;
   top: 12px;
-  z-index: 20008;
+  z-index: 888;
 }
 
 .all-pubaccounts {
@@ -800,7 +801,7 @@ body,
     position: absolute;
     width: 100%;
     border: 1px solid #eee;
-    z-index: 8888;
+    z-index: 888;
 }
 
 .header-bar a:hover {

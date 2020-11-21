@@ -4,7 +4,7 @@ setTimeout(function () {
   var script = document.createElement('script')
   script.type = 'text/javascript'
   script.innerHTML =
-    "document.body.setAttribute('data-msg_desc', msg_desc );document.body.setAttribute('data-msg_title', msg_title);document.body.setAttribute('data-msg_cdn_url', msg_cdn_url);"
+    "if(typeof msg_desc != 'undefined') { document.body.setAttribute('data-msg_desc', msg_desc );document.body.setAttribute('data-msg_title', msg_title);document.body.setAttribute('data-msg_cdn_url', msg_cdn_url); }"
   document.head.appendChild(script)
   document.head.removeChild(script)
 }, 50)

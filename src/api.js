@@ -99,6 +99,7 @@ setTimeout(function () {
 var allAccounts = []
 var accounts = []
 
+
 function getAccounts() {
   chrome.extension.sendMessage(
     {
@@ -110,7 +111,9 @@ function getAccounts() {
   )
 }
 
-getAccounts()
+if(window.location.href.indexOf('mp.weixin.qq.com') == -1) {
+  getAccounts()
+}
 
 function sendToWindow(msg) {
   msg.callReturn = true
