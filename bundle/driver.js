@@ -1975,8 +1975,8 @@ class ToutiaoDriver {
     await $.get('https://mp.toutiao.com/profile_v3/graphic/publish')
 
     var res = await $.ajax({
-      url:
-        'https://mp.toutiao.com/core/article/edit_article_post/?source=mp&type=article',
+      // url:'https://mp.toutiao.com/core/article/edit_article_post/?source=mp&type=article',
+      url: 'https://mp.toutiao.com/mp/agw/article/publish?source=mp&type=article',
       type: 'POST',
       dataType: 'JSON',
       data: {
@@ -2056,7 +2056,10 @@ class ToutiaoDriver {
     return [{
       id: res.data.original,
       object_key: res.data.original,
-      url: res.data.url
+      url: res.data.url,
+      images: [
+        res.data
+      ]
     }]
   }
 
@@ -2464,24 +2467,27 @@ class Segmentfault {
     post.markdown = markdown
     console.log(markdown)
 
-    var data = await requestFrameMethod({
-      type: 'sendPost',
-      data: {
-        type: 1,
-        url: '',
-        blogId: 0,
-        isTiming: 0,
-        created: '',
-        weibo: 0,
-        license: 0,
-        tags: '',
-        title: post.post_title,
-        text: post.markdown,
-        articleId: '',
-        draftId: '',
-        id: '',
+    var data = await requestFrameMethod(
+      {
+        type: 'sendPost',
+        data: {
+          type: 1,
+          url: '',
+          blogId: 0,
+          isTiming: 0,
+          created: '',
+          weibo: 0,
+          license: 0,
+          tags: '',
+          title: post.post_title,
+          text: post.markdown,
+          articleId: '',
+          draftId: '',
+          id: '',
+        },
       },
-    })
+      'segment'
+    )
 
     console.log('data', data)
     return {

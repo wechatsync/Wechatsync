@@ -616,10 +616,12 @@ class Syner {
             post_thumbnail_raw: post_thumbnail,
           })
           break
-        } catch (e) {}
+        } catch (e) {
+          console.log('upload thumb failed', e)
+        }
       }
     }
-    console.log('update last')
+    console.log('update last', editInput)
 
     var finalPostId = account.params ? parseInt(postId) : postId
     var editResp = await driver.editPost(finalPostId, editInput)

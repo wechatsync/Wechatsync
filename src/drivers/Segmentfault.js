@@ -62,24 +62,27 @@ export default class Segmentfault {
     post.markdown = markdown
     console.log(markdown)
 
-    var data = await requestFrameMethod({
-      type: 'sendPost',
-      data: {
-        type: 1,
-        url: '',
-        blogId: 0,
-        isTiming: 0,
-        created: '',
-        weibo: 0,
-        license: 0,
-        tags: '',
-        title: post.post_title,
-        text: post.markdown,
-        articleId: '',
-        draftId: '',
-        id: '',
+    var data = await requestFrameMethod(
+      {
+        type: 'sendPost',
+        data: {
+          type: 1,
+          url: '',
+          blogId: 0,
+          isTiming: 0,
+          created: '',
+          weibo: 0,
+          license: 0,
+          tags: '',
+          title: post.post_title,
+          text: post.markdown,
+          articleId: '',
+          draftId: '',
+          id: '',
+        },
       },
-    })
+      'segment'
+    )
 
     console.log('data', data)
     return {

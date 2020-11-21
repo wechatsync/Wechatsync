@@ -19,8 +19,63 @@
           </span>
         </div>
       </header>
+  <section id="tab-content-wrap">
+        <div
+          class="alert alert-warning mr-3 ml-3 mt-4"
+          role="alert"
+          v-if="hasUpdate"
+        >
+          <button
+            type="button"
+            class="close"
+            data-dismiss="alert"
+            aria-label="Close"
+            @click="dontShowNotify"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="alert-heading">新版本！</h4>
+          <template v-if="remoteStatus.html">
+            <div v-html="remoteStatus.html">
+            </div>
+          </template>
+          <template v-if="!remoteStatus.html">
+            <p>
+              {{ remoteStatus.desc }}
+              <a href="https://www.wechatsync.com/?utm_source=version_notify" target="_blank"
+                >下载最新版本</a
+              >
+            </p>
+          </template>
+        </div>
 
-      <section id="tab-content-wrap" v-if="currentTab == 'account'">
+       <div
+          class="alert alert-success mr-3 ml-3 mt-4"
+          role="alert"
+          v-if="!dismiss_donate"
+        >
+          <button
+            type="button"
+            class="close"
+            data-dismiss="alert"
+            aria-label="Close"
+            @click="dontShowNotify"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="alert-heading">谢谢使用！</h4>
+          <p>
+            本项目为非营利性项目。广泛的用户群体是我维护的主要动力。
+            <!-- <br> -->
+            如果觉得不错还请分享给你的朋友！谢谢！<br>
+            如果你是开发者并且对本项目感兴趣、欢迎参与进来
+            <a href="https://github.com/wechatsync/Wechatsync" target="_blank">wechatsync/Wechatsync</a>
+          </p>
+          <hr />
+          <p class="mb-0 text-right">by <a href="https://blog.dev4eos.com/about/?utm_source=syncslogon" target="_blank">fun</a></p>
+        </div>
+
+      <section  v-if="currentTab == 'account'">
         <div
           class="alert alert-warning mr-3 ml-3 mt-4"
           role="alert"
@@ -71,28 +126,6 @@
           </div>
         </div>
 
-        <div
-          class="alert alert-warning mr-3 ml-3 mt-4"
-          role="alert"
-          v-if="hasUpdate"
-        >
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-            @click="dontShowNotify"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-          <h4 class="alert-heading">新版本！</h4>
-          <p>
-            {{ remoteStatus.desc }}
-            <a href="https://www.wechatsync.com/" target="_blank"
-              >下载最新版本</a
-            >
-          </p>
-        </div>
         <div class="account-list">
           <ul class="account-types" style="padding-bottom: 50px">
             <li v-for="account in accounts">
@@ -116,38 +149,15 @@
           role="alert"
         >本项目为非营利性项目，广泛的用户群体是我维护的主要动力，如果觉得不错请分享给你的朋友！谢谢！</div>-->
 
-        <div
-          class="alert alert-success mr-3 ml-3 mt-4"
-          role="alert"
-          v-if="!dismiss_donate"
-        >
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-            @click="dontShowNotify"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-          <h4 class="alert-heading">谢谢使用！</h4>
-          <p>
-            本项目为非营利性项目。广泛的用户群体是我维护的主要动力。
-            <!-- <br> -->
-            如果觉得不错还请分享给你的朋友！谢谢！
-          </p>
-          <hr />
-          <p class="mb-0 text-right">by fun</p>
-        </div>
-
+      
         <div class="tool-bottom">
           <button
-            class="btn btn-outline-secondary"
+            class="btn btn-outline-info"
             type="button"
             style="margin-right: 10px"
             @click="writeArticle()"
           >
-            写文章
+            交流群
           </button>
 
           <button
@@ -177,31 +187,7 @@
           </button>
         </div>
       </section>
-
-      <section id="tab-content-wrap" v-if="currentTab == 'tool'">
-        <div
-          class="alert alert-warning mr-3 ml-3 mt-4"
-          role="alert"
-          v-if="hasUpdate"
-        >
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-            @click="dontShowNotify"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-          <h4 class="alert-heading">新版本！</h4>
-          <p>
-            {{ remoteStatus.desc }}
-            <a href="https://www.wechatsync.com/" class="ml-2" target="_blank"
-              >下载最新版本</a
-            >
-          </p>
-        </div>
-
+      <section v-if="currentTab == 'tool'">
         <div class="account-list">
           <ul class="account-types mb-2">
             <li
@@ -234,32 +220,8 @@
           <div v-if="tasks.length == 0" class="ml-3 pb-2 mt-2">暂无数据</div>
           <div v-if="tasks.length > 10" class="ml-3 pb-2">只存储最近100条</div>
         </div>
-
-        <div
-          class="alert alert-success mr-3 ml-3 mt-4"
-          role="alert"
-          v-if="!dismiss_donate"
-        >
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-            @click="dontShowNotify"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-          <h4 class="alert-heading">谢谢使用！</h4>
-          <p>
-            本项目为非营利性项目。广泛的用户群体是我维护的主要动力。
-            <!-- <br> -->
-            如果觉得不错还请分享给你的朋友！谢谢！
-          </p>
-          <hr />
-          <p class="mb-0 text-right">by fun</p>
-        </div>
       </section>
-      <section id="tab-content-wrap" v-if="currentTab == 'about'">
+      <section v-if="currentTab == 'about'">
         <div style="text-align: center; padding-top: 30px">
           <a
             href="https://www.wechatsync.com/?utm_source=extension_about"
@@ -274,6 +236,7 @@
           </div>
         </div>
       </section>
+     </section>
     </section>
   </div>
 </template>
@@ -285,7 +248,7 @@ import { initliazeDriver, getDriverProvider } from '../vm/vm'
 var compareVer = require('compare-ver')
 
 var loginForm
-var currentVersion = '1.0.4'
+var currentVersion = '1.0.5'
 var checker = new VersionChecker()
 
 if (userInfo == null) {
@@ -321,7 +284,7 @@ export default {
       orderSign: '',
       hasUpdate: false,
       currentTab: localStorage.getItem('currentTab') || 'account',
-      dismiss_donate: true,
+      dismiss_donate: localStorage.getItem('dismiss_donate') || false,
       onPurchase: localStorage.getItem('onPurchase') || false,
       reachLimit: localStorage.getItem('reachLimit') || false,
       tabs: [
@@ -410,7 +373,7 @@ export default {
 
         setTimeout(() => {
           document.body.appendChild(script)
-        }, 5000)
+        }, 10000)
         // var remoteDriver = getDriverProvider(window.remoteDriver);
         // var driverMeta = remoteDriver.getMeta();
         // var hasNew = compareVer.gt(driverMeta.version, driverVersion.version);
@@ -431,7 +394,8 @@ export default {
     },
     writeArticle() {
       chrome.tabs.create({
-        url: chrome.runtime.getURL('editor.html'),
+        url: 'https://www.wechatsync.com/?utm_source=plugin&u='+
+          userInfo._id +'#group',
       })
     },
     goDonate() {
@@ -467,6 +431,13 @@ export default {
       // this.hasUpdate = true;
       // this.remoteStatus = {
       //   version: "0.0.8",
+      //   html: `<p>
+      //       本项目为非营利性项目。广泛的用户群体是我维护的主要动力。
+      //       <!-- <br> -->
+      //       如果觉得不错还请分享给你的朋友！谢谢！
+      //     </p>
+      //     <hr />
+      //     <p class="mb-0 text-right">by fun</p>`,
       //   desc:
       //     "今日头条同步失败更明确的提示、修复今日头条不因为要手机号验证不能直接发布的问题，改为同步过去是草稿、解决了微信如果有外链及视频会无法同步到今日头条情况"
       // };

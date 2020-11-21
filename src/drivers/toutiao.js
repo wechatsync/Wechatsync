@@ -45,8 +45,8 @@ export default class ToutiaoDriver {
     await $.get('https://mp.toutiao.com/profile_v3/graphic/publish')
 
     var res = await $.ajax({
-      url:
-        'https://mp.toutiao.com/core/article/edit_article_post/?source=mp&type=article',
+      // url:'https://mp.toutiao.com/core/article/edit_article_post/?source=mp&type=article',
+      url: 'https://mp.toutiao.com/mp/agw/article/publish?source=mp&type=article',
       type: 'POST',
       dataType: 'JSON',
       data: {
@@ -126,7 +126,10 @@ export default class ToutiaoDriver {
     return [{
       id: res.data.original,
       object_key: res.data.original,
-      url: res.data.url
+      url: res.data.url,
+      images: [
+        res.data
+      ]
     }]
   }
 

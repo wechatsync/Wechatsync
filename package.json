@@ -8,6 +8,8 @@
     "testfile": "cross-env WECHAT_ENV=testing mocha-webpack --timeout 1000000 --webpack-config webpack.config.js --require tests/setup.js ",
     "start": "cross-env WECHAT_ENV=development webpack --watch",
     "build": "cross-env WECHAT_ENV=production webpack",
+    "mddev": "cross-env WECHAT_ENV=development webpack --config webpack.editor.js --watch",
+    "buildmd": "cross-env WECHAT_ENV=production webpack --config webpack.editor.js",
     "driver": "cross-env WECHAT_ENV=production webpack --config webpack.driver.js"
   },
   "author": "fun",
@@ -25,6 +27,7 @@
     "extension-streams": "^1.0.7",
     "googleapis": "^47.0.0",
     "html-to-draftjs": "^1.5.0",
+    "html-webpack-plugin": "^2.30.1",
     "juice": "^6.0.0",
     "markdown-draft-js": "^2.2.1",
     "mavon-editor": "^2.7.6",
@@ -42,6 +45,7 @@
     "vue-json-viewer": "^2.2.8",
     "vue-moment": "^3.2.0",
     "vue-router": "^3.0.1",
+    "vue-spinner": "^1.0.4",
     "vuex": "^3.0.1"
   },
   "devDependencies": {

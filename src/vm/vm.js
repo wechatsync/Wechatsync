@@ -75,7 +75,7 @@ window.onmessage = e => {
   } catch (e) {}
 }
 
-function requestFrameMethod(d) {
+function requestFrameMethod(d, name) {
   return new Promise((resolve, reject) => {
     var evtId = Date.now() + Math.random()
     d.eventId = evtId
@@ -87,14 +87,22 @@ function requestFrameMethod(d) {
       }
     }
 
-    segIframe.contentWindow.postMessage(JSON.stringify(d), '*')
+    var callFrame = frameStack[name]
+    callFrame.contentWindow.postMessage(JSON.stringify(d), '*')
   })
 }
 
-function initliazeFrame(src, type) {
+function initliazeFrame(src, type, forceOpen) {
   if (!frameStack[type]) {
-    rameStack[type] = document.createElement('iframe')
-    rameStack[type].src = src || 'https://segmentfault.com/write?freshman=1' 
-    document.body.append(rameStack[type])
+     if (!forceOpen) {
+       frameStack[type] = document.createElement('iframe')
+       frameStack[type].src = src || 'https://segmentfault.com/write?freshman=1'
+       document.body.append(frameStack[type])
+     } else {
+       window.open(src)
+     }
   }
 }
+
+window.requestFrameMethod = requestFrameMethod
+window.initliazeFrame = initliazeFrame

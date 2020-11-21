@@ -1,6 +1,53 @@
 <template>
   <div class="editor-wrapper">
-    <div class="major-actions">
+    <div class="header-bar">
+        <nav class="navbar navbar-expand-lg navbar-light" style="padding: 0 10px;">
+        <!-- Brand -->
+        <a class="navbar-brand" href="#" style="color: #222; font-size: 20px; width: 350px;margin-right: 20px;">
+            <img src="https://www.wechatsync.com/images/logo-light.svg" height="38" style="vertical-align: -12px;">
+            同步助手Markdown
+        </a>
+
+        <!-- Toggler -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Collapse -->
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <!-- Toggler -->
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="fe fe-x"></i>
+          </button>
+          <!-- Navigation -->
+          <ul class="navbar-nav ml-auto" style="margin-right: 70px;">
+            <li class="nav-item">
+              <a class="nav-link" target="_blank" href="https://github.com/wechatsync/Wechatsync">Github</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" target="_blank" href="https://www.wechatsync.com/#install">插件下载</a>
+            </li>
+          </ul>
+          <!-- Button -->
+          <a href="https://github.com/lljxx1/Music-Analytics" target="_blank" class="btn d-lg-inline-flex" style="
+                  margin-right: 10px;
+              "><i class="fa fa-github" style="
+                  color: #222;
+                  font-size: 24px;
+              "></i></a>
+        </div>
+    </nav>
+    </div>
+    <div class="" v-if="!extensionInstalled" style="padding-top: 80px; padding-left: 10px">
+        <scale-loader class="loading" style="margin-top: 80px; margin-bottom: 10px" :loading="true" color="black" ></scale-loader>
+        <div v-if="checkCount > 3">
+            未检测到插件<br>
+            请安装同步助手Chrome插件 
+            <a href="https://www.wechatsync.com/#install" target="_blank">https://www.wechatsync.com/#install</a>
+        </div>
+    </div>
+    <div class="app-main" v-if="extensionInstalled">
+        <div class="major-actions">
       <el-popover
         placement="top-start"
         width="500"
@@ -78,14 +125,14 @@
               >关闭</el-button
             >
         </div>
-        <el-button slot="reference" size="small" type="primary">发布</el-button>
+        <el-button slot="reference" size="small" type="primary">同步发布</el-button>
       </el-popover>
     </div>
 
     <div class="article-list">
       <div class="top-tools">
         <button class="btn btn-sm btn-success" type="button" @click="create()">
-          写文章
+          新文章
         </button>
       </div>
       <div class="article-all">
@@ -109,6 +156,7 @@
             <div class="icon fa fa-mavon-trash-o" @click="trash(item)"></div>
           </div>
         </div>
+
         <div v-if="!list.length" class="not-article">没有文章</div>
       </div>
     </div>
@@ -127,6 +175,7 @@
         :boxShadow="false"
         v-model="currentArtitle.content"
       />
+    </div>
     </div>
   </div>
 </template>
@@ -147,14 +196,23 @@ var trash = new PouchDB('trash-articles')
 //   console.log('Ch-Ch-Changes');
 // });
 
-var service = analytics.getService('syncer')
-var tracker = service.getTracker('UA-48134052-13')
+// var service = analytics.getService('syncer')
+// var tracker = service.getTracker('UA-48134052-13')
 
 var axios = require('axios')
-import Juejin from '../drivers/juejin'
+// import Juejin from '../drivers/juejin'
 
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+
+import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue'
 export default {
   name: '',
+  components: { ScaleLoader },
   filters: {
     date(time) {
       let oldDate = new Date(time)
@@ -221,6 +279,8 @@ export default {
         // }
       ],
       value: '',
+      extensionInstalled: false,
+      checkCount: 0,
       allAccounts: [],
       currentArtitle: {},
       taskStatus: {},
@@ -240,25 +300,35 @@ export default {
     },
   },
   mounted() {
+
     // if(this.list.length) this.currentArtitle = this.list[0];
     this.loadDoc()
-    this.loadAccounts()
-    tracker.sendAppView('MainView')
-
-    const self = this
-
-    chrome.runtime.onMessage.addListener(function (request, sender, sendResponseA) {
-      console.log('content.js revice', request)
-      try {
-        console.log('revice', request)
-        if (request.method == 'taskUpdate') {
-          // buildStatusHtml(request.task)
-          self.taskStatus = request.task
-        }
-      } catch (e) {
-        console.log(e)
-      }
-    })
+    var self = this;
+    ;(function check() {
+          self.extensionInstalled = typeof window.$syncer != 'undefined';
+        //   self.extensionInstalled = false
+          self.checkCount++;
+          if(self.extensionInstalled) {
+            // self.recom();
+            self.loadAccounts()
+            return
+          }
+          setTimeout(check, 800);
+     })();
+    // tracker.sendAppView('MainView')
+    // const self = this
+    // chrome.runtime.onMessage.addListener(function (request, sender, sendResponseA) {
+    //   console.log('content.js revice', request)
+    //   try {
+    //     console.log('revice', request)
+    //     if (request.method == 'taskUpdate') {
+    //       // buildStatusHtml(request.task)
+    //       self.taskStatus = request.task
+    //     }
+    //   } catch (e) {
+    //     console.log(e)
+    //   }
+    // })
   },
   methods: {
     loadAccounts() {
@@ -267,15 +337,19 @@ export default {
 
       var self = this
       function getAccounts() {
-        chrome.extension.sendMessage(
-          {
-            action: 'getAccount',
-          },
-          function (resp) {
+        window.$syncer.getAccounts(function(resp) {
             console.log('allAccounts', resp)
             self.allAccounts = resp
-          }
-        )
+        })
+        // chrome.extension.sendMessage(
+        //   {
+        //     action: 'getAccount',
+        //   },
+        //   function (resp) {
+        //     console.log('allAccounts', resp)
+        //     self.allAccounts = resp
+        //   }
+        // )
       }
 
       getAccounts()
@@ -302,16 +376,26 @@ export default {
       // console.log(selectedAc, this.$refs.editor.d_render);
       // return;
       this.$message('准备同步')
-      chrome.extension.sendMessage(
-        {
-          action: 'addTask',
-          task: {
-            post: getPost(),
-            accounts: selectedAc,
-          },
-        },
-        function (resp) {}
-      )
+       window.$syncer.addTask({
+           post: getPost(),
+           accounts: selectedAc,
+       }, function(status) {
+           self.taskStatus = status
+           console.log('status', status)
+       }, function(){
+           console.log('send')
+       })
+
+    //   chrome.extension.sendMessage(
+    //     {
+    //       action: 'addTask',
+    //       task: {
+    //         post: getPost(),
+    //         accounts: selectedAc,
+    //       },
+    //     },
+    //     function (resp) {}
+    //   )
 
       this.submitting = true
       this.taskStatus = {}
@@ -406,9 +490,9 @@ export default {
       console.log(docId)
       var doc = {
         _id: docId,
-        title: '标题',
+        title: '',
         updateTime: Date.now(),
-        content: '内容',
+        content: '',
         type: 'markdown',
         html: '',
       }
@@ -416,19 +500,43 @@ export default {
       if (res.ok) {
         // this.list.push(doc);
       }
-
       this.loadDoc()
-      console.log(res)
+      console.log('create', res, doc)
     },
     open(item) {
       this.currentArtitle = item
     },
     async imgAdd(pos, $file) {
       // var dri = new Segmentfault();
-      var dri = new Juejin()
-      var finalUrl = await dri.uploadFileByForm($file)
-      // console.log(pos, $file, finalUrl)
-      this.$refs.editor.$img2Url(pos, finalUrl)
+    //   var dri = new Juejin()
+    //   var finalUrl = await dri.uploadFileByForm($file)
+
+    var sortOrderTypes = [
+        "zhihu",
+        "jianshu",
+        "toutiao",
+        "weibo",
+        "douban",
+        "segmentfault"
+    ].map(_ => this.allAccounts.filter(a => a.type === _)[0]).filter(_ => _);
+
+    if(sortOrderTypes.length === 0) {
+        this.$message('当前未登陆任何自媒体平台，无法自动上传图片')
+        return;
+    }
+
+    var base64Url = await toBase64($file);
+    var actionData = {
+        src: base64Url,
+        account: sortOrderTypes[0]
+    }
+    console.log('actionData', actionData);
+    window.$syncer.uploadImage(actionData, (res) => {
+        console.log('res', res)
+        this.$refs.editor.$img2Url(pos, res.result.url)
+    })
+    console.log('imgAdd', pos, $file, sortOrderTypes, this.allAccounts)
+    //   this.$refs.editor.$img2Url(pos, finalUrl)
     },
   },
 }
@@ -441,6 +549,10 @@ export default {
 
 // https://cdn-ms.juejin.im/v1/upload?bucket=gold-user-assets
 
+.v-note-wrapper {
+    padding-top: 110px;
+}
+
 .article-all {
   color: #878787;
   height: 100%;
@@ -448,7 +560,7 @@ export default {
   overflow-y: auto;
   box-sizing: border-box;
   position: relative;
-  margin-top: 80px;
+  margin-top: 110px;
 }
 
 #app,
@@ -626,7 +738,7 @@ body,
   position: absolute !important;
   width: 100%;
   top: 0;
-  padding-top: 80px;
+//   padding-top: 80px;
   border-left: none !important;
   box-sizing: border;
 }
@@ -636,7 +748,7 @@ body,
   // margin-bottom: 12px;
   position: absolute;
   z-index: 1502;
-  top: 32px;
+  top: 60px;
 }
 
 .post-title input {
@@ -661,9 +773,9 @@ body,
 
 .major-actions {
   position: absolute;
-  right: 40px;
+  right: 15px;
   top: 12px;
-  z-index: 2000;
+  z-index: 20008;
 }
 
 .all-pubaccounts {
@@ -679,5 +791,19 @@ body,
   line-height: 36px;
   padding: 0 15px;
   font-size: 14px;
+}
+
+.header-bar {
+    height: 60px;
+    // line-height: 60px;
+    line-height: 42px;;
+    position: absolute;
+    width: 100%;
+    border: 1px solid #eee;
+    z-index: 8888;
+}
+
+.header-bar a:hover {
+    text-decoration: none;
 }
 </style>

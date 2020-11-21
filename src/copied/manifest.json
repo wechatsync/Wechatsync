@@ -7,7 +7,7 @@
     "48": "images/logo.png",
     "128": "images/logo.png"
   },
-  "version": "1.0.4",
+  "version": "1.0.5",
   "content_security_policy": "script-src 'self' 'unsafe-eval' https://hm.baidu.com https://cdn.authing.cn https://cdn.jsdelivr.net https://www.google.com/ https://ajax.googleapis.com/; object-src 'self'",
   "browser_action": {
     "default_icon": "icon.png",
@@ -43,15 +43,15 @@
       "js": ["libs/juqery.js", "api.js"],
       "all_frames": true,
       "matches": [
-        "http://www.wechatsync.com/*",
-        "https://www.wechatsync.com/*"
-      ],
-      "run_at": "document_end"
+        "http://*/*",
+        "https://*/*"
+      ]
     },
     {
       "js": ["libs/juqery.js", "segmenftfault.js"],
       "all_frames": true,
-      "matches": ["http://segmentfault.com/*", "https://segmentfault.com/*"],
+      "matches": ["http://segmentfault.com/*", "https://segmentfault.com/*", "https://mp.toutiao.com/*",
+        "http://mp.toutiao.com/*"],
       "run_at": "document_end"
     }
   ],
