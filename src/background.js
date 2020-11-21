@@ -49,26 +49,11 @@ async function loadDriver() {
   afterDriver()
 }
 
-;(async () => {
-  console.log('WECHAT_ENV', process.env.WECHAT_ENV)
-  if (process.env.WECHAT_ENV == 'production') {
-    loadDriver()
-  } else {
-    window.driverMeta = localDriver.getMeta()
-    afterDriver()
-    console.log('dvelopment driver')
-  }
-})()
+
 
 var publicAccounts = []
 
-function afterDriver() {
- 
-  window.getPublicAccounts = getPublicAccounts
-  ;(async () => {
-    publicAccounts = await getPublicAccounts()
-  })()
-}
+
 
 var db = new Store()
 window.db = db
@@ -98,101 +83,114 @@ class Syner {
   }
 
   modifyHeaderIfNecessary() {
-    console.log('modifyHeaderIfNecessary')
-    chrome.webRequest.onBeforeSendHeaders.addListener(
-      function(details) {
-        console.log('details.requestHeaders', details, details.url)
-        // WEIBO API
-        try {
-          var modifRules = [
-            {
-              prefix: 'mp.weixin.qq.com/cgi-bin',
-              origin: 'https://mp.weixin.qq.com',
-              referer: 'https://mp.weixin.qq.com/cgi-bin/appmsg',
-            },
-            {
-              prefix: 'mp.toutiao.com/mp',
-              origin: 'https://mp.toutiao.com',
-              referer: 'https://mp.toutiao.com/profile_v4/graphic/publish',
-            },
-          ]
+    console.log('modifyHeaderIfNecessary', window.driverMeta)
+    var insepectURLs = [
+      '*://mp.toutiao.com/mp*',
+      '*://card.weibo.com/*',
+      '*://mp.weixin.qq.com/*',
+      '*://zhuanlan.zhihu.com/api/*',
+      // '*://api.bilibili.com/*',
+    ]
 
-          for (let index = 0; index < modifRules.length; index++) {
-            const modifRule = modifRules[index]
-            if (details.url.indexOf(modifRule.prefix) > -1) {
+    if (window.driverMeta && window.driverMeta.inspectUrls) {
+      insepectURLs = insepectURLs.concat(window.driverMeta.inspectUrls)
+    }
+
+      chrome.webRequest.onBeforeSendHeaders.addListener(
+        function(details) {
+          console.log('details.requestHeaders', details, details.url)
+          // WEIBO API
+          try {
+            var modifRules = [
+              {
+                prefix: 'mp.weixin.qq.com/cgi-bin',
+                origin: 'https://mp.weixin.qq.com',
+                referer: 'https://mp.weixin.qq.com/cgi-bin/appmsg',
+              },
+              {
+                prefix: 'mp.toutiao.com/mp',
+                origin: 'https://mp.toutiao.com',
+                referer: 'https://mp.toutiao.com/profile_v4/graphic/publish',
+              },
+            ]
+
+            for (let index = 0; index < modifRules.length; index++) {
+              const modifRule = modifRules[index]
+              if (details.url.indexOf(modifRule.prefix) > -1) {
+                var foundRefereHeader = false
+                for (var i = 0; i < details.requestHeaders.length; ++i) {
+                  if (details.requestHeaders[i].name === 'Referer')
+                    foundRefereHeader = true
+                  if (details.requestHeaders[i].name === 'Origin') {
+                    details.requestHeaders[i].value = modifRule.origin
+                  }
+                }
+                if (!foundRefereHeader) {
+                  details.requestHeaders.push({
+                    name: 'Referer',
+                    value: modifRule.referer,
+                  })
+                }
+                console.log('details.requestHeaders', modifRule, details)
+              } else {
+                // console.log('rule not macth', modifRule.prefix, details.url)
+              }
+            }
+
+            if (details.url.indexOf('https://card.weibo.com/article/v3') > -1) {
               var foundRefereHeader = false
               for (var i = 0; i < details.requestHeaders.length; ++i) {
                 if (details.requestHeaders[i].name === 'Referer')
                   foundRefereHeader = true
                 if (details.requestHeaders[i].name === 'Origin') {
-                  details.requestHeaders[i].value = modifRule.origin
+                  details.requestHeaders[i].value = 'https://card.weibo.com'
                 }
               }
               if (!foundRefereHeader) {
                 details.requestHeaders.push({
                   name: 'Referer',
-                  value: modifRule.referer,
+                  value: 'https://card.weibo.com/article/v3/editor',
                 })
               }
-              console.log('details.requestHeaders', modifRule, details)
-            } else {
-              // console.log('rule not macth', modifRule.prefix, details.url)
+              console.log('details.requestHeaders', details)
             }
-          }
 
-          if (details.url.indexOf('https://card.weibo.com/article/v3') > -1) {
-            var foundRefereHeader = false
-            for (var i = 0; i < details.requestHeaders.length; ++i) {
-              if (details.requestHeaders[i].name === 'Referer')
-                foundRefereHeader = true
-              if (details.requestHeaders[i].name === 'Origin') {
-                details.requestHeaders[i].value = 'https://card.weibo.com'
-              }
-            }
-            if (!foundRefereHeader) {
-              details.requestHeaders.push({
-                name: 'Referer',
-                value: 'https://card.weibo.com/article/v3/editor',
+            //  zhihu xsrf token
+            if (details.url.indexOf('zhuanlan.zhihu.com/api') > -1) {
+              var cookieHeader = details.requestHeaders.filter(h => {
+                return h.name.toLowerCase() == 'cookie'
               })
-            }
-            console.log('details.requestHeaders', details)
-          }
 
-          //  zhihu xsrf token
-          if (details.url.indexOf('zhuanlan.zhihu.com/api') > -1) {
-            var cookieHeader = details.requestHeaders.filter(h => {
-              return h.name.toLowerCase() == 'cookie'
-            })
-
-            if (cookieHeader.length) {
-              var cookieStr = cookieHeader[0].value
-              var _xsrf = getCookie('_xsrf', cookieStr)
-              if (_xsrf) {
-                details.requestHeaders.push({
-                  name: 'x-xsrftoken',
-                  value: _xsrf,
-                })
+              if (cookieHeader.length) {
+                var cookieStr = cookieHeader[0].value
+                var _xsrf = getCookie('_xsrf', cookieStr)
+                if (_xsrf) {
+                  details.requestHeaders.push({
+                    name: 'x-xsrftoken',
+                    value: _xsrf,
+                  })
+                }
+                console.log('cookieStr', cookieStr)
               }
-              console.log('cookieStr', cookieStr)
+              console.log('details.requestHeaders', details)
             }
-            console.log('details.requestHeaders', details)
+          } catch (e) {
+            console.log('modify headers error', e)
           }
-        } catch (e) {
-          console.log('modify headers error', e)
-        }
 
-        return { requestHeaders: details.requestHeaders }
-      },
-      {
-        urls: [
-          '*://mp.toutiao.com/mp*',
-          '*://card.weibo.com/*',
-          '*://mp.weixin.qq.com/*',
-          '*://zhuanlan.zhihu.com/api/*',
-        ],
-      },
-      ['blocking', 'requestHeaders', 'extraHeaders']
-    )
+          try {
+            window.driverMeta.urlHandler(details)
+          } catch (e) {
+            console.log('urlHandler', e)
+          }
+
+          return { requestHeaders: details.requestHeaders }
+        },
+        {
+          urls: insepectURLs,
+        },
+        ['blocking', 'requestHeaders', 'extraHeaders',]
+      )
   }
 
   getSender(guid) {
@@ -205,7 +203,6 @@ class Syner {
 
   listenRequest() {
     var self = this
-
     chrome.runtime.onMessage.addListener(function(
       request,
       sender,
@@ -655,9 +652,25 @@ class Syner {
 // }
 
 console.log('background.js')
-var syncer = new Syner()
-window.syncer = syncer
+function afterDriver() {
+  var syncer = new Syner()
+  window.syncer = syncer
+  window.getPublicAccounts = getPublicAccounts
+  ;(async () => {
+    publicAccounts = await getPublicAccounts()
+  })()
+}
 
+;(async () => {
+  console.log('WECHAT_ENV', process.env.WECHAT_ENV)
+  if (process.env.WECHAT_ENV == 'production') {
+    loadDriver()
+  } else {
+    window.driverMeta = localDriver.getMeta()
+    afterDriver()
+    console.log('dvelopment driver')
+  }
+})();
 var sharedContextmenuId = null
 function createSharedContextmenu() {
   if (!sharedContextmenuId) {

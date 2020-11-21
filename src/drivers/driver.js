@@ -10,6 +10,9 @@ import Cnblog from './cnblog'
 import Weixin from './weixin'
 import YiDian from './yidian'
 import Douban from './douban'
+import Bilibili from './bilibili'
+
+var _cacheState = {}
 
 export function getDriver(account) {
   if (account.type == 'wordpress') {
@@ -39,6 +42,13 @@ export function getDriver(account) {
 
   if (account.type == 'toutiao') {
     return new ToutiaoDriver()
+  }
+
+  if (account.type == 'bilibili') {
+    return new Bilibili({
+      globalState: _cacheState,
+      state: _cacheState[account.type],
+    })
   }
 
   if (account.type == 'weibo') {
@@ -89,6 +99,7 @@ export async function getPublicAccounts() {
     new Weixin(),
     new YiDian(),
     new Douban(),
+    new Bilibili()
   ]
   var users = []
   for (let index = 0; index < drivers.length; index++) {
@@ -103,10 +114,48 @@ export async function getPublicAccounts() {
   return users
 }
 
+function getCookie(name, cookieStr) {
+  let arr,
+    reg = new RegExp('(^| )' + name + '=([^;]*)(;|$)')
+  if ((arr = cookieStr.match(reg))) {
+    return unescape(arr[2])
+  } else {
+    return ''
+  }
+}
+
+function urlHandler(details) {
+  if (
+    details.url.indexOf('api.bilibili.com') >
+    -1
+  ) {
+    var cookieHeader = details.requestHeaders.filter(h => {
+      return h.name.toLowerCase() == 'cookie'
+    })
+
+    if (cookieHeader.length) {
+      var cookieStr = cookieHeader[0].value
+      var bili_jct = getCookie('bili_jct', cookieStr)
+      if (bili_jct) {
+        _cacheState['bilibili'] = _cacheState['bilibili'] || {};
+        Object.assign(_cacheState['bilibili'], {
+          csrf: bili_jct,
+        })
+        console.log('bili_jct', bili_jct, details)
+      }
+    }
+    // console.log('details.requestHeaders', details)
+  }
+  
+}
+
 export function getMeta() {
   return {
     version: '0.0.10',
     versionNumber: 11,
     log: '',
+    urlHandler: urlHandler,
+    inspectUrls: ['*://api.bilibili.com/*'],
+    
   }
 }
