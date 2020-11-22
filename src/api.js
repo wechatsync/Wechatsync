@@ -1,6 +1,6 @@
-console.log('segmenftfault')
+// console.log('segmenftfault')
 function testFunc() {
-  console.log('testFunc for segmenftfault')
+  console.log('api ready')
   var poster = {
     versionNumber: 1001,
   }
@@ -90,7 +90,13 @@ function testFunc() {
 setTimeout(function () {
   var script = document.createElement('script')
   script.type = 'text/javascript'
-  script.innerHTML = testFunc.toString() + '; ' + testFunc.name + '();'
+  script.innerHTML =
+    ';(function() {  ' +
+    testFunc.toString() +
+    '; ' +
+    testFunc.name +
+    '(); ' +
+    ' })();'
   document.head.appendChild(script)
   document.head.removeChild(script)
   console.log('injject')
