@@ -248,7 +248,7 @@ import { initliazeDriver, getDriverProvider } from '../vm/vm'
 var compareVer = require('compare-ver')
 
 var loginForm
-var currentVersion = '1.0.6'
+var currentVersion = '1.0.7'
 var checker = new VersionChecker()
 
 if (userInfo == null) {
