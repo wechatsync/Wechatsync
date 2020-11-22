@@ -11,6 +11,7 @@ import Weixin from './weixin'
 import YiDian from './yidian'
 import Douban from './douban'
 import Bilibili from './bilibili'
+import B51Cto from './51cto'
 
 var _cacheState = {}
 
@@ -53,6 +54,10 @@ export function getDriver(account) {
 
   if (account.type == 'weibo') {
     return new Weibo()
+  }
+  
+  if (account.type == '51cto') {
+    return new B51Cto()
   }
 
   if (account.type == 'segmentfault') {
@@ -99,7 +104,8 @@ export async function getPublicAccounts() {
     new Weixin(),
     new YiDian(),
     new Douban(),
-    new Bilibili()
+    new Bilibili(),
+    new B51Cto()
   ]
   var users = []
   for (let index = 0; index < drivers.length; index++) {

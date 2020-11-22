@@ -106,19 +106,20 @@ var allAccounts = []
 var accounts = []
 
 
-function getAccounts() {
+function getAccounts(cb) {
   chrome.extension.sendMessage(
     {
       action: 'getAccount',
     },
     function (resp) {
       allAccounts = resp
+      cb && cb()
     }
   )
 }
 
 if(window.location.href.indexOf('mp.weixin.qq.com') == -1) {
-  getAccounts()
+  // getAccounts()
 }
 
 function sendToWindow(msg) {
@@ -153,10 +154,11 @@ window.addEventListener('message', function (evt) {
     try {
       var action = JSON.parse(evt.data)
       if (action.method == 'getAccounts') {
-        getAccounts()
-        sendToWindow({
-          eventID: action.eventID,
-          result: allAccounts,
+        getAccounts(function() {
+          sendToWindow({
+            eventID: action.eventID,
+            result: allAccounts,
+          })
         })
       }
 
