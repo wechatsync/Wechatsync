@@ -84,7 +84,10 @@ export function getDriver(account) {
   }
 
   if(account.type == 'douban') {
-    return new Douban(account)
+    return new Douban({
+      globalState: _cacheState,
+      state: _cacheState[account.type],
+    })
   }
 
   throw Error('not supprt account type')
@@ -152,7 +155,24 @@ function urlHandler(details) {
     }
     // console.log('details.requestHeaders', details)
   }
-  
+
+  // https://music.douban.com/subject/24856133/new_review
+  if (
+    details.url.indexOf('music.douban.com') >
+    -1
+    && 
+    details.url.indexOf('/new_review') >
+    -1
+  ) {
+    _cacheState['douban'] = _cacheState['douban'] || {};
+    Object.assign(_cacheState['douban'], {
+      is_review: true,
+      subject: 'music',
+      url: details.url,
+      id: details.url.replace('https://music.douban.com/subject/', '')
+      .replace('/new_review', '')
+    })
+  }
 }
 
 export function getMeta() {
@@ -161,7 +181,6 @@ export function getMeta() {
     versionNumber: 11,
     log: '',
     urlHandler: urlHandler,
-    inspectUrls: ['*://api.bilibili.com/*'],
-    
+    inspectUrls: ['*://api.bilibili.com/*', '*://music.douban.com/*'],
   }
 }

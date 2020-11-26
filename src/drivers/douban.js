@@ -73,7 +73,8 @@ function getFormData(obj) {
 
 
 export default class Douban {
-  constructor() {
+  constructor(config) {
+    this.config = config
     this.meta = metaCache
     this.name = 'douban'
   }
@@ -142,6 +143,9 @@ export default class Douban {
           var sourcePair =  item.src.split("?#")
           var rawSrc = sourcePair[0]
           var sourceId = sourcePair[1]
+          if(sourcePair.length) {
+            item.src = rawSrc
+          }
           var imageTemplate = {
             id: sourceId,
             src:  item.src,
@@ -174,6 +178,13 @@ export default class Douban {
       },
       blockEntities: {
         image: function (item) {
+          var sourcePair =  item.src.split("?#")
+          if(sourcePair.length) {
+            var rawSrc = sourcePair[0]
+            var sourceId = sourcePair[1]
+            item.id = sourceId
+            item.src = rawSrc
+          }
           console.log('image_open', 'blockEntities', item)
           return {
             type: 'IMAGE',
@@ -184,31 +195,83 @@ export default class Douban {
       }
     }));
     console.log(draftjsState)
+
+    var state = this.config.state;
+
+    var requestUrl = 'https://www.douban.com/j/note/autosave';
+    var draftLink = 'https://www.douban.com/note/create';
+    var requestBody = {
+      is_rich: 1,
+      note_id: this.meta.form.note_id,
+      note_title: post.post_title,
+      note_text: draftjsState,
+      introduction: '',
+      note_privacy: 'P',
+      cannot_reply: null,
+      author_tags: null,
+      accept_donation: null,
+      donation_notice: null,
+      is_original: null,
+      ck: this.meta.form.ck
+    }
+
+    // https://music.douban.com/subject/24856133/new_review
+    // music review
+    // https://music.douban.com/j/review/create
+    // is_rich: 1
+    // topic_id: 
+    // review[subject_id]: 24856133
+    // review[title]: aaa
+    // review[introduction]: 
+    // review[text]: {"entityMap":{},"blocks":[{"key":"9riq1","text":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{"page":0}}]}
+    // review[rating]: 
+    // review[spoiler]: 
+    // review[donate]: 
+    // review[original]: 
+    // ck: O4jk
+    if(state.is_review) {
+      if(state.subject == 'music') {
+        draftLink = state.url;
+        requestUrl = 'https://music.douban.com/j/review/create'
+        requestBody = {
+          is_rich: 1,
+          topic_id: '',
+          review: {
+            subject_id: state.id,
+            title:  post.post_title,
+            introduction: '',
+            text: draftjsState,
+            rating: '',
+            spoiler: '',
+            donate: '',
+            original: ''
+          },
+          ck: this.meta.form.ck
+        }
+      }
+    }
+    console.log('state', requestBody)
+    // return {
+    //   status: 'success',
+    //   post_id: 'test',
+    //   draftLink: draftLink,
+    // }
     // const draftjsState = covertHTMLToDraftJs(post.post_content)
     var res = await $.ajax({
-      url:
-        'https://www.douban.com/j/note/autosave',
+      url: requestUrl,
       type: 'POST',
       dataType: 'JSON',
-      data: {
-        is_rich: 1,
-        note_id: this.meta.form.note_id,
-        note_title: post.post_title,
-        note_text: draftjsState,
-        introduction: '',
-        note_privacy: 'P',
-        cannot_reply: null,
-        author_tags: null,
-        accept_donation: null,
-        donation_notice: null,
-        is_original: null,
-        ck: this.meta.form.ck
-      },
+      data: requestBody,
     })
+
+    if(res.url) {
+      draftLink = res.url
+    }
+
     return {
       status: 'success',
       post_id: this.meta.form.note_id,
-      draftLink: 'https://www.douban.com/note/create',
+      draftLink: draftLink,
     }
   }
 
@@ -217,16 +280,31 @@ export default class Douban {
   }
 
   async uploadFile(file) {
+
+    // https://music.douban.com/j/review/upload_image
+    var requestUrl = 'https://www.douban.com/j/note/add_photo';
+    var state = this.config.state;
     var formdata = new FormData()
     var blob = new Blob([file.bits], {
-        type: file.type
+      type: file.type
     });
+
+    if(state.is_review) {
+      if(state.subject == 'music') {
+        requestUrl =  'https://music.douban.com/j/review/upload_image';
+        formdata.append('review_id', '')
+        formdata.append('picfile', blob)
+      }
+    } else {
+      formdata.append('note_id', this.meta.form.note_id)
+      formdata.append('image_file', blob)
+    }
+
     formdata.append('ck', this.meta.form.ck)
-    formdata.append('note_id', this.meta.form.note_id)
     formdata.append('upload_auth_token', this.meta._POST_PARAMS.siteCookie.value)
-    formdata.append('image_file', blob)
+   
     var res = await axios({
-      url: 'https://www.douban.com/j/note/add_photo',
+      url: requestUrl,
       method: 'post',
       data: formdata,
       headers: { 'Content-Type': 'multipart/form-data' },
