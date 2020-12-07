@@ -12,6 +12,8 @@ import YiDian from './yidian'
 import Douban from './douban'
 import Bilibili from './bilibili'
 import B51Cto from './51cto'
+import FocusDriver from './focus'
+
 
 var _cacheState = {}
 
@@ -54,6 +56,10 @@ export function getDriver(account) {
 
   if (account.type == 'weibo') {
     return new Weibo()
+  }
+  
+  if (account.type == 'sohufocus') {
+    return new FocusDriver()
   }
   
   if (account.type == '51cto') {
@@ -108,7 +114,8 @@ export async function getPublicAccounts() {
     new YiDian(),
     new Douban(),
     new Bilibili(),
-    new B51Cto()
+    new B51Cto(),
+    new FocusDriver()
   ]
   var users = []
   for (let index = 0; index < drivers.length; index++) {
