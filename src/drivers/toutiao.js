@@ -1,3 +1,29 @@
+// source: 0
+// content: <p>testaaa</p>
+// title: test
+// search_creation_info: {"searchTopOne":0,"abstract":""}
+// title_id: 1607584898506_1559572462858242
+// extra: {"content_word_cnt":7,"gd_ext":{"entrance":"hotspots","from_page":"publisher_mp","enter_from":"PC","device_platform":"mp","is_message":0}}
+// mp_editor_stat: {"a_justify":1}
+// educluecard: 
+// draft_form_data: {"coverType":2}
+// pgc_feed_covers: []
+// claim_origin: 0
+// origin_debut_check_pgc_normal: 0
+// is_fans_article: 0
+// govern_forward: 0
+// praise: 0
+// disable_praise: 0
+// article_ad_type: 2
+// tree_plan_article: 0
+// activity_tag: 0
+// trends_writing_tag: 0
+// community_sync: 0
+// is_refute_rumor: 0
+// save: 0
+// timer_status: 0
+// timer_time: 
+
 export default class ToutiaoDriver {
   constructor() {
     // this.skipReadImage = true
@@ -51,7 +77,7 @@ export default class ToutiaoDriver {
       dataType: 'JSON',
       data: {
         title: post.post_title,
-        article_ad_type: 3,
+        article_ad_type: 2,
         article_type: 0,
         from_diagnosis: 0,
         origin_debut_check_pgc_normal: 0,
