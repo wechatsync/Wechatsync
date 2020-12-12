@@ -55,7 +55,7 @@ export function getDriver(account) {
   if (account.type == 'weibo') {
     return new Weibo()
   }
-  
+
   if (account.type == '51cto') {
     return new B51Cto()
   }
@@ -157,8 +157,8 @@ function urlHandler(details) {
 
 export function getMeta() {
   return {
-    version: '0.0.10',
-    versionNumber: 11,
+    version: '0.0.11',
+    versionNumber: 12,
     log: '',
     urlHandler: urlHandler,
     inspectUrls: ['*://api.bilibili.com/*'],
