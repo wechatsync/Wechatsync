@@ -51,7 +51,7 @@ export default class ToutiaoDriver {
       dataType: 'JSON',
       data: {
         title: post.post_title,
-        article_ad_type: 3,
+        article_ad_type: 2,
         article_type: 0,
         from_diagnosis: 0,
         origin_debut_check_pgc_normal: 0,

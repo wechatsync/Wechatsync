@@ -67,7 +67,6 @@
       "driver.js",
       "libs/juqery.js",
       "libs/jquery.xmlrpc.min.js",
-      "libs/bluebird.min.js",
       "libs/aliyun-oss-sdk.min.js",
       "libs/md5.min.js",
       "libs/google-analytics-bundle.js",
