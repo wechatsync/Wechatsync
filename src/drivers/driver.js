@@ -57,11 +57,15 @@ export function getDriver(account) {
   if (account.type == 'weibo') {
     return new Weibo()
   }
+<<<<<<< HEAD
   
   if (account.type == 'sohufocus') {
     return new FocusDriver()
   }
   
+=======
+
+>>>>>>> ec9df539e03684b969142ec072f1aba9b0f1bcb8
   if (account.type == '51cto') {
     return new B51Cto()
   }
@@ -184,8 +188,8 @@ function urlHandler(details) {
 
 export function getMeta() {
   return {
-    version: '0.0.10',
-    versionNumber: 11,
+    version: '0.0.11',
+    versionNumber: 12,
     log: '',
     urlHandler: urlHandler,
     inspectUrls: ['*://api.bilibili.com/*', '*://music.douban.com/*'],

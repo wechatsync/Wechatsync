@@ -102,6 +102,11 @@ export default class WordpressDriver {
 
   //  'metaWeblog.getPost' => array($this, 'mwGetPost'),
 
+  editImg(img, source) {
+    // img.attr('web_uri', source.images[0].origin_web_uri)
+    img.removeAttr('data-src');
+  }
+
   uploadFile(file) {
     if (this.isTypecho) {
       file['bytes'] = file['bits']

@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
-  "name": "微信同步助手",
-  "description": "微信文章同步助手，支持头条号、简书、知乎、WordPress",
+  "name": "微信公众号同步助手",
+  "description": "微信公众号文章同步助手，支持头条号、简书、知乎、WordPress",
   "icons": {
     "16": "images/logo.png",
     "48": "images/logo.png",
@@ -67,7 +67,6 @@
       "driver.js",
       "libs/juqery.js",
       "libs/jquery.xmlrpc.min.js",
-      "libs/bluebird.min.js",
       "libs/aliyun-oss-sdk.min.js",
       "libs/md5.min.js",
       "libs/google-analytics-bundle.js",
