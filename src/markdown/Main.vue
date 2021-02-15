@@ -512,6 +512,7 @@ export default {
     //   var finalUrl = await dri.uploadFileByForm($file)
 
     var sortOrderTypes = [
+        "weixin",
         "zhihu",
         "jianshu",
         "toutiao",

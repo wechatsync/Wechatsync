@@ -256,6 +256,7 @@ $('#exampleModalCenter .btn-primary').click(function (e) {
       console.log('addTask return', resp)
     }
   )
+  // getCache
 
   $('#syncd-users').html('等待发布...')
   // $("#closesyncmodl").click();
@@ -510,3 +511,5 @@ function buildStatusContainer() {
   })
   return wrapper;
 }
+
+

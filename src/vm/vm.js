@@ -28,6 +28,7 @@ export function getDriverProvider(code) {
     Promise: Promise,
     md5: md5,
     juice: juice,
+    setCache: setCache,
     initliazeFrame: initliazeFrame,
     requestFrameMethod: requestFrameMethod,
     //   window: window
@@ -61,6 +62,16 @@ export function initliazeDriver() {
   })
 }
 
+function setCache(name, value) {
+  var d = {};
+  d[name] = value;
+  chrome.storage.local.set(d,
+    function() {
+      console.log('cachhe seted')
+      // loadDriver()
+    }
+  )
+}
 
 var segIframe = null
 var abb = {}
@@ -104,5 +115,6 @@ function initliazeFrame(src, type, forceOpen) {
   }
 }
 
+window.setCache = setCache
 window.requestFrameMethod = requestFrameMethod
 window.initliazeFrame = initliazeFrame
