@@ -510,8 +510,8 @@ export default {
       // var dri = new Segmentfault();
     //   var dri = new Juejin()
     //   var finalUrl = await dri.uploadFileByForm($file)
-
     var sortOrderTypes = [
+        "weixin",
         "zhihu",
         "jianshu",
         "toutiao",
@@ -526,13 +526,17 @@ export default {
     }
 
     var base64Url = await toBase64($file);
+    var accountCurrent = sortOrderTypes[0];
     var actionData = {
         src: base64Url,
-        account: sortOrderTypes[0]
+        account: accountCurrent
     }
     console.log('actionData', actionData);
     window.$syncer.uploadImage(actionData, (res) => {
         console.log('res', res)
+        if(accountCurrent.type === 'zhihu') {
+          res.result.url = [res.result.url, '_r.jpg'].join('');
+        }
         this.$refs.editor.$img2Url(pos, res.result.url)
     })
     console.log('imgAdd', pos, $file, sortOrderTypes, this.allAccounts)

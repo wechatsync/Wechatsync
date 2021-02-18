@@ -57,15 +57,11 @@ export function getDriver(account) {
   if (account.type == 'weibo') {
     return new Weibo()
   }
-<<<<<<< HEAD
   
   if (account.type == 'sohufocus') {
     return new FocusDriver()
   }
   
-=======
-
->>>>>>> ec9df539e03684b969142ec072f1aba9b0f1bcb8
   if (account.type == '51cto') {
     return new B51Cto()
   }
