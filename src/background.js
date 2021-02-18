@@ -257,6 +257,18 @@ class Syner {
         })()
         return true
       }
+
+      if (request.action && request.action == 'getCache') {
+        console.log(request)
+        ;(async () => {
+          chrome.storage.local.get([request.name], function(result) {
+            sendResponseA({
+              result: result,
+            })
+          })
+        })();
+        return true
+      }
       
       if (request.action && request.action == 'updateDriver') {
         console.log('updateDriver', request);
@@ -709,3 +721,22 @@ function removeSharedContextmenu() {
 }
 
 createSharedContextmenu()
+
+
+
+
+
+chrome.tabs.executeScript(
+  tab.id,
+  {
+    code: args.code,
+  },
+  function(res) {
+    chrome.tabs.remove(tab.id)
+    console.log('sendResponseA', res)
+    sendResponseA({
+      error: null,
+      result: res,
+    })
+  }
+)

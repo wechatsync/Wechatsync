@@ -13,6 +13,7 @@ import Douban from './douban'
 import Bilibili from './bilibili'
 import B51Cto from './51cto'
 import FocusDriver from './focus'
+import Discuz from './Discuz'
 
 
 var _cacheState = {}
@@ -96,6 +97,11 @@ export function getDriver(account) {
     })
   }
 
+  if(account.type == 'discuz') {
+    console.log('discuz', account)
+    return new Discuz(account.config)
+  }
+
   throw Error('not supprt account type')
 }
 
@@ -115,8 +121,16 @@ export async function getPublicAccounts() {
     new Douban(),
     new Bilibili(),
     new B51Cto(),
-    new FocusDriver()
+    new FocusDriver(),
   ]
+
+  var customDiscuzEndpoints = ['https://www.51hanghai.com'];
+  customDiscuzEndpoints.forEach(_ => {
+    drivers.push(new Discuz({
+        url: _,
+      }));
+  })
+
   var users = []
   for (let index = 0; index < drivers.length; index++) {
     const driver = drivers[index]
@@ -162,7 +176,6 @@ function urlHandler(details) {
     }
     // console.log('details.requestHeaders', details)
   }
-
   // https://music.douban.com/subject/24856133/new_review
   if (
     details.url.indexOf('music.douban.com') >

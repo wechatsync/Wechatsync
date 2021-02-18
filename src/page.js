@@ -1,7 +1,11 @@
 
 // const Mercury = require('@postlight/mercury-parser');
-
-console.log('page.js', ReaderArticleFinderJS, 'Mercury')
+console.log(
+  'page.js',
+  ReaderArticleFinderJS,
+  'Readability',
+  Readability
+)
 
 function initPageFetch(isForceShow) {
   if ($('#syncd-pannel').length == 0)
@@ -115,6 +119,12 @@ display: none;">
   })
 
   function adoptableArticle() {
+    try {
+      var $reader = new Readability(document.cloneNode(true)).parse()
+      console.log('adoptableArticle', $reader)
+    } catch(e) {
+      console.log('Readability.error', e)
+    }
     var $article = $(ReaderArticleFinderJS.adoptableArticle().outerHTML)
     /*补全绝对路径链接*/
     $article.find('a').each(function (idx, a) {
@@ -193,7 +203,25 @@ display: none;">
     }, 1000)
   }
 
+  function getArticle() {
+    // var av = ReaderArticleFinderJS.isReaderModeAvailable();
+    var arcArticle = null;
+    try {
+      arcArticle = new Readability(document.cloneNode(true)).parse()
+      // arcArticle = true;
+      console.log('adoptableArticle', arcArticle)
+    } catch (e) {
+      console.log('Readability.error', e)
+    }
+    return arcArticle;
+  }
+
+  function hasArticle() {
+    return getArticle() != null;
+  }
+
   if (isForceShow) {
+    // hasArticle();
     if (ReaderArticleFinderJS.isReaderModeAvailable()) {
       // showArticle();
       findAndShow(
@@ -202,13 +230,43 @@ display: none;">
           showArticle()
         }
       )
+    } else if(hasArticle()) {
+      function allocate() {
+        var $article = getArticle();
+        var $dom = $($article.content);
+        var thePageData = {
+          article: $article.content,
+          url: window.location.href,
+          leadingImage: $dom.find('img').eq(0).attr('src'),
+          mainImage: $dom.find('img').eq(0).attr('src'),
+          pageNumber: 1,
+          description: $article.excerpt,
+          nextPage: 0,
+          title: document.title,
+          rtl: false,
+        }
+        console.log('', $widgetPage, $widgetPage[0], thePageData)
+        $widgetPage[0].contentWindow.postMessage(
+          JSON.stringify(thePageData),
+          '*'
+        )
+        widgetDomMain.css('display', 'block')
+        $widgetPage[0].contentWindow.postMessage(
+          JSON.stringify({ method: 'openPannel' }),
+          '*'
+        )
+      }
+
+      setTimeout(() => {
+        allocate()
+      }, 1000)
+
     } else {
       // Mercury.parse().then((article) => {
       //   console.log('article', article)
       // })
       const artitleDoms = $('article');
       if(artitleDoms.length) {
-
         function allocate() {
           var thePageData = {
             article: artitleDoms[0].outerHTML,
@@ -313,3 +371,41 @@ chrome.extension.onRequest.addListener(function (
     methodManager[request.method](request, sender, sendResponse)
   }
 })
+
+// window.frames['uchome-ifrHtmlEditor'].window.frames['HtmlEditor'].document.body.innerHTML
+// window.onload = function() {
+console.log('discuz_cache')
+if (window.location.href.indexOf('loaddraft') > -1){
+    ;(function loop() {
+    if(window.frames['uchome-ifrHtmlEditor']) {
+
+      function extractPage(cacheData) {
+        // resp.result.discuz_cache
+        console.log(cacheData)
+
+        document.querySelector('#title').value = cacheData.title
+         window.frames['uchome-ifrHtmlEditor'].window.frames[
+           'HtmlEditor'
+         ].document.body.innerHTML = cacheData.content
+      }
+
+      chrome.extension.sendMessage(
+        {
+          action: 'getCache',
+          name: 'discuz_cache',
+        },
+        function(resp) {
+          var data = JSON.parse(resp.result.discuz_cache)
+          // alert(resp.result.discuz_cache)
+          extractPage(data)
+          console.log('getCache return', resp)
+        }
+      )
+
+      return;
+    }
+
+    setTimeout(loop, 500)
+  })();
+}
+// }

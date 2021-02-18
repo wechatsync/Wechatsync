@@ -25,7 +25,7 @@
   ],
   "content_scripts": [
     {
-      "js": ["libs/juqery.js", "libs/reader.js", "page.js"],
+      "js": ["libs/juqery.js", "libs/Readability.js", "libs/reader.js", "page.js"],
       "matches": ["http://*/*", "https://*/*"]
     },
     {
