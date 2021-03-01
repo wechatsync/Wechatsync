@@ -434,13 +434,12 @@ export default {
   },
 }
 </script>
-<style lang="scss">
+<style>
 .article-list {
   height: 100%;
   width: 350px;
 }
 
-// https://cdn-ms.juejin.im/v1/upload?bucket=gold-user-assets
 
 .article-all {
   color: #878787;
@@ -626,7 +625,6 @@ export default {
 
 .top-tools,
 .post-title {
-  // margin-bottom: 12px;
   position: absolute;
   z-index: 1502;
   top: 32px;
@@ -657,7 +655,6 @@ export default {
 }
 
 .all-pubaccounts {
-  // background: #f3f3f3;
 }
 
 .account-item img {
@@ -665,18 +662,12 @@ export default {
 }
 
 .account-item {
-  // height: 36px;
   line-height: 36px;
   padding: 0 15px;
   font-size: 14px;
 }
 
 .account-item .name-block {
-  // width: 100px;
-  // font-weight: bold;
-  // color: black;
-  // overflow: hidden;
-  // display: inline-block;
 }
 .account-item .message {
   max-width: 300px;
