@@ -723,20 +723,17 @@ function removeSharedContextmenu() {
 createSharedContextmenu()
 
 
-
-
-
-chrome.tabs.executeScript(
-  tab.id,
-  {
-    code: args.code,
-  },
-  function(res) {
-    chrome.tabs.remove(tab.id)
-    console.log('sendResponseA', res)
-    sendResponseA({
-      error: null,
-      result: res,
-    })
-  }
-)
+// chrome.tabs.executeScript(
+//   tab.id,
+//   {
+//     code: args.code,
+//   },
+//   function(res) {
+//     chrome.tabs.remove(tab.id)
+//     console.log('sendResponseA', res)
+//     sendResponseA({
+//       error: null,
+//       result: res,
+//     })
+//   }
+// )

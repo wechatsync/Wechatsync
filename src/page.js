@@ -375,15 +375,18 @@ chrome.extension.onRequest.addListener(function (
 // window.frames['uchome-ifrHtmlEditor'].window.frames['HtmlEditor'].document.body.innerHTML
 // window.onload = function() {
 console.log('discuz_cache')
-if (window.location.href.indexOf('loaddraft') > -1){
+if (window.location.href.indexOf('loaddraft') > -1 || ( document.referrer && document.referrer.indexOf('loaddraft') > -1)){
     ;(function loop() {
-    if(window.frames['uchome-ifrHtmlEditor']) {
-
+    if(window.frames['uchome-ifrHtmlEditor'] || window.e_iframe) {
       function extractPage(cacheData) {
         // resp.result.discuz_cache
         console.log(cacheData)
-
         document.querySelector('#title').value = cacheData.title
+        if(document.querySelector('#subject'))  document.querySelector('#subject').value = cacheData.title
+        if(window.e_iframe) {
+          window.e_iframe.contentWindow.document.body.innerHTML = cacheData.content
+        }
+
          window.frames['uchome-ifrHtmlEditor'].window.frames[
            'HtmlEditor'
          ].document.body.innerHTML = cacheData.content
@@ -403,9 +406,12 @@ if (window.location.href.indexOf('loaddraft') > -1){
       )
 
       return;
+    } else {
+      console.log('not found;')
     }
-
     setTimeout(loop, 500)
   })();
+} else {
+  console.log('skip')
 }
 // }
