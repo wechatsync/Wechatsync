@@ -377,7 +377,7 @@ chrome.extension.onRequest.addListener(function (
 console.log('discuz_cache')
 if (window.location.href.indexOf('loaddraft') > -1 || ( document.referrer && document.referrer.indexOf('loaddraft') > -1)){
     ;(function loop() {
-    if(window.frames['uchome-ifrHtmlEditor'] || window.e_iframe) {
+    if(window.frames['uchome-ifrHtmlEditor'] || document.querySelector('#subject')) {
       function extractPage(cacheData) {
         // resp.result.discuz_cache
         console.log(cacheData)
