@@ -377,14 +377,21 @@ chrome.extension.onRequest.addListener(function (
 console.log('discuz_cache')
 if (window.location.href.indexOf('loaddraft') > -1 || ( document.referrer && document.referrer.indexOf('loaddraft') > -1)){
     ;(function loop() {
-    if(window.frames['uchome-ifrHtmlEditor'] || document.querySelector('#subject')) {
+    if(window.frames['uchome-ifrHtmlEditor'] || window.e_iframe) {
       function extractPage(cacheData) {
         // resp.result.discuz_cache
         console.log(cacheData)
         document.querySelector('#title').value = cacheData.title
-        if(document.querySelector('#subject'))  document.querySelector('#subject').value = cacheData.title
+        if(document.querySelector('#subject')) {
+          console.log('set title')
+          document.querySelector('#subject').value = cacheData.title
+        } else {
+          console.log('no title')
+        }
         if(window.e_iframe) {
           window.e_iframe.contentWindow.document.body.innerHTML = cacheData.content
+        } else {
+          console.log('not frame')
         }
 
          window.frames['uchome-ifrHtmlEditor'].window.frames[
