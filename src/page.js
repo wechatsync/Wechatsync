@@ -380,8 +380,7 @@ if (window.location.href.indexOf('loaddraft') > -1 || ( document.referrer && doc
     if(window.frames['uchome-ifrHtmlEditor'] || window.e_iframe) {
       function extractPage(cacheData) {
         // resp.result.discuz_cache
-        console.log(cacheData)
-        document.querySelector('#title').value = cacheData.title
+        console.log('extractPage', cacheData)
         if(document.querySelector('#subject')) {
           console.log('set title')
           document.querySelector('#subject').value = cacheData.title
@@ -393,12 +392,14 @@ if (window.location.href.indexOf('loaddraft') > -1 || ( document.referrer && doc
         } else {
           console.log('not frame')
         }
-
-         window.frames['uchome-ifrHtmlEditor'].window.frames[
-           'HtmlEditor'
-         ].document.body.innerHTML = cacheData.content
+        // for another
+        if((window.frames['uchome-ifrHtmlEditor']) {
+          document.querySelector('#title').value = cacheData.title
+          window.frames['uchome-ifrHtmlEditor'].window.frames[
+             'HtmlEditor'
+           ].document.body.innerHTML = cacheData.content
+        }
       }
-
       chrome.extension.sendMessage(
         {
           action: 'getCache',
@@ -407,8 +408,12 @@ if (window.location.href.indexOf('loaddraft') > -1 || ( document.referrer && doc
         function(resp) {
           var data = JSON.parse(resp.result.discuz_cache)
           // alert(resp.result.discuz_cache)
-          extractPage(data)
           console.log('getCache return', resp)
+          try {
+            extractPage(data)
+          } catch (e) {
+            console.log('extractPage.error', e)
+          }
         }
       )
 
