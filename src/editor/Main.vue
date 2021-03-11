@@ -433,13 +433,11 @@ export default {
   },
 }
 </script>
-<style lang="scss">
+<style>
 .article-list {
   height: 100%;
   width: 350px;
 }
-
-// https://cdn-ms.juejin.im/v1/upload?bucket=gold-user-assets
 
 .article-all {
   color: #878787;
@@ -633,7 +631,6 @@ body,
 
 .top-tools,
 .post-title {
-  // margin-bottom: 12px;
   position: absolute;
   z-index: 1502;
   top: 32px;
@@ -667,7 +664,6 @@ body,
 }
 
 .all-pubaccounts {
-  // background: #f3f3f3;
 }
 
 .account-item img {

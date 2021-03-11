@@ -545,13 +545,12 @@ export default {
   },
 }
 </script>
-<style lang="scss">
+<style>
 .article-list {
   height: 100%;
   width: 350px;
 }
 
-// https://cdn-ms.juejin.im/v1/upload?bucket=gold-user-assets
 
 .v-note-wrapper {
     padding-top: 110px;

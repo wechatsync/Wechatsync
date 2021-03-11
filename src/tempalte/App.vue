@@ -444,7 +444,7 @@ export default {
   },
 }
 </script>
-<style lang="scss">
+<style>
 .box-card {
   margin: 20px;
 }
@@ -465,7 +465,6 @@ export default {
   width: 350px;
 }
 
-// https://cdn-ms.juejin.im/v1/upload?bucket=gold-user-assets
 
 .article-all {
   color: #878787;

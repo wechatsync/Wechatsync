@@ -1,5 +1,4 @@
 // https://www.51hanghai.com/portal.php?mod=portalcp&ac=article
-
 var _cacheMeta = null;
 
 export default class Discuz {
@@ -7,8 +6,10 @@ export default class Discuz {
     this.config = config || {}
     var url = this.config.url
     this.pubUrl = `${url}/portal.php?mod=portalcp&ac=article`
-    this.upUrl = `${url}/misc.php?mod=swfupload&action=swfupload&operation=portal`
+    // this.upUrl = `${url}/misc.php?mod=swfupload&action=swfupload&operation=portal`
+    this.upUrl = `${url}/misc.php?mod=swfupload&action=swfupload&operation=upload`
     this.name = 'discuz'
+    
     // this.skipReadImage = true
   }
 
@@ -22,6 +23,7 @@ export default class Discuz {
     var htmlDoc = parser.parseFromString(res, 'text/html')
     var nickname = htmlDoc.querySelector('.vwmy').innerText
     var img = htmlDoc.querySelector('.avt img').src
+
     _cacheMeta = {
       uid: img.split('uid=')[1].split('&size')[0],
       title: nickname,
@@ -33,6 +35,24 @@ export default class Discuz {
       home: postUrl,
       icon: favIcon,
     }
+
+    var uploadSrciptBlocks = [].slice.apply(htmlDoc.querySelectorAll('script')).filter(_ => _.innerText.indexOf('SWFUpload') > -1);
+    if(uploadSrciptBlocks.length) {
+      var scripText = uploadSrciptBlocks[0].innerText
+      var startTag = 'post_params:'
+      var strIndex =  scripText.indexOf(startTag)
+      var dataStr = scripText.substring(strIndex + startTag.length, scripText.indexOf('},', strIndex) + 1);
+      var post_params = new Function(
+        'var config = ' +
+        dataStr +
+          '; return config;'
+      )();
+      _cacheMeta.uploadToken = post_params.hash
+      _cacheMeta.raw = post_params
+    }
+    // var parser = new DOMParser()
+    // var htmlDoc = parser.parseFromString(res, 'text/html')
+    // var img = htmlDoc.querySelector('li.more.user > a > img')
     return _cacheMeta
   }
 
@@ -107,19 +127,19 @@ export default class Discuz {
     return {
       status: 'success',
       post_id: 0,
-      draftLink: this.pubUrl + '&loaddraft',
+      draftLink: `${this.config.url}/forum.php?mod=guide&view=my&loaddraft`,
     }
   }
 
   async uploadFile(file) {
-    // var id = Date.now() + Math.floor(Math.random()* 1000);
-    // return [
-    //   {
-    //     id: id,
-    //     object_key: id,
-    //     url: file.src,
-    //   },
-    // ]
+    var id = Date.now() + Math.floor(Math.random()* 1000);
+    return [
+      {
+        id: id,
+        object_key: id,
+        url: file.src,
+      },
+    ]
     var src = file.src
     // var file = new File([file.bits], 'temp', {
     //   type: file.type,
@@ -130,11 +150,11 @@ export default class Discuz {
     var formdata = new FormData()
 
     formdata.append('uid', _cacheMeta.uid)
-    formdata.append('hash', '5e25e9eb8043a70a2fe724cd4cc39aa2')
+    formdata.append('hash', _cacheMeta.uploadToken)
     formdata.append('filetype', '.jpg')
     formdata.append('type', 'image')
     formdata.append('aid', '0')
-    formdata.append('catid', '19')
+    // formdata.append('catid', '19')
     // formdata.append('Filedata', blob)
     formdata.append('Filedata', blob, new Date().getTime() + '.jpg')
     formdata.append('size', blob.size)
@@ -146,19 +166,30 @@ export default class Discuz {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    if (res.data.aid === false) {
-      throw new Error('图片上传失败 ' + src)
-    }
+    var imageHtmlRes = await axios.get(`${this.config.url}/forum.php?mod=ajax&action=imagelist&type=single&pid=0&aids=` + res.data)
+    var parser = new DOMParser()
+    var htmlDoc = parser.parseFromString(imageHtmlRes.data, 'text/html')
+    var imgSrc = `${this.config.url}/` + htmlDoc.querySelector("img").getAttribute('src')
+    console.log('upload.res', imageHtmlRes)
+    var imageId = Date.now() +Math.floor( Math.random() * 10);
+    // if (res.data.aid === false) {
+    //   throw new Error('图片上传失败 ' + src)
+    // }
     // http only
     console.log('uploadFile', res)
     return [
-      {
-        id: res.data.aid,
-        object_key: res.data.aid,
-        url: res.data.bigimg,
-        // size: res.data.data.size,
-        // images: [res.data],
+       {
+        id: imageId,
+        object_key: imageId,
+        url: imgSrc
       },
+      // {
+      //   id: res.data.aid,
+      //   object_key: res.data.aid,
+      //   url: res.data.bigimg,
+      //   // size: res.data.data.size,
+      //   // images: [res.data],
+      // },
     ]
   }
 
@@ -207,8 +238,8 @@ export default class Discuz {
     console.log('post', post)
   }
 
-  // editImg(img, source) {
-  //   img.attr('size', source.size)
-  // }
-  //   <img class="" src="http://p2.pstatp.com/large/pgc-image/bc0a9fc8e595453083d85deb947c3d6e" data-ic="false" data-ic-uri="" data-height="1333" data-width="1000" image_type="1" web_uri="pgc-image/bc0a9fc8e595453083d85deb947c3d6e" img_width="1000" img_height="1333"></img>
+  editImg(img, source) {
+    img.removeAttr('crossorigin')
+    img.attr('referrerpolicy', "no-referrer")
+  }
 }
