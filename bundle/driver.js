@@ -1076,6 +1076,11 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_11__douban__ = __webpack_require__(15);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_12__bilibili__ = __webpack_require__(18);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_13__51cto__ = __webpack_require__(19);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_14__focus__ = __webpack_require__(20);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15__Discuz__ = __webpack_require__(21);
+
+
+
 
 
 
@@ -1133,7 +1138,11 @@ function getDriver(account) {
   if (account.type == 'weibo') {
     return new __WEBPACK_IMPORTED_MODULE_4__weibo__["a" /* default */]()
   }
-
+  
+  if (account.type == 'sohufocus') {
+    return new __WEBPACK_IMPORTED_MODULE_14__focus__["a" /* default */]()
+  }
+  
   if (account.type == '51cto') {
     return new __WEBPACK_IMPORTED_MODULE_13__51cto__["a" /* default */]()
   }
@@ -1162,7 +1171,15 @@ function getDriver(account) {
   }
 
   if(account.type == 'douban') {
-    return new __WEBPACK_IMPORTED_MODULE_11__douban__["a" /* default */](account)
+    return new __WEBPACK_IMPORTED_MODULE_11__douban__["a" /* default */]({
+      globalState: _cacheState,
+      state: _cacheState[account.type],
+    })
+  }
+
+  if(account.type == 'discuz') {
+    console.log('discuz', account)
+    return new __WEBPACK_IMPORTED_MODULE_15__Discuz__["a" /* default */](account.config)
   }
 
   throw Error('not supprt account type')
@@ -1183,8 +1200,17 @@ async function getPublicAccounts() {
     new __WEBPACK_IMPORTED_MODULE_10__yidian__["a" /* default */](),
     new __WEBPACK_IMPORTED_MODULE_11__douban__["a" /* default */](),
     new __WEBPACK_IMPORTED_MODULE_12__bilibili__["a" /* default */](),
-    new __WEBPACK_IMPORTED_MODULE_13__51cto__["a" /* default */]()
+    new __WEBPACK_IMPORTED_MODULE_13__51cto__["a" /* default */](),
+    new __WEBPACK_IMPORTED_MODULE_14__focus__["a" /* default */](),
   ]
+
+  var customDiscuzEndpoints = ['https://www.51hanghai.com'];
+  customDiscuzEndpoints.forEach(_ => {
+    drivers.push(new __WEBPACK_IMPORTED_MODULE_15__Discuz__["a" /* default */]({
+        url: _,
+      }));
+  })
+
   var users = []
   for (let index = 0; index < drivers.length; index++) {
     const driver = drivers[index]
@@ -1230,7 +1256,23 @@ function urlHandler(details) {
     }
     // console.log('details.requestHeaders', details)
   }
-  
+  // https://music.douban.com/subject/24856133/new_review
+  if (
+    details.url.indexOf('music.douban.com') >
+    -1
+    && 
+    details.url.indexOf('/new_review') >
+    -1
+  ) {
+    _cacheState['douban'] = _cacheState['douban'] || {};
+    Object.assign(_cacheState['douban'], {
+      is_review: true,
+      subject: 'music',
+      url: details.url,
+      id: details.url.replace('https://music.douban.com/subject/', '')
+      .replace('/new_review', '')
+    })
+  }
 }
 
 function getMeta() {
@@ -1239,8 +1281,7 @@ function getMeta() {
     versionNumber: 12,
     log: '',
     urlHandler: urlHandler,
-    inspectUrls: ['*://api.bilibili.com/*'],
-    
+    inspectUrls: ['*://api.bilibili.com/*', '*://music.douban.com/*'],
   }
 }
 
@@ -1959,6 +2000,11 @@ class WordpressDriver {
 
   //  'metaWeblog.getPost' => array($this, 'mwGetPost'),
 
+  editImg(img, source) {
+    // img.attr('web_uri', source.images[0].origin_web_uri)
+    img.removeAttr('data-src');
+  }
+
   uploadFile(file) {
     if (this.isTypecho) {
       file['bytes'] = file['bits']
@@ -1985,6 +2031,32 @@ window.WordpressDriver = WordpressDriver
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+// source: 0
+// content: <p>testaaa</p>
+// title: test
+// search_creation_info: {"searchTopOne":0,"abstract":""}
+// title_id: 1607584898506_1559572462858242
+// extra: {"content_word_cnt":7,"gd_ext":{"entrance":"hotspots","from_page":"publisher_mp","enter_from":"PC","device_platform":"mp","is_message":0}}
+// mp_editor_stat: {"a_justify":1}
+// educluecard: 
+// draft_form_data: {"coverType":2}
+// pgc_feed_covers: []
+// claim_origin: 0
+// origin_debut_check_pgc_normal: 0
+// is_fans_article: 0
+// govern_forward: 0
+// praise: 0
+// disable_praise: 0
+// article_ad_type: 2
+// tree_plan_article: 0
+// activity_tag: 0
+// trends_writing_tag: 0
+// community_sync: 0
+// is_refute_rumor: 0
+// save: 0
+// timer_status: 0
+// timer_time: 
+
 class ToutiaoDriver {
   constructor() {
     // this.skipReadImage = true
@@ -2038,7 +2110,7 @@ class ToutiaoDriver {
       dataType: 'JSON',
       data: {
         title: post.post_title,
-        article_ad_type: 3,
+        article_ad_type: 2,
         article_type: 0,
         from_diagnosis: 0,
         origin_debut_check_pgc_normal: 0,
@@ -4136,7 +4208,8 @@ function getFormData(obj) {
 
 
 class Douban {
-  constructor() {
+  constructor(config) {
+    this.config = config
     this.meta = metaCache
     this.name = 'douban'
   }
@@ -4205,6 +4278,9 @@ class Douban {
           var sourcePair =  item.src.split("?#")
           var rawSrc = sourcePair[0]
           var sourceId = sourcePair[1]
+          if(sourcePair.length) {
+            item.src = rawSrc
+          }
           var imageTemplate = {
             id: sourceId,
             src:  item.src,
@@ -4237,6 +4313,13 @@ class Douban {
       },
       blockEntities: {
         image: function (item) {
+          var sourcePair =  item.src.split("?#")
+          if(sourcePair.length) {
+            var rawSrc = sourcePair[0]
+            var sourceId = sourcePair[1]
+            item.id = sourceId
+            item.src = rawSrc
+          }
           console.log('image_open', 'blockEntities', item)
           return {
             type: 'IMAGE',
@@ -4247,31 +4330,83 @@ class Douban {
       }
     }));
     console.log(draftjsState)
+
+    var state = this.config.state;
+
+    var requestUrl = 'https://www.douban.com/j/note/autosave';
+    var draftLink = 'https://www.douban.com/note/create';
+    var requestBody = {
+      is_rich: 1,
+      note_id: this.meta.form.note_id,
+      note_title: post.post_title,
+      note_text: draftjsState,
+      introduction: '',
+      note_privacy: 'P',
+      cannot_reply: null,
+      author_tags: null,
+      accept_donation: null,
+      donation_notice: null,
+      is_original: null,
+      ck: this.meta.form.ck
+    }
+
+    // https://music.douban.com/subject/24856133/new_review
+    // music review
+    // https://music.douban.com/j/review/create
+    // is_rich: 1
+    // topic_id: 
+    // review[subject_id]: 24856133
+    // review[title]: aaa
+    // review[introduction]: 
+    // review[text]: {"entityMap":{},"blocks":[{"key":"9riq1","text":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{"page":0}}]}
+    // review[rating]: 
+    // review[spoiler]: 
+    // review[donate]: 
+    // review[original]: 
+    // ck: O4jk
+    if(state.is_review) {
+      if(state.subject == 'music') {
+        draftLink = state.url;
+        requestUrl = 'https://music.douban.com/j/review/create'
+        requestBody = {
+          is_rich: 1,
+          topic_id: '',
+          review: {
+            subject_id: state.id,
+            title:  post.post_title,
+            introduction: '',
+            text: draftjsState,
+            rating: '',
+            spoiler: '',
+            donate: '',
+            original: ''
+          },
+          ck: this.meta.form.ck
+        }
+      }
+    }
+    console.log('state', requestBody)
+    // return {
+    //   status: 'success',
+    //   post_id: 'test',
+    //   draftLink: draftLink,
+    // }
     // const draftjsState = covertHTMLToDraftJs(post.post_content)
     var res = await $.ajax({
-      url:
-        'https://www.douban.com/j/note/autosave',
+      url: requestUrl,
       type: 'POST',
       dataType: 'JSON',
-      data: {
-        is_rich: 1,
-        note_id: this.meta.form.note_id,
-        note_title: post.post_title,
-        note_text: draftjsState,
-        introduction: '',
-        note_privacy: 'P',
-        cannot_reply: null,
-        author_tags: null,
-        accept_donation: null,
-        donation_notice: null,
-        is_original: null,
-        ck: this.meta.form.ck
-      },
+      data: requestBody,
     })
+
+    if(res.url) {
+      draftLink = res.url
+    }
+
     return {
       status: 'success',
       post_id: this.meta.form.note_id,
-      draftLink: 'https://www.douban.com/note/create',
+      draftLink: draftLink,
     }
   }
 
@@ -4280,16 +4415,31 @@ class Douban {
   }
 
   async uploadFile(file) {
+
+    // https://music.douban.com/j/review/upload_image
+    var requestUrl = 'https://www.douban.com/j/note/add_photo';
+    var state = this.config.state;
     var formdata = new FormData()
     var blob = new Blob([file.bits], {
-        type: file.type
+      type: file.type
     });
+
+    if(state.is_review) {
+      if(state.subject == 'music') {
+        requestUrl =  'https://music.douban.com/j/review/upload_image';
+        formdata.append('review_id', '')
+        formdata.append('picfile', blob)
+      }
+    } else {
+      formdata.append('note_id', this.meta.form.note_id)
+      formdata.append('image_file', blob)
+    }
+
     formdata.append('ck', this.meta.form.ck)
-    formdata.append('note_id', this.meta.form.note_id)
     formdata.append('upload_auth_token', this.meta._POST_PARAMS.siteCookie.value)
-    formdata.append('image_file', blob)
+   
     var res = await axios({
-      url: 'https://www.douban.com/j/note/add_photo',
+      url: requestUrl,
       method: 'post',
       data: formdata,
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -10219,6 +10369,339 @@ class B51Cto {
   //   <img class="" src="http://p2.pstatp.com/large/pgc-image/bc0a9fc8e595453083d85deb947c3d6e" data-ic="false" data-ic-uri="" data-height="1333" data-width="1000" image_type="1" web_uri="pgc-image/bc0a9fc8e595453083d85deb947c3d6e" img_width="1000" img_height="1333"></img>
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = B51Cto;
+
+
+
+/***/ }),
+/* 20 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+
+class FocusDriver {
+  constructor() {
+    this.name = 'weibo'
+  }
+
+  async getMetaData() {
+    var res = await $.get('https://mp-fe-pc.focus.cn//user/status?')
+    return {
+        uid: res.data.uid,
+        title: res.data.accountName,
+        avatar: null,
+        supportTypes: ['html'],
+        displayName: '搜狐焦点',
+        type: 'sohufocus',
+        home: 'https://mp.focus.cn/fe/index.html#/info/draft',
+        icon: 'https://mp.focus.cn/favicon.ico',
+      }
+  }
+
+  async addPost(post) {
+    return {
+      status: 'success',
+      post_id: 0,
+    }
+  }
+
+
+  async preEditPost(post) {
+    // var div = $('<div>');
+    // $('body').append(div);
+    // div.html(post.content);
+
+    // // var doc = div;
+    // // doc.clone()
+    // var documentClone = document.cloneNode(true);
+    // var article = new Readability(documentClone).parse();
+
+    // div.remove();
+    // console.log(article);
+    var rexp = new RegExp('>[\ts ]*<', 'g')
+    var result = post.content.replace(rexp, '><')
+    post.content = result
+  }
+
+  async editPost(post_id, post) {
+    var res = await axios.post('https://mp-fe-pc.focus.cn/news/info/publishNewsInfo', {
+        "projectIds": [],
+        "newsBasic": {
+          "id": "",
+          "cityId": 0,
+          "title": post.post_title,
+          "category": 1,
+          "headImg": "",
+          "newsAbstract": "",
+          "isGuide": 0,
+          "status": 4
+        },
+        "newsContent": {
+          "content": post.post_content
+        },
+        "videoIds": []
+    })
+    // console.log(res)
+    var aId = res.data.data.id
+    return {
+      status: 'success',
+      post_id: aId,
+      draftLink: 'https://mp.focus.cn/fe/index.html#/info/subinfo/' + aId,
+    }
+  }
+
+  async uploadFile(file) {
+    var formdata = new FormData()
+    var blob = new Blob([file.bits], {
+        type: file.type
+    });
+
+    formdata.append('image', blob, new Date().getTime() + '.jpg')
+    var res = await axios({
+      url: `https://mp-fe-pc.focus.cn/common/image/upload?type=2`,
+      method: 'post',
+      data: formdata,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+   
+    if(res.data.code != 200) {
+      console.log(res.data);
+      throw new Error('upload failed')
+    }
+    var url = `https://t-img.51f.com/sh740wsh${res.data.data}`
+    return [
+      {
+        id: res.data.data,
+        object_key: res.data.data,
+        url: url,
+      },
+    ]
+  }
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = FocusDriver;
+
+
+
+/***/ }),
+/* 21 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+// https://www.51hanghai.com/portal.php?mod=portalcp&ac=article
+
+var _cacheMeta = null;
+
+class Discuz {
+  constructor(config) {
+    this.config = config || {}
+    var url = this.config.url
+    this.pubUrl = `${url}/portal.php?mod=portalcp&ac=article`
+    this.upUrl = `${url}/misc.php?mod=swfupload&action=swfupload&operation=portal`
+    this.name = 'discuz'
+    // this.skipReadImage = true
+  }
+
+  async getMetaData() {
+    var url = this.config.url;
+    console.log('disduz', this.config)
+    var postUrl = `${url}/portal.php?mod=portalcp&ac=article`
+    var favIcon = `${url}/favicon.ico`
+    var res = await $.get(postUrl)
+    var parser = new DOMParser()
+    var htmlDoc = parser.parseFromString(res, 'text/html')
+    var nickname = htmlDoc.querySelector('.vwmy').innerText
+    var img = htmlDoc.querySelector('.avt img').src
+    _cacheMeta = {
+      uid: img.split('uid=')[1].split('&size')[0],
+      title: nickname,
+      avatar: img,
+      type: 'discuz',
+      displayName: 'Discuz',
+      supportTypes: ['html'],
+      config: this.config,
+      home: postUrl,
+      icon: favIcon,
+    }
+    return _cacheMeta
+  }
+
+  async addPost(post) {
+    return {
+      status: 'success',
+      post_id: 0,
+    }
+  }
+
+  async editPost(post_id, post) {
+    var postStruct = {}
+
+    if (post.markdown) {
+      postStruct = {
+        title: post.post_title,
+        catid: 24,
+        content: post.markdown,
+        romotepic: 1,
+      }
+    } else {
+      postStruct = {
+        title: post.post_title,
+        catid: 24,
+        romotepic: 1,
+        content: post.post_content,
+      }
+    }
+
+    // title: test
+    // highlight_style[0]: 
+    // highlight_style[1]: 
+    // highlight_style[2]: 
+    // highlight_style[3]: 
+    // htmlname: 
+    // oldhtmlname: 
+    // pagetitle: 
+    // catid: 24
+    // from: 
+    postStruct.fromurl = null
+    postStruct.dateline = null
+    postStruct.from_idtyp = `tid`
+    postStruct.from_id = 0
+    postStruct.id = 0
+    postStruct.idtype = `tid`;
+    postStruct.url = null; 
+    postStruct.author = null;
+    // conver: a:3:{s:3:"pic";s:0:"";s:5:"thumb";i:0;s:6:"remote";i:0;}
+    // file: (binary)
+    // file: (binary)
+    // content: test
+    // romotepic: 1
+    // summary: 
+    // aid: 
+    // cid: 
+    // attach_ids: 
+    // articlesubmit: true
+    postStruct.articlesubmit = true;
+    postStruct.formhash = `caa4c6cb`
+    postStruct.conver = `a:3:{s:3:"pic";s:0:"";s:5:"thumb";i:0;s:6:"remote";i:0;}`;
+    // var res = await $.ajax({
+    //   url: this.pubUrl,
+    //   type: 'POST',
+    //   dataType: 'JSON',
+    //   data: postStruct,
+    // })
+    // if (!res.data) {
+    //   throw new Error(res.message)
+    // }
+    setCache('discuz_cache', JSON.stringify(postStruct))
+
+    return {
+      status: 'success',
+      post_id: 0,
+      draftLink: this.pubUrl + '&loaddraft',
+    }
+  }
+
+  async uploadFile(file) {
+    // var id = Date.now() + Math.floor(Math.random()* 1000);
+    // return [
+    //   {
+    //     id: id,
+    //     object_key: id,
+    //     url: file.src,
+    //   },
+    // ]
+    var src = file.src
+    // var file = new File([file.bits], 'temp', {
+    //   type: file.type,
+    // })
+    var blob = new Blob([file.bits], {
+      type: file.type,
+    })
+    var formdata = new FormData()
+
+    formdata.append('uid', _cacheMeta.uid)
+    formdata.append('hash', '5e25e9eb8043a70a2fe724cd4cc39aa2')
+    formdata.append('filetype', '.jpg')
+    formdata.append('type', 'image')
+    formdata.append('aid', '0')
+    formdata.append('catid', '19')
+    // formdata.append('Filedata', blob)
+    formdata.append('Filedata', blob, new Date().getTime() + '.jpg')
+    formdata.append('size', blob.size)
+    formdata.append('id', 'WU_FILE_1')
+    var res = await axios({
+      url: this.upUrl,
+      method: 'post',
+      data: formdata,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    if (res.data.aid === false) {
+      throw new Error('图片上传失败 ' + src)
+    }
+    // http only
+    console.log('uploadFile', res)
+    return [
+      {
+        id: res.data.aid,
+        object_key: res.data.aid,
+        url: res.data.bigimg,
+        // size: res.data.data.size,
+        // images: [res.data],
+      },
+    ]
+  }
+
+  async preEditPost(post) {
+    var div = $('<div>')
+    $('body').append(div)
+
+    div.html(post.content)
+    // var org = $(post.content);
+    // var doc = $('<div>').append(org.clone());
+    var doc = div
+    var pres = doc.find('a')
+    for (let mindex = 0; mindex < pres.length; mindex++) {
+      const pre = pres.eq(mindex)
+      try {
+        pre.after(pre.html()).remove()
+      } catch (e) {}
+    }
+
+    var pres = doc.find('iframe')
+    for (let mindex = 0; mindex < pres.length; mindex++) {
+      const pre = pres.eq(mindex)
+      try {
+        pre.remove()
+      } catch (e) {}
+    }
+
+    try {
+      const images = doc.find('img')
+      for (let index = 0; index < images.length; index++) {
+        const image = images.eq(index)
+        const imgSrc = image.attr('src')
+        if (imgSrc && imgSrc.indexOf('.svg') > -1) {
+          console.log('remove svg Image')
+          image.remove()
+        }
+      }
+      const qqm = doc.find('qqmusic')
+      qqm.next().remove()
+      qqm.remove()
+    } catch (e) {}
+
+    post.content = $('<div>')
+      .append(doc.clone())
+      .html()
+    console.log('post', post)
+  }
+
+  // editImg(img, source) {
+  //   img.attr('size', source.size)
+  // }
+  //   <img class="" src="http://p2.pstatp.com/large/pgc-image/bc0a9fc8e595453083d85deb947c3d6e" data-ic="false" data-ic-uri="" data-height="1333" data-width="1000" image_type="1" web_uri="pgc-image/bc0a9fc8e595453083d85deb947c3d6e" img_width="1000" img_height="1333"></img>
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Discuz;
 
 
 
