@@ -10,7 +10,9 @@
     "build": "cross-env WECHAT_ENV=production webpack",
     "mddev": "cross-env WECHAT_ENV=development webpack --config webpack.editor.js --watch",
     "buildmd": "cross-env WECHAT_ENV=production webpack --config webpack.editor.js",
-    "driver": "cross-env WECHAT_ENV=production webpack --config webpack.driver.js"
+    "driver": "cross-env WECHAT_ENV=production webpack --config webpack.driver.js",
+    "devtool": "cross-env WECHAT_ENV=development APP_TYPE=devtool webpack --config webpack.editor.js --watch",
+    "builddevtool": "cross-env WECHAT_ENV=production APP_TYPE=devtool webpack --config webpack.editor.js"
   },
   "author": "fun",
   "license": "ISC",
@@ -41,11 +43,15 @@
     "sval": "^0.4.6",
     "turndown": "^6.0.0",
     "url-loader": "^2.2.0",
+    "v-contextmenu": "^2.9.0",
     "vue": "^2.5.17",
+    "vue-awesome": "^4.1.0",
     "vue-click-outside": "^1.0.7",
+    "vue-codemirror": "^4.0.6",
     "vue-json-viewer": "^2.2.8",
     "vue-moment": "^3.2.0",
     "vue-router": "^3.0.1",
+    "vue-runtime-helpers": "^1.1.2",
     "vue-spinner": "^1.0.4",
     "vuex": "^3.0.1"
   },

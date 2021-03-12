@@ -3,10 +3,25 @@
     <div class="header-bar">
         <nav class="navbar navbar-expand-lg navbar-light" style="padding: 0 10px;">
         <!-- Brand -->
-        <a class="navbar-brand" href="#" style="color: #222; font-size: 20px; width: 350px;margin-right: 20px;">
+        <a class="navbar-brand" href="#" style="color: #222; font-size: 20px; width: 178px;margin-right: 20px;">
             <img src="https://www.wechatsync.com/images/logo-light.svg" height="38" style="vertical-align: -12px;">
-            同步助手Markdown
+            开发者工具
         </a>
+
+            <div id="actions">
+        <nav class="actionCont collapsed">
+          <div class="action-item" id="deploy-code">
+            <a class="ai-button" @click="deployCode()">
+              <v-icon name="paper-plane" scale="0.9"/>部署到插件
+            </a>
+          </div>
+          <div class="action-item" id="run-code">
+            <a class="ai-button" @click="runCode()">
+              <v-icon name="play" scale="0.8"/>测试
+            </a>
+          </div>
+        </nav>
+      </div>
 
         <!-- Toggler -->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,7 +35,7 @@
             <i class="fe fe-x"></i>
           </button>
           <!-- Navigation -->
-          <ul class="navbar-nav ml-auto" style="margin-right: 70px;">
+          <ul class="navbar-nav ml-auto" style="margin-right: 15px;">
             <li class="nav-item">
               <a class="nav-link" target="_blank" href="https://github.com/wechatsync/Wechatsync">Github</a>
             </li>
@@ -28,17 +43,10 @@
               <a class="nav-link" target="_blank" href="https://www.wechatsync.com/#install">插件下载</a>
             </li>
           </ul>
-          <!-- Button -->
-          <a href="https://github.com/lljxx1/Music-Analytics" target="_blank" class="btn d-lg-inline-flex" style="
-                  margin-right: 10px;
-              "><i class="fa fa-github" style="
-                  color: #222;
-                  font-size: 24px;
-              "></i></a>
         </div>
     </nav>
     </div>
-    <div class="" v-if="!extensionInstalled" style="padding-top: 80px; padding-left: 10px">
+    <div class="loading-page" v-if="!extensionInstalled" style="padding-top: 80px; padding-left: 10px">
         <scale-loader class="loading" style="margin-top: 80px; margin-bottom: 10px" :loading="true" color="black" ></scale-loader>
         <div v-if="checkCount > 3">
             未检测到插件<br>
@@ -46,161 +54,159 @@
             <a href="https://www.wechatsync.com/#install" target="_blank">https://www.wechatsync.com/#install</a>
         </div>
     </div>
-    <div class="app-main" v-if="extensionInstalled">
-        <div class="major-actions">
-      <el-popover
-        placement="top-start"
-        width="500"
-        v-model="visible"
-        :title="submitting ? '发布中' : '发布到'"
-        trigger="click"
-      >
-        <div>
-          <hr />
-          <div class="all-pubaccounts" v-if="!submitting">
-            <div class="account-item" v-for="account in allAccounts">
-              <el-checkbox v-model="account.checked">
-                <img
-                  :src="account.icon ? account.icon : ''"
-                  class="icon"
-                  height="20"
-                  style="vertical-align: -6px; height: 20px !important"
-                />
-                {{ account.title }}
-              </el-checkbox>
-            </div>
-          </div>
-           <div class="all-pubaccounts" v-if="submitting && taskStatus">
-              <p v-if="!taskStatus.accounts">等待发布..</p>
-              <div
-                class="account-item taskStatus"
-                v-for="account in taskStatus.accounts"
+    <div class="app-main theme-eclipse multi-file-mode" v-if="extensionInstalled">
+
+    <div id="sidebar">
+      <div id="sidebar-main">
+        <div class="sidebar-item" id="file-manager">
+          <h3 class="toggler" title>
+            适配器
+            <a class="add-file" @click="createFile()">
+              <v-icon name="plus" scale="0.5"/>
+            </a>
+            <a class="add-file">
+              <label>
+                <v-icon name="folder-open" scale="0.5"/>
+                <input type="file" ref="filer" name="fileContent" style="display:none">
+              </label>
+            </a>
+          </h3>
+          <div class="body" style="padding-left:0;padding-right:0">
+            <ul class="file-list">
+              <v-contextmenu ref="contextmenu" @contextmenu="handleFileContextmenu">
+                <!-- <v-contextmenu-item @click="handleSelectAsMain">Select As Main</v-contextmenu-item> -->
+                <v-contextmenu-item @click="handleRename">重命名</v-contextmenu-item>
+                <v-contextmenu-item @click="handleDelete">删除</v-contextmenu-item>
+              </v-contextmenu>
+              <li
+                v-for="(file, index) in files"
+                :class="{ active: currentEditFileName == file.fileName }"
+                class="file-item"
+                :key="index"
+                v-contextmenu:contextmenu
               >
-                <img
-                  :src="account.icon ? account.icon : ''"
-                  class="icon"
-                  height="20"
-                  style="vertical-align: -6px; height: 20px !important"
-                />
-                <span class="name-block">{{ account.title }}</span>
-                <span
-                  style="margin-left: 15px"
-                  :class="account.status + ' message'"
+                <div v-if="!file.edit" @click="openFile(file, index)">
+                  <span class="file-name">{{ file.fileName }}</span>
+                  <strong class="tag-label" v-if="file.isLeader">测试文章</strong>
+                </div>
+                <div v-if="file.edit">
+                  <input type="text" v-model="file.fileName" @keyup.enter="handleEdit(file, index)">
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="content">
+        <div class="file-tabs">
+          <ul :current="currentEditFileName">
+            <li
+              v-if="file"
+              class="editor-file"
+              :class="{ active: currentEditFileName == file.fileName } 
+                  "
+              v-for="(file, index) in editorFiles"
+            >
+              <a @click="selectFile(file)">{{ file.fileName }}</a>
+              <a class="close-btn" @click="closeFile(file, index)">
+                <v-icon name="times" scale="0.6"/>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div id="editor">
+          <div class="pannel-main">
+            <codemirror
+                  v-model="currentEditFile.content"
+                  :options="getFileCodeOptions(currentEditFile)"
                 >
-                  <template v-if="account.status == 'uploading'">
-                    <div class="lds-dual-ring"></div>
-                    {{ account.msg || '发布中' }}
-                  </template>
-
-                  <template v-if="account.status == 'failed'">
-                    同步失败, 错误内容：{{ account.error }}
-                  </template>
-
-                  <template v-if="account.status == 'done' && account.editResp">
-                    同步成功
-                    <a
-                      :href="account.editResp.draftLink"
-                      v-if="account.type != 'wordpress' && account.editResp"
-                      style="margin-left: 5px"
-                      target="_blank"
-                      >查看草稿</a
-                    >
-                  </template>
-                </span>
+            </codemirror>
+          </div>
+          <div class="gutter gutter-vertical" style="height: 1px;"></div>
+          <div class="pannel-main" style="height: calc(30% - 0.5px);">
+              <div class="windowLabelCont">
+                <span class="windowLabel">Console</span>
               </div>
-            </div>
-          <hr />
-          <el-button
-              size="small"
-              v-if="!submitting"
-              type="primary"
-              @click="doSubmit"
-              >同步</el-button
-            >
-          <el-button
-              size="small"
-              v-if="submitting"
-              type="primary"
-              @click="submitting = false"
-              >关闭</el-button
-            >
-        </div>
-        <el-button slot="reference" size="small" type="primary">同步发布</el-button>
-      </el-popover>
-    </div>
-
-    <div class="article-list">
-      <div class="top-tools">
-        <button class="btn btn-sm btn-success" type="button" @click="create()">
-          新文章
-        </button>
-      </div>
-      <div class="article-all">
-        <div
-          v-for="(item, index) in list"
-          class="article-item"
-          @click="open(item)"
-          :class="{ selected: item._id == currentArtitle._id }"
-        >
-          <div class="hover-overlay"></div>
-          <div class="selected-overlay"></div>
-          <div class="main-content">
-            <div class="title">{{ item.title }}</div>
-            <div class="date">{{ item.updateTime | date }}</div>
-            <div class="desc">
-              {{ item.content.substr(0, 100) }}
-            </div>
-          </div>
-          <div class="item-divider" v-if="index > 0"></div>
-          <div class="hover-container">
-            <div class="icon fa fa-mavon-trash-o" @click="trash(item)"></div>
+              <div class="vue-codemirror">
+                <div class="CodeMirror cm-s-monokai">
+                  <div class="results-container">
+                    <p v-for="log in logs">{{ log}}</p>
+                  </div>
+                </div>
+              </div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div v-if="!list.length" class="not-article">没有文章</div>
-      </div>
-    </div>
-    <div class="editor-main">
-      <div class="post-title">
-        <input
-          type="text"
-          v-model="currentArtitle.title"
-          placeholder="标题"
-          class="form-control"
-        />
-      </div>
-      <mavon-editor
-        ref="editor"
-        @imgAdd="imgAdd"
-        :boxShadow="false"
-        v-model="currentArtitle.content"
-      />
-    </div>
+     <div id="bottom-bar">
+        <a href="https://www.wechatsync.com/#group" target="_blank">wechat group</a>
+      <ul class="right">
+        <li>
+          <a
+            title="issues or request new feature"
+            href="https://github.com/wechatsync/Wechatsync"
+            target="_blank"
+          >
+            <v-icon name="brands/github" scale="1"/>
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
 <script>
-var PouchDB = require('pouchdb').default
 
+// language
+import "codemirror/mode/javascript/javascript.js";
+// theme css
+// import "codemirror/theme/monokai.css";
+// theme css
+import "codemirror/theme/eclipse.css";
+// require active-line.js
+import "codemirror/addon/selection/active-line.js";
+// styleSelectedText
+import "codemirror/addon/selection/mark-selection.js";
+import "codemirror/addon/search/searchcursor.js";
+// hint
+import "codemirror/addon/hint/show-hint.js";
+import "codemirror/addon/hint/show-hint.css";
+import "codemirror/addon/hint/javascript-hint.js";
+import "codemirror/addon/selection/active-line.js";
+// highlightSelectionMatches
+import "codemirror/addon/scroll/annotatescrollbar.js";
+import "codemirror/addon/search/matchesonscrollbar.js";
+import "codemirror/addon/search/searchcursor.js";
+import "codemirror/addon/search/match-highlighter.js";
+// keyMap
+import "codemirror/mode/clike/clike.js";
+import "codemirror/addon/edit/matchbrackets.js";
+import "codemirror/addon/comment/comment.js";
+import "codemirror/addon/dialog/dialog.js";
+import "codemirror/addon/dialog/dialog.css";
+import "codemirror/addon/search/searchcursor.js";
+import "codemirror/addon/search/search.js";
+import "codemirror/keymap/sublime.js";
+// foldGutter
+import "codemirror/addon/fold/foldgutter.css";
+import "codemirror/addon/fold/brace-fold.js";
+import "codemirror/addon/fold/comment-fold.js";
+import "codemirror/addon/fold/foldcode.js";
+import "codemirror/addon/fold/foldgutter.js";
+import "codemirror/addon/fold/indent-fold.js";
+import "codemirror/addon/fold/markdown-fold.js";
+import "codemirror/addon/fold/xml-fold.js";
+
+
+
+var PouchDB = require('pouchdb').default
 PouchDB.plugin(require('pouchdb-find').default)
 console.log(PouchDB)
 var db = new PouchDB('articles')
 var trash = new PouchDB('trash-articles')
-// db.put({
-//   _id: 'dave@gmail.com',
-//   name: 'David',
-//   age: 69
-// });
-
-// db.changes().on('change', function() {
-//   console.log('Ch-Ch-Changes');
-// });
-
-// var service = analytics.getService('syncer')
-// var tracker = service.getTracker('UA-48134052-13')
-
 var axios = require('axios')
-// import Juejin from '../drivers/juejin'
 
 const toBase64 = file => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -209,58 +215,21 @@ const toBase64 = file => new Promise((resolve, reject) => {
     reader.onerror = error => reject(error);
 });
 
+import files from "./files.js"
+import exampleCodes from "./example.js"
+
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue'
+
 export default {
   name: '',
   components: { ScaleLoader },
-  filters: {
-    date(time) {
-      let oldDate = new Date(time)
-      let newDate = new Date()
-      var dayNum = ''
-      var getTime = (newDate.getTime() - oldDate.getTime()) / 1000
-
-      if (getTime < 60 * 5) {
-        dayNum = '刚刚'
-      } else if (getTime >= 60 * 5 && getTime < 60 * 60) {
-        dayNum = parseInt(getTime / 60) + '分钟前'
-      } else if (getTime >= 3600 && getTime < 3600 * 24) {
-        dayNum = parseInt(getTime / 3600) + '小时前'
-      } else if (getTime >= 3600 * 24 && getTime < 3600 * 24 * 30) {
-        dayNum = parseInt(getTime / 3600 / 24) + '天前'
-      } else if (getTime >= 3600 * 24 * 30 && getTime < 3600 * 24 * 30 * 12) {
-        dayNum = parseInt(getTime / 3600 / 24 / 30) + '个月前'
-      } else if (time >= 3600 * 24 * 30 * 12) {
-        dayNum = parseInt(getTime / 3600 / 24 / 30 / 12) + '年前'
-      }
-
-      let year = oldDate.getFullYear()
-      let month = oldDate.getMonth() + 1
-      let day = oldDate.getDate()
-      let hour = oldDate.getHours()
-      let minute = oldDate.getMinutes()
-      let second = oldDate.getSeconds()
-
-      if (dayNum == '刚刚') return dayNum
-      return (
-        dayNum +
-        ' ' +
-        year +
-        '-' +
-        month +
-        '-' +
-        day +
-        ' ' +
-        hour +
-        ':' +
-        minute +
-        ':' +
-        second
-      )
-    },
-  },
   data() {
     return {
+      logs: [],
+      files: [],
+      currentEditFile: {},
+      currentEditFileName: "",
+      editorFiles: [],
       visible: false,
       submitting: false,
       list: [
@@ -291,50 +260,84 @@ export default {
   },
 
   watch: {
-    currentArtitle: {
-      handler: function (newValue) {
-        console.log('change', this.currentArtitle, newValue)
-        this.saveDoc(newValue)
-      },
+    files: {
       deep: true,
-    },
+      handler() {
+        this.saveState();
+      }
+    }
   },
   mounted() {
 
     // if(this.list.length) this.currentArtitle = this.list[0];
-    this.loadDoc()
+    // this.loadDoc()
     var self = this;
     ;(function check() {
           self.extensionInstalled = typeof window.$syncer != 'undefined';
-        //   self.extensionInstalled = false
           self.checkCount++;
           if(self.extensionInstalled) {
-            // self.recom();
+            window.$syncer.startInspect(function(args) {
+              console.log('log', args)
+              self.addLog(args);
+            });
             self.loadAccounts()
+            self.afterExtension()
             return
           }
           setTimeout(check, 800);
-     })();
-    // tracker.sendAppView('MainView')
-    // const self = this
-    // chrome.runtime.onMessage.addListener(function (request, sender, sendResponseA) {
-    //   console.log('content.js revice', request)
-    //   try {
-    //     console.log('revice', request)
-    //     if (request.method == 'taskUpdate') {
-    //       // buildStatusHtml(request.task)
-    //       self.taskStatus = request.task
-    //     }
-    //   } catch (e) {
-    //     console.log(e)
-    //   }
-    // })
+    })();
+
+   
   },
   methods: {
+    ...files,
+    addLog(args) {
+      if(this.logs.length > 100) {
+        this.logs.shift();
+      }
+      this.logs.push(JSON.stringify(args))
+    },
+    afterExtension() {
+      this.loadState();
+      this.$nextTick(_ => {
+        this.initFileManager();
+      })
+
+     
+    },
+    loadState () {
+      var state = window.localStorage.getItem("state");
+      if(state) {
+        state = JSON.parse(state)
+        if(!state.files.length) {
+          state.files = exampleCodes.files
+        }
+      } else {
+        state = {}
+        state.files = exampleCodes.files
+      }
+      this.files = state.files
+      console.log('this.files', this.files)
+      this.editorAfterProjectLoad()
+    },
+    saveState() {
+      var state = {
+        files: this.files.map(data => {
+          return {
+            fileName: data.fileName,
+            content: data.content,
+            isLeader: data.isLeader,
+            hexData: data.hexData,
+            compiled: data.compiled
+          };
+        }),
+        lastSave: Date.now()
+      }
+      window.localStorage.setItem("state", JSON.stringify(state));
+    },
     loadAccounts() {
       var allAccounts = []
       var accounts = []
-
       var self = this
       function getAccounts() {
         window.$syncer.getAccounts(function(resp) {
@@ -351,13 +354,23 @@ export default {
         //   }
         // )
       }
-
       getAccounts()
+    },
+
+    deployCode() {
+      var driverName = this.currentEditFile.fileName.split('.')[0]
+      var driverCode = this.currentEditFile.content;
+      // console.log(this.currentEditFile)
+      window.$syncer.updateDriver({
+        name: driverName,
+        code: driverCode,
+        dev: true,
+        patch: true
+      })
     },
 
     async doSubmit() {
       var self = this
-
       function getPost() {
         var post = {}
         post.title = self.currentArtitle.title
@@ -401,108 +414,9 @@ export default {
       this.taskStatus = {}
     },
 
-    async createExampleDoc() {
-      // console.log(await db.id());
-      // return;
-      var inited = localStorage.getItem('inited')
-      if (inited) return
-      var docId = await db.id()
-      var content =
-        '@[toc](目录)\n\nMarkdown 语法简介\n=============\n> [语法详解](http://commonmark.org/help/)\n\n## **粗体**\n```\n**粗体**\n__粗体__\n```\n## *斜体*\n```\n*斜体*\n_斜体_\n```\n## 标题\n```\n# 一级标题 #\n一级标题\n====\n## 二级标题 ##\n二级标题\n----\n### 三级标题 ###\n#### 四级标题 ####\n##### 五级标题 #####\n###### 六级标题 ######\n```\n## 分割线\n```\n***\n---\n```\n****\n## ^上^角~下~标\n```\n上角标 x^2^\n下角标 H~2~0\n```\n## ++下划线++ ~~中划线~~\n```\n++下划线++\n~~中划线~~\n```\n## ==标记==\n```\n==标记==\n```\n## 段落引用\n```\n> 一级\n>> 二级\n>>> 三级\n...\n```\n\n## 列表\n```\n有序列表\n1.\n2.\n3.\n...\n无序列表\n-\n-\n...\n```\n\n## 任务列表\n\n- [x] 已完成任务\n- [ ] 未完成任务\n\n```\n- [x] 已完成任务\n- [ ] 未完成任务\n```\n\n## 链接\n```\n[链接](www.baidu.com)\n![图片描述](http://www.image.com)\n```\n## 代码段落\n\\``` type\n\n代码段落\n\n\\```\n\n\\` 代码块 \\`\n\n```c++\nint main()\n{\n    printf("hello world!");\n}\n```\n`code`\n## 表格(table)\n```\n| 标题1 | 标题2 | 标题3 |\n| :--  | :--: | ----: |\n| 左对齐 | 居中 | 右对齐 |\n| ---------------------- | ------------- | ----------------- |\n```\n| 标题1 | 标题2 | 标题3 |\n| :--  | :--: | ----: |\n| 左对齐 | 居中 | 右对齐 |\n| ---------------------- | ------------- | ----------------- |\n## 脚注(footnote)\n```\nhello[^hello]\n```\n\n见底部脚注[^hello]\n\n[^hello]: 一个注脚\n\n## 表情(emoji)\n[参考网站: https://www.webpagefx.com/tools/emoji-cheat-sheet/](https://www.webpagefx.com/tools/emoji-cheat-sheet/)\n```\n:laughing:\n:blush:\n:smiley:\n:)\n...\n```\n:laughing::blush::smiley::)\n\n## $\\KaTeX$公式\n\n我们可以渲染公式例如：$x_i + y_i = z_i$和$\\sum_{i=1}^n a_i=0$\n我们也可以单行渲染\n$$\\sum_{i=1}^n a_i=0$$\n具体可参照[katex文档](http://www.intmath.com/cg5/katex-mathjax-comparison.php)和[katex支持的函数](https://github.com/Khan/KaTeX/wiki/Function-Support-in-KaTeX)以及[latex文档](https://math.meta.stackexchange.com/questions/5020/mathjax-basic-tutorial-and-quick-reference)\n\n## 布局\n\n::: hljs-left\n`::: hljs-left`\n`居左`\n`:::`\n:::\n\n::: hljs-center\n`::: hljs-center`\n`居中`\n`:::`\n:::\n\n::: hljs-right\n`::: hljs-right`\n`居右`\n`:::`\n:::\n\n## 定义\n\n术语一\n\n:   定义一\n\n包含有*行内标记*的术语二\n\n:   定义二\n\n        {一些定义二的文字或代码}\n\n    定义二的第三段\n\n```\n术语一\n\n:   定义一\n\n包含有*行内标记*的术语二\n\n:   定义二\n\n        {一些定义二的文字或代码}\n\n    定义二的第三段\n\n```\n\n## abbr\n*[HTML]: Hyper Text Markup Language\n*[W3C]:  World Wide Web Consortium\nHTML 规范由 W3C 维护\n```\n*[HTML]: Hyper Text Markup Language\n*[W3C]:  World Wide Web Consortium\nHTML 规范由 W3C 维护\n```\n\n'
-      var doc = {
-        _id: docId,
-        title: 'Markdonw语法',
-        updateTime: Date.now(),
-        content: content,
-        type: 'markdown',
-        html: '',
-      }
-      var res = await db.put(doc)
-      this.loadDoc()
-      localStorage.setItem('inited', 1)
-    },
-    async saveDoc(newDoc) {
-      await db.get(newDoc._id).then(function (doc) {
-        return db.put(
-          Object.assign(
-            {
-              _id: newDoc._id,
-              _rev: doc._rev,
-            },
-            newDoc
-          )
-        )
-      })
-    },
-    async loadDoc() {
-      // var res = await db.allDocs({
-      //   include_docs: true,
-      // });
-      await db.createIndex({
-        index: {
-          fields: ['updateTime', 'type', 'title', 'content'],
-        },
-      })
+    
 
-      var res = await db.find({
-        selector: {},
-        fields: ['_id', 'title', 'updateTime', 'content', 'type', 'html'],
-        sort: [
-          {
-            updateTime: 'desc',
-          },
-        ],
-      })
 
-      console.log(res)
-      this.list = res.docs.map((d) => {
-        d.title = d.title || '标题'
-        return d
-      })
-
-      if (this.list.length) {
-        this.currentArtitle = this.list[0]
-      } else {
-        this.createExampleDoc()
-      }
-      console.log(this.list)
-    },
-
-    async trash(item) {
-      console.log(item)
-      var rv = item._rev
-      delete item._rev
-      var re = await trash.put(item)
-      // var d = await db.remove(item._id, rv);
-      // console.log(d, re);
-      var rr = await db.get(item._id).then(function (doc) {
-        doc._deleted = true
-        return db.put(doc)
-      })
-
-      this.loadDoc()
-    },
-
-    async create() {
-      var docId = Date.now() + Math.floor(Math.random() * 1000) + ''
-      console.log(db.id)
-      // var docId = await db.id(docId);
-      console.log(docId)
-      var doc = {
-        _id: docId,
-        title: '',
-        updateTime: Date.now(),
-        content: '',
-        type: 'markdown',
-        html: '',
-      }
-      var res = await db.put(doc)
-      if (res.ok) {
-        // this.list.push(doc);
-      }
-      this.loadDoc()
-      console.log('create', res, doc)
-    },
     open(item) {
       this.currentArtitle = item
     },
@@ -546,6 +460,8 @@ export default {
 }
 </script>
 <style>
+
+
 .article-list {
   height: 100%;
   width: 350px;
@@ -799,11 +715,10 @@ body,
 
 .header-bar {
     height: 60px;
-    // line-height: 60px;
     line-height: 42px;;
-    position: absolute;
+    /* position: absolute; */
     width: 100%;
-    border: 1px solid #eee;
+    border: 1px solid #ddd;
     z-index: 888;
 }
 

@@ -17,6 +17,15 @@ import Discuz from './Discuz'
 
 
 var _cacheState = {}
+const _customDrivers = [];
+
+export function addCustomDriver(name, driverClass) {
+  _customDrivers.push({
+    name: name,
+    handler: driverClass
+  })
+  console.log('addCustomDriver', _customDrivers)
+}
 
 export function getDriver(account) {
   if (account.type == 'wordpress') {
@@ -102,6 +111,12 @@ export function getDriver(account) {
     return new Discuz(account.config)
   }
 
+  const matchedDrivers = _customDrivers.filter(_ => _.name == account.type)
+  if(matchedDrivers.length) {
+    const driverInCustom = matchedDrivers[0]
+    return new driverInCustom['handler'](account)
+  }
+
   throw Error('not supprt account type')
 }
 
@@ -127,9 +142,18 @@ export async function getPublicAccounts() {
   var customDiscuzEndpoints = ['https://www.51hanghai.com'];
   customDiscuzEndpoints.forEach(_ => {
     drivers.push(new Discuz({
-        url: _,
-      }));
+      url: _,
+   }));
   })
+
+  for (let index = 0; index < _customDrivers.length; index++) {
+    const _customDriver = _customDrivers[index];
+    try {
+      drivers.push(new _customDriver['handler']());
+    } catch (e) {
+      console.log('initlaze custom driver error', e)
+    }
+  }
 
   var users = []
   for (let index = 0; index < drivers.length; index++) {
@@ -204,3 +228,5 @@ export function getMeta() {
     inspectUrls: ['*://api.bilibili.com/*', '*://music.douban.com/*'],
   }
 }
+
+// DEVTOOL_PLACEHOLDER_INSERT

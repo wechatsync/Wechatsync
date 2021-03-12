@@ -24,6 +24,7 @@ function testFunc() {
   }
 
   var _statueandler = null;
+  var _consolehandler = null;
 
   poster.addTask = function(task, statueandler, cb) {
     _statueandler = statueandler;
@@ -57,6 +58,16 @@ function testFunc() {
     )
   }
 
+  poster.startInspect = function(handler, cb) {
+    _consolehandler = handler
+    callFunc(
+      {
+        method: 'startInspect',
+      },
+      cb
+    )
+  }
+
   poster.uploadImage = function(data, cb) {
     callFunc(
       {
@@ -67,12 +78,18 @@ function testFunc() {
       cb
     )
   }
+  
 
   window.addEventListener('message', function (evt) {
     try {
       var action = JSON.parse(evt.data)
         if (action.method && action.method === 'taskUpdate') {
           if (_statueandler != null) _statueandler(action.task)
+          return
+        }
+
+        if (action.method && action.method === 'consoleLog') {
+          if (_consolehandler != null) _consolehandler(action.args)
           return
         }
         if (!action.callReturn) return
@@ -82,6 +99,8 @@ function testFunc() {
       }
     } catch (e) {}
   })
+
+  
 
   window.$poster = poster
   window.$syncer = poster
@@ -141,6 +160,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponseA) {
         method: 'taskUpdate',
       })
     }
+
+    if (request.method == 'consoleLog') {
+      sendToWindow({
+        args: request.args,
+        method: 'consoleLog',
+      })
+    }
   } catch (e) {
     console.log(e)
   }
@@ -161,8 +187,7 @@ window.addEventListener('message', function (evt) {
           })
         })
       }
-
-       if (action.method == 'addTask') {
+      if (action.method == 'addTask') {
         chrome.extension.sendMessage(
           {
             action: 'addTask',
@@ -190,7 +215,7 @@ window.addEventListener('message', function (evt) {
          )
       }
 
-      if (evt.origin == 'https://www.wechatsync.com') {
+      if (evt.origin == 'https://www.wechatsync.com' || evt.origin == 'http://localhost:8080') {
         if (action.method == 'updateDriver') {
           chrome.extension.sendMessage(
             {
@@ -205,7 +230,23 @@ window.addEventListener('message', function (evt) {
             }
           )
         }
+
+        if (action.method == 'startInspect') {
+          chrome.extension.sendMessage(
+            {
+              action: 'startInspect'
+            },
+            function(resp) {
+              sendToWindow({
+                eventID: action.eventID,
+                result: resp,
+              })
+            }
+          )
+        }
       }
+
+
     } catch (e) {}
   // }
 })
