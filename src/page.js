@@ -393,7 +393,7 @@ if (window.location.href.indexOf('loaddraft') > -1 || ( document.referrer && doc
           console.log('not frame')
         }
         // for another
-        if((window.frames['uchome-ifrHtmlEditor']) {
+        if(window.frames['uchome-ifrHtmlEditor']) {
           document.querySelector('#title').value = cacheData.title
           window.frames['uchome-ifrHtmlEditor'].window.frames[
              'HtmlEditor'
