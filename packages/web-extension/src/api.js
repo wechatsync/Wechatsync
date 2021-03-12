@@ -78,7 +78,7 @@ function testFunc() {
       cb
     )
   }
-  
+
 
   window.addEventListener('message', function (evt) {
     try {
@@ -100,7 +100,7 @@ function testFunc() {
     } catch (e) {}
   })
 
-  
+
 
   window.$poster = poster
   window.$syncer = poster

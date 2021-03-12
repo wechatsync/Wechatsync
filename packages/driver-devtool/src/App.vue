@@ -50,7 +50,7 @@
         <scale-loader class="loading" style="margin-top: 80px; margin-bottom: 10px" :loading="true" color="black" ></scale-loader>
         <div v-if="checkCount > 3">
             未检测到插件<br>
-            请安装同步助手Chrome插件 
+            请安装同步助手Chrome插件
             <a href="https://www.wechatsync.com/#install" target="_blank">https://www.wechatsync.com/#install</a>
         </div>
     </div>
@@ -105,7 +105,7 @@
             <li
               v-if="file"
               class="editor-file"
-              :class="{ active: currentEditFileName == file.fileName } 
+              :class="{ active: currentEditFileName == file.fileName }
                   "
               v-for="(file, index) in editorFiles"
             >
@@ -287,7 +287,7 @@ export default {
           setTimeout(check, 800);
     })();
 
-   
+
   },
   methods: {
     ...files,
@@ -303,7 +303,7 @@ export default {
         this.initFileManager();
       })
 
-     
+
     },
     loadState () {
       var state = window.localStorage.getItem("state");
@@ -414,7 +414,7 @@ export default {
       this.taskStatus = {}
     },
 
-    
+
 
 
     open(item) {
@@ -658,14 +658,12 @@ body,
   position: absolute !important;
   width: 100%;
   top: 0;
-//   padding-top: 80px;
   border-left: none !important;
   box-sizing: border;
 }
 
 .top-tools,
 .post-title {
-  // margin-bottom: 12px;
   position: absolute;
   z-index: 1502;
   top: 60px;
@@ -699,7 +697,6 @@ body,
 }
 
 .all-pubaccounts {
-  // background: #f3f3f3;
 }
 
 .account-item img {

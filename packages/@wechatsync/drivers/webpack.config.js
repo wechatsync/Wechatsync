@@ -1,14 +1,3 @@
-const path = require('path')
-const production = process.env.WECHAT_ENV == 'production'
-
-var devTools = {
-  devtool: 'source-map', //inline-
-}
-
-if (production) {
-  delete devTools.devtool
-}
-
 module.exports = {
   mode: 'production',
   entry: "./index.js",

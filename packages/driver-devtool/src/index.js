@@ -2,7 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import VueMoment from 'vue-moment'
 
-// 
+//
 import VueCodemirror from 'vue-codemirror'
 import 'codemirror/lib/codemirror.css'
 import "./main.css";
@@ -20,6 +20,7 @@ Vue.use(ElementUI)
 
 import mavonEditor from 'mavon-editor'
 import 'mavon-editor/dist/css/index.css'
+import './styles/boot.css'
 
 // or import all icons if you don't care about bundle size
 // import 'vue-awesome/icons'
@@ -34,7 +35,7 @@ Vue.component('v-icon', Icon)
 Vue.use(mavonEditor)
 Vue.use(VueRouter)
 Vue.use(VueMoment)
-Vue.use(VueCodemirror, /* { 
+Vue.use(VueCodemirror, /* {
   options: { theme: 'base16-dark', ... },
   events: ['scroll', ...]
 } */)
