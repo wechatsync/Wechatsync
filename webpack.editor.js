@@ -10,9 +10,31 @@ const Dotenv = require('dotenv-webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 const production = process.env.WECHAT_ENV == 'production'
-console.log('production', production)
+
 // if (!process.env.WECHAT_ENV) production = true
 const vueAlias = `vue/dist/vue${production ? '.min' : ''}.js`
+const appType = process.env.APP_TYPE || 'editor'
+const entryApps = {}
+let outputPath = path.resolve(__dirname, './md')
+let copyAssetsDir = [
+  `./src/markdown/copied`,
+  `./src/copied/css`
+]
+
+console.log('production', production, {
+  appType
+})
+
+if(appType == 'devtool') {
+  entryApps['devtool'] = `./src/packages/devtool/devtool.js`,
+  outputPath = path.resolve(__dirname, './devtool')
+  copyAssetsDir = [
+    `./src/packages/devtool/copied`,
+    `./src/copied/css`
+  ]
+} else {
+  entryApps['md'] = `./src/md.js`
+}
 
 const devPlugins = [
   new webpack.DefinePlugin({
@@ -54,11 +76,9 @@ if (production) {
 }
 
 module.exports = {
-  entry: {
-    md: `./src/md.js`,
-  },
+  entry: entryApps,
   output: {
-    path: path.resolve(__dirname, './md'),
+    path: outputPath,
     filename: '[name].js',
   },
   resolve: {
@@ -78,6 +98,9 @@ module.exports = {
           presets: ['es2015', 'stage-3'],
         },
         exclude: /node_modules/,
+        // include: [
+        //   path.resolve('node_modules/vue-awesome')
+        // ]
       },
     ],
     rules: [
@@ -127,8 +150,9 @@ module.exports = {
     //   chunksSortMode: 'dependency',
     // }),
     new IgnoreEmitPlugin(/\.omit$/),
-    new CopyWebpackPlugin([`./src/markdown/copied`]),
-    new CopyWebpackPlugin([`./src/copied/css`]),
+    new CopyWebpackPlugin(copyAssetsDir),
+    // new CopyWebpackPlugin([`./src/markdown/copied`]),
+    // new CopyWebpackPlugin([`./src/copied/css`]),
     new Dotenv({
       path: !production ? './.env.development' : './.env.production',
       safe: true,

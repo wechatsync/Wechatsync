@@ -14,12 +14,39 @@ window.draftJs = draftJs;
 
 window.axios = axios
 window.juice = juice
+window.currentDriver = localDriver
+
+var logWatchers = []
+
+
+var rawLogFun = console.log
+console.log = function (message) {
+  rawLogFun.apply(null, arguments)
+  try {
+    var args = [].slice.apply(arguments)
+    brodcastToWatcher(args)
+  } catch (e){
+    console.log('brodcastToWatcher.error', e);
+  }
+}
+
+function brodcastToWatcher(args) {
+  for (let index = 0; index < logWatchers.length; index++) {
+    const logWatcher = logWatchers[index];
+    // console.log('brodcastToWatcher', logWatcher, args)
+    chrome.tabs.sendMessage(
+      logWatcher.tab.id,
+      { method: 'consoleLog', args: args },
+      function (response) {}
+    )
+  }
+}
+
 var service = analytics.getService('syncer')
 var tracker = service.getTracker('UA-48134052-13')
 
 let getDriver = localDriver.getDriver
 let getPublicAccounts = localDriver.getPublicAccounts
-
 
 async function setDriver(driver) {
   window.currentDriver = driver
@@ -296,41 +323,74 @@ class Syner {
         return true
       }
       
+      if (request.action && request.action == 'startInspect') {
+        // self.senders[request.task.guid] = sender
+        logWatchers.push(sender)
+      }
+
       if (request.action && request.action == 'updateDriver') {
         console.log('updateDriver', request);
         (async () => {
           try {
-            var isDevelopment = request.dev;
-            var newDriver = getDriverProvider(request.data.code)
-            var newDriverMeta = newDriver.getMeta()
-            console.log('new version found', newDriverMeta)
-            if (isDevelopment) {
-              // dynamic reload not store
-              setDriver(newDriver)
-            } else {
-              // if (newDriverMeta.versionNumber > window.driverMeta.versionNumber) {
-              chrome.storage.local.set(
-                {
-                  driver: request.data.code,
-                },
-                function() {
-                  console.log('driver seted')
-                  loadDriver()
+            var isDevelopment = request.data.dev;
+            var isPatch = request.data.patch;
+            var patchName = request.data.name;
+            // var patchName = request.name;
+            if (isPatch && isDevelopment) {
+              console.log('try patch driver')
+              try {
+                var patchCodeVm = getDriverProvider(request.data.code)
+                if(patchCodeVm.driver) {
+                  window.currentDriver.addCustomDriver(patchName, patchCodeVm.driver)
+                  console.log('custom driver seted')
                 }
-              )
-              console.log('is new driver')
-              sendResponseA({
-                result: {
-                status: 1
-              },
-              })
-            // } else {
-            //   sendResponseA({
-            //     result: {
-            //     status: 0
-            //   },
-            //   })
-            // }
+                // const codeStartTag = "// DEVTOOL_PLACEHOLDER_INSERT"
+                // const driver = await initliazeDriver({
+                //   beforeCreate(result) {
+                //     result.driver = result.driver.replace(codeStartTag, codeStartTag + "\n\n" + request.data.code)
+                //     console.log('beforeCreate', result.driver)
+                //   },
+                // })
+                // await setDriver(driver)
+                console.log('newDriver.isPatch', patchCodeVm)
+              } catch (e) {
+                console.log('initvm failed', e)
+              }
+      
+            }
+
+            if (!isPatch) {
+              var newDriver = getDriverProvider(request.data.code)
+              var newDriverMeta = newDriver.getMeta()
+              console.log('new version found', newDriverMeta)
+              if (isDevelopment) {
+                setDriver(newDriver)
+                // dynamic reload not store
+              } else {
+                // if (newDriverMeta.versionNumber > window.driverMeta.versionNumber) {
+                chrome.storage.local.set(
+                  {
+                    driver: request.data.code,
+                  },
+                  function() {
+                    console.log('driver seted')
+                    loadDriver()
+                  }
+                )
+                console.log('is new driver')
+                sendResponseA({
+                  result: {
+                  status: 1
+                },
+                })
+              // } else {
+              //   sendResponseA({
+              //     result: {
+              //     status: 0
+              //   },
+              //   })
+              // }
+              }
             }
           } catch (e) {
             sendResponseA({
@@ -700,6 +760,7 @@ function afterDriver() {
   ;(async () => {
     publicAccounts = await getPublicAccounts()
   })()
+  window.getPublicAccounts = getPublicAccounts
 }
 
 ;(async () => {
