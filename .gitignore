@@ -4,3 +4,7 @@ build/
 md/
 .DS_Store
 *.iml
+yarn-error.log
+dist
+zip/*
+package-json.lock

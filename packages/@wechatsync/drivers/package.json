@@ -1,0 +1,19 @@
+{
+  "name": "@wechatsync/drivers",
+  "version": "1.0.0",
+  "description": "The adapters for publishing article to supported platform ",
+  "main": "index.js",
+  "scripts": {
+    "start": "webpack serve",
+    "build": "webpack --env production"
+  },
+  "keywords": [
+    "publish",
+    "article"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "turndown": "^6.0.0",
+    "markdown-draft-js": "^2.2.1"
+  }
+}
