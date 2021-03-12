@@ -248,22 +248,25 @@ import { initliazeDriver, getDriverProvider } from '../vm/vm'
 var compareVer = require('compare-ver')
 
 var loginForm
-var currentVersion = '1.0.7'
+var currentVersion = '1.0.8'
 var checker = new VersionChecker()
 
 if (userInfo == null) {
+  userInfo = {
+    _id: 'unknow'
+  }
   console.log('start login')
-  loginForm = new Guard('5cece8a899346457833c189c', {
-    title: '微信同步助手',
-    logo: '/images/logo.png',
-  });
-  loginForm.on('login', function (userInfo) {
-    localStorage.setItem('userInfo', JSON.stringify(userInfo))
-    localStorage.setItem('token', JSON.stringify(userInfo.token))
-  })
-  loginForm.on('authingUnload', () => {
-    console.log('login failed')
-  })
+  // loginForm = new Guard('5cece8a899346457833c189c', {
+  //   title: '微信同步助手',
+  //   logo: '/images/logo.png',
+  // });
+  // loginForm.on('login', function (userInfo) {
+  //   localStorage.setItem('userInfo', JSON.stringify(userInfo))
+  //   localStorage.setItem('token', JSON.stringify(userInfo.token))
+  // })
+  // loginForm.on('authingUnload', () => {
+  //   console.log('login failed')
+  // })
 } else {
   userInfo = JSON.parse(userInfo)
 }

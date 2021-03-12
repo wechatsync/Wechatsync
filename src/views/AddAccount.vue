@@ -6,6 +6,12 @@
       </a>
       添加账号
     </header>
+    <div> 
+      <p v-if="!type" class="mt-2 mb-2 ml-3">
+        除WordPress、Typecho平台外
+        <br />其它平台只要在当前浏览器登录过即可被识别到账号，无需在此添加
+      </p>
+    </div>
     <ul class="account-types" style="padding-bottom: 53px" v-if="!type">
       <li @click="add(driver.type)" v-for="driver in drivers">
         <img :src="driver.icon" class="icon" height="20" />
@@ -21,10 +27,7 @@
         <img src="/images/arrow-right-light.png" style="float: right;">
       </li>-->
     </ul>
-    <p v-if="!type" class="mt-2 ml-3">
-      除WordPress、Typecho平台外
-      <br />其它的只要在当前浏览器登录过即可被识别到账号，无需在此添加
-    </p>
+   
     <div
       v-if="type == 'wordpress' || type == 'typecho'"
       class="add-account-form"

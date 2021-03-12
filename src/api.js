@@ -188,24 +188,24 @@ window.addEventListener('message', function (evt) {
              })
            }
          )
-       }
+      }
 
-       if (action.method == 'updateDriver') {
-         chrome.extension.sendMessage(
-           {
-             action: 'updateDriver',
-             data: action.data,
-           },
-           function(resp) {
-             sendToWindow({
-               eventID: action.eventID,
-               result: resp,
-             })
-           }
-         )
-       }
-
-       
+      if (evt.origin == 'https://www.wechatsync.com') {
+        if (action.method == 'updateDriver') {
+          chrome.extension.sendMessage(
+            {
+              action: 'updateDriver',
+              data: action.data,
+            },
+            function(resp) {
+              sendToWindow({
+                eventID: action.eventID,
+                result: resp,
+              })
+            }
+          )
+        }
+      }
     } catch (e) {}
   // }
 })

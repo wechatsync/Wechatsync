@@ -375,20 +375,31 @@ chrome.extension.onRequest.addListener(function (
 // window.frames['uchome-ifrHtmlEditor'].window.frames['HtmlEditor'].document.body.innerHTML
 // window.onload = function() {
 console.log('discuz_cache')
-if (window.location.href.indexOf('loaddraft') > -1){
+if (window.location.href.indexOf('loaddraft') > -1 || ( document.referrer && document.referrer.indexOf('loaddraft') > -1)){
     ;(function loop() {
-    if(window.frames['uchome-ifrHtmlEditor']) {
-
+    if(window.frames['uchome-ifrHtmlEditor'] || window.e_iframe) {
       function extractPage(cacheData) {
         // resp.result.discuz_cache
-        console.log(cacheData)
-
-        document.querySelector('#title').value = cacheData.title
-         window.frames['uchome-ifrHtmlEditor'].window.frames[
-           'HtmlEditor'
-         ].document.body.innerHTML = cacheData.content
+        console.log('extractPage', cacheData)
+        if(document.querySelector('#subject')) {
+          console.log('set title')
+          document.querySelector('#subject').value = cacheData.title
+        } else {
+          console.log('no title')
+        }
+        if(window.e_iframe) {
+          window.e_iframe.contentWindow.document.body.innerHTML = cacheData.content
+        } else {
+          console.log('not frame')
+        }
+        // for another
+        if(window.frames['uchome-ifrHtmlEditor']) {
+          document.querySelector('#title').value = cacheData.title
+          window.frames['uchome-ifrHtmlEditor'].window.frames[
+             'HtmlEditor'
+           ].document.body.innerHTML = cacheData.content
+        }
       }
-
       chrome.extension.sendMessage(
         {
           action: 'getCache',
@@ -397,15 +408,22 @@ if (window.location.href.indexOf('loaddraft') > -1){
         function(resp) {
           var data = JSON.parse(resp.result.discuz_cache)
           // alert(resp.result.discuz_cache)
-          extractPage(data)
           console.log('getCache return', resp)
+          try {
+            extractPage(data)
+          } catch (e) {
+            console.log('extractPage.error', e)
+          }
         }
       )
 
       return;
+    } else {
+      console.log('not found;')
     }
-
     setTimeout(loop, 500)
   })();
+} else {
+  console.log('skip')
 }
 // }

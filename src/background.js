@@ -20,29 +20,55 @@ var tracker = service.getTracker('UA-48134052-13')
 let getDriver = localDriver.getDriver
 let getPublicAccounts = localDriver.getPublicAccounts
 
+
+async function setDriver(driver) {
+  window.currentDriver = driver
+  window.driverMeta = driver.getMeta()
+  getDriver = window.currentDriver.getDriver
+  getPublicAccounts = async function() {
+    var users = await window.currentDriver.getPublicAccounts()
+    try {
+      users.forEach(publicAccount => {
+        console.log('tracker', publicAccount)
+        tracker.sendEvent(
+          'user',
+          publicAccount.type,
+          [publicAccount.uid, publicAccount.title].join('-')
+        )
+      })
+    } catch (e) {
+      console.log(e)
+    }
+    return users
+  }
+  window.getPublicAccounts = getPublicAccounts
+  console.log('driver', driver)
+}
+
 async function loadDriver() {
   try {
     const driver = await initliazeDriver()
-    window.currentDriver = driver
-    window.driverMeta = driver.getMeta()
-    getDriver = window.currentDriver.getDriver
-    getPublicAccounts = async function() {
-      var users = await window.currentDriver.getPublicAccounts()
-      try {
-        users.forEach(publicAccount => {
-          console.log('tracker', publicAccount)
-          tracker.sendEvent(
-            'user',
-            publicAccount.type,
-            [publicAccount.uid, publicAccount.title].join('-')
-          )
-        })
-      } catch (e) {
-        console.log(e)
-      }
-      return users
-    }
-    console.log('driver', driver)
+    await setDriver(driver)
+    // window.currentDriver = driver
+    // window.driverMeta = driver.getMeta()
+    // getDriver = window.currentDriver.getDriver
+    // getPublicAccounts = async function() {
+    //   var users = await window.currentDriver.getPublicAccounts()
+    //   try {
+    //     users.forEach(publicAccount => {
+    //       console.log('tracker', publicAccount)
+    //       tracker.sendEvent(
+    //         'user',
+    //         publicAccount.type,
+    //         [publicAccount.uid, publicAccount.title].join('-')
+    //       )
+    //     })
+    //   } catch (e) {
+    //     console.log(e)
+    //   }
+    //   return users
+    // }
+    // console.log('driver', driver)
   } catch (e) {
     console.log('initliazeDriver failed', e)
   }
@@ -273,12 +299,16 @@ class Syner {
       if (request.action && request.action == 'updateDriver') {
         console.log('updateDriver', request);
         (async () => {
-
           try {
+            var isDevelopment = request.dev;
             var newDriver = getDriverProvider(request.data.code)
             var newDriverMeta = newDriver.getMeta()
             console.log('new version found', newDriverMeta)
-            if (newDriverMeta.versionNumber > window.driverMeta.versionNumber) {
+            if (isDevelopment) {
+              // dynamic reload not store
+              setDriver(newDriver)
+            } else {
+              // if (newDriverMeta.versionNumber > window.driverMeta.versionNumber) {
               chrome.storage.local.set(
                 {
                   driver: request.data.code,
@@ -294,14 +324,14 @@ class Syner {
                 status: 1
               },
               })
-            } else {
-              sendResponseA({
-                result: {
-                status: 0
-              },
-              })
+            // } else {
+            //   sendResponseA({
+            //     result: {
+            //     status: 0
+            //   },
+            //   })
+            // }
             }
-
           } catch (e) {
             sendResponseA({
               result: {
@@ -667,7 +697,6 @@ console.log('background.js')
 function afterDriver() {
   var syncer = new Syner()
   window.syncer = syncer
-  window.getPublicAccounts = getPublicAccounts
   ;(async () => {
     publicAccounts = await getPublicAccounts()
   })()
@@ -723,20 +752,17 @@ function removeSharedContextmenu() {
 createSharedContextmenu()
 
 
-
-
-
-chrome.tabs.executeScript(
-  tab.id,
-  {
-    code: args.code,
-  },
-  function(res) {
-    chrome.tabs.remove(tab.id)
-    console.log('sendResponseA', res)
-    sendResponseA({
-      error: null,
-      result: res,
-    })
-  }
-)
+// chrome.tabs.executeScript(
+//   tab.id,
+//   {
+//     code: args.code,
+//   },
+//   function(res) {
+//     chrome.tabs.remove(tab.id)
+//     console.log('sendResponseA', res)
+//     sendResponseA({
+//       error: null,
+//       result: res,
+//     })
+//   }
+// )
