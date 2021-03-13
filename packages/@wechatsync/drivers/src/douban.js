@@ -1,13 +1,7 @@
 var metaCache = null
 
 import TurndownService from 'turndown'
-// import { markdownToDraft } from 'markdown-draft-js';
 import markdownToDraft from './tools/mtd'
-// const axios = require('axios');
-const draftJs = window.draftJs;
-// const convertToRaw = draftJs.convertToRaw
-// const htmlToDraft = require('html-to-draftjs').default
-// const ContentState = draftJs.ContentState
 
 
 const ImageRegexp = /^!\[([^\]]*)]\s*\(([^)"]+)( "([^)"]+)")?\)/
@@ -54,14 +48,6 @@ const imageBlock = (remarkable) => {
 }
 
 
-function covertHTMLToDraftJs(html) {
-    const blocksFromHtml = htmlToDraft(html)
-    const { contentBlocks, entityMap } = blocksFromHtml;
-    const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
-    const contentStateString = JSON.stringify(convertToRaw(contentState))
-    console.log('contentStateString', contentStateString)
-    return contentStateString
-}
 
 function getFormData(obj) {
     var map = {};
@@ -219,15 +205,15 @@ export default class Douban {
     // music review
     // https://music.douban.com/j/review/create
     // is_rich: 1
-    // topic_id: 
+    // topic_id:
     // review[subject_id]: 24856133
     // review[title]: aaa
-    // review[introduction]: 
+    // review[introduction]:
     // review[text]: {"entityMap":{},"blocks":[{"key":"9riq1","text":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{"page":0}}]}
-    // review[rating]: 
-    // review[spoiler]: 
-    // review[donate]: 
-    // review[original]: 
+    // review[rating]:
+    // review[spoiler]:
+    // review[donate]:
+    // review[original]:
     // ck: O4jk
     if(state.is_review) {
       if(state.subject == 'music') {
@@ -251,12 +237,6 @@ export default class Douban {
       }
     }
     console.log('state', requestBody)
-    // return {
-    //   status: 'success',
-    //   post_id: 'test',
-    //   draftLink: draftLink,
-    // }
-    // const draftjsState = covertHTMLToDraftJs(post.post_content)
     var res = await $.ajax({
       url: requestUrl,
       type: 'POST',
@@ -302,7 +282,7 @@ export default class Douban {
 
     formdata.append('ck', this.meta.form.ck)
     formdata.append('upload_auth_token', this.meta._POST_PARAMS.siteCookie.value)
-   
+
     var res = await axios({
       url: requestUrl,
       method: 'post',

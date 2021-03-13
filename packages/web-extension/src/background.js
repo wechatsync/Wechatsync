@@ -1,20 +1,12 @@
-window.driver = require("./drivers/builtDriverCode").default;
+require("./drivers/driverCodePack");
 import Store from './db/store'
 import { upImage } from './util/image'
 
 import { getGuid } from './util/util'
 import { initliazeDriver, getDriverProvider } from './vm/vm'
 
-var axios = require('axios')
-var juice = require('juice/client')
-var draftJs = require('draft-js')
 var localDriver = require('./drivers/driver')
 
-window.htmlToDraft = require('html-to-draftjs').default
-window.draftJs = draftJs;
-
-window.axios = axios
-window.juice = juice
 var service = analytics.getService('syncer')
 var tracker = service.getTracker('UA-48134052-13')
 
@@ -296,7 +288,7 @@ class Syner {
         })();
         return true
       }
-      
+
       if (request.action && request.action == 'updateDriver') {
         console.log('updateDriver', request);
         (async () => {
@@ -341,7 +333,7 @@ class Syner {
               },
             })
           }
-          
+
         })()
         return true
       }
