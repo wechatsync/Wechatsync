@@ -1,22 +1,13 @@
-window.driver = require("./drivers/builtDriverCode").default;
+require("./drivers/driverCodePack");
 import Store from './db/store'
 import { upImage } from './util/image'
 
 import { getGuid } from './util/util'
 import { initliazeDriver, getDriverProvider } from './vm/vm'
 
-var axios = require('axios')
-var juice = require('juice/client')
-var draftJs = require('draft-js')
 var localDriver = require('./drivers/driver')
 
-window.htmlToDraft = require('html-to-draftjs').default
-window.draftJs = draftJs;
-
-window.axios = axios
-window.juice = juice
 window.currentDriver = localDriver
-
 var logWatchers = []
 
 
@@ -323,7 +314,7 @@ class Syner {
         })();
         return true
       }
-      
+
       if (request.action && request.action == 'startInspect') {
         // self.senders[request.task.guid] = sender
         logWatchers.push(sender)
@@ -357,7 +348,7 @@ class Syner {
               } catch (e) {
                 console.log('initvm failed', e)
               }
-      
+
             }
 
             if (!isPatch) {
@@ -401,7 +392,7 @@ class Syner {
               },
             })
           }
-          
+
         })()
         return true
       }

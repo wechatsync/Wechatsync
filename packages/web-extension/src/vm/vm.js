@@ -1,5 +1,6 @@
 // import vm from "../../vm/vm";
 import Sval from 'sval'
+import svalScopes from "@wechatsync/drivers/scopes";
 
 export function getDriverProvider(code) {
   const options = {
@@ -9,29 +10,18 @@ export function getDriverProvider(code) {
     sandBox: true,
   }
 
-  var axios = require('axios')
-  var juice = require('juice/client')
-  var draftJs = require('draft-js')
-  var htmlToDraft = require('html-to-draftjs').default
-  // window.draftJs = draftJs
-
   const interpreter = new Sval(options)
   const sanbox = {
-    draftJs: draftJs,
-    htmlToDraft: htmlToDraft,
+    ...svalScopes,
     console: console,
     $: $,
     DOMParser: DOMParser,
     document: document,
-    axios: axios,
     Blob: Blob,
     Promise: Promise,
-    md5: md5,
-    juice: juice,
     setCache: setCache,
     initliazeFrame: initliazeFrame,
     requestFrameMethod: requestFrameMethod,
-    //   window: window
   }
 
   for (var k in sanbox) {

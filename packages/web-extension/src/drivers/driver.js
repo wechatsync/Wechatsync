@@ -70,11 +70,11 @@ export function getDriver(account) {
   if (account.type == 'weibo') {
     return new Weibo()
   }
-  
+
   if (account.type == 'sohufocus') {
     return new FocusDriver()
   }
-  
+
   if (account.type == '51cto') {
     return new B51Cto()
   }
@@ -103,6 +103,7 @@ export function getDriver(account) {
   }
 
   if(account.type == 'douban') {
+    console.log(account.type)
     return new Douban({
       globalState: _cacheState,
       state: _cacheState[account.type],
@@ -207,7 +208,7 @@ function urlHandler(details) {
   if (
     details.url.indexOf('music.douban.com') >
     -1
-    && 
+    &&
     details.url.indexOf('/new_review') >
     -1
   ) {

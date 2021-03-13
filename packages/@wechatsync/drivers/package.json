@@ -13,7 +13,10 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "turndown": "^6.0.0",
-    "markdown-draft-js": "^2.2.1"
+    "axios": "^0.21.1",
+    "js-md5": "^0.7.3",
+    "juice": "^7.0.0",
+    "remarkable": "^2.0.1",
+    "turndown": "^6.0.0"
   }
 }

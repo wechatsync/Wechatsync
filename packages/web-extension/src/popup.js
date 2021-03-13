@@ -9,8 +9,6 @@ import Mint from 'mint-ui'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 
-window.driver = require("./drivers/builtDriverCode").default;
-
 Vue.use(ElementUI)
 
 Vue.use(Mint)

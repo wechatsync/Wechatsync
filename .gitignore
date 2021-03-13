@@ -8,5 +8,5 @@ WechatSync.zip
 *.iml
 yarn-error.log
 dist
-zip/*
+zip
 package-json.lock
