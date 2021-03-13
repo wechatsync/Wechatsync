@@ -13,23 +13,39 @@
 - `@wechatsync/drivers`: 各平台发布 Driver 集合
 - `web-extension`: Chrome 插件
 - `markdown-editor`: 在线 Markdown 编辑器
-## 环境要求
+## 初始化
 
-- yarn（必须），由于 npm workspace 功能并不成熟，请选择使用 yarn
+yarn（必须），由于 npm workspace 功能并不成熟，请选择使用 yarn
+
+根目录下 `yarn install` 即可安装所有依赖
 
 ## 插件开发
 
 ``` bash
+# 根目录
 yarn workspace web-extension start
+# 或者，在 web-extension 目录下
+yarn start
 ```
 
 插件目录下 `dist` 文件夹拖入浏览器插件管理界面
 
 ## Markdown编辑器开发
 ``` bash
+# 根目录
 yarn workspace markdown-editor start
+# 或者，在 markdown-editor 目录下
+yarn start
 ```
+跟随命令行提示在浏览器查看效果，已配置热更新，无需手动刷新
 
+## devtool 开发
+``` bash
+# 根目录
+yarn workspace driver-devtool start
+# 或者，在 driver-devtool 目录下
+yarn start
+```
 跟随命令行提示在浏览器查看效果，已配置热更新，无需手动刷新
 
 ## Driver集合开发
