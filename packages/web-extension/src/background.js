@@ -8,7 +8,9 @@ import { initliazeDriver, getDriverProvider } from './vm/vm'
 var localDriver = require('./drivers/driver')
 
 window.currentDriver = localDriver
-var logWatchers = []
+
+// index by tabId
+var logWatchers = {}
 
 
 var rawLogFun = console.log
@@ -23,8 +25,9 @@ console.log = function (message) {
 }
 
 function brodcastToWatcher(args) {
-  for (let index = 0; index < logWatchers.length; index++) {
-    const logWatcher = logWatchers[index];
+  var tabIds = Object.keys(logWatchers)
+  for (let index = 0; index < tabIds.length; index++) {
+    const logWatcher = logWatchers[tabIds[index]];
     // console.log('brodcastToWatcher', logWatcher, args)
     chrome.tabs.sendMessage(
       logWatcher.tab.id,
@@ -317,7 +320,8 @@ class Syner {
 
       if (request.action && request.action == 'startInspect') {
         // self.senders[request.task.guid] = sender
-        logWatchers.push(sender)
+        // logWatchers.push(sender)
+        logWatchers[sender.tab.id] = sender
       }
 
       if (request.action && request.action == 'updateDriver') {
@@ -335,6 +339,18 @@ class Syner {
                 if(patchCodeVm.driver) {
                   window.currentDriver.addCustomDriver(patchName, patchCodeVm.driver)
                   console.log('custom driver seted')
+                  sendResponseA({
+                    result: {
+                      status: 1
+                    },
+                  })
+                } else {
+                  sendResponseA({
+                    result: {
+                      error: 'exports.driver not found',
+                      status: 0
+                    },
+                  })
                 }
                 // const codeStartTag = "// DEVTOOL_PLACEHOLDER_INSERT"
                 // const driver = await initliazeDriver({
@@ -346,6 +362,13 @@ class Syner {
                 // await setDriver(driver)
                 console.log('newDriver.isPatch', patchCodeVm)
               } catch (e) {
+
+                sendResponseA({
+                  result: {
+                    error: 'initvm failed',
+                    status: 0
+                  },
+                })
                 console.log('initvm failed', e)
               }
 
@@ -372,8 +395,8 @@ class Syner {
                 console.log('is new driver')
                 sendResponseA({
                   result: {
-                  status: 1
-                },
+                    status: 1
+                  },
                 })
               // } else {
               //   sendResponseA({
@@ -400,9 +423,9 @@ class Syner {
       if (request.action && request.action == 'callDriverMethod') {
         console.log(request)
         ;(async () => {
-          var driver = getDriver(request.data.account )
-          var methodName = request.methodName
           try {
+            var driver = getDriver(request.data.account )
+            var methodName = request.methodName
             if (methodName === 'uploadImage') {
               var postId = Math.floor(Math.random() * 100000)
               var imgSRC = request.data.src;
@@ -417,13 +440,21 @@ class Syner {
               })
             } else {
               var driverFunc = driver[methodName]
-              var article = await driverFunc(request.data)
-              sendResponseA({
-                article: article,
-              })
+              if(!driverFunc) {
+                sendResponseA({
+                  error: 'method not exists',
+                })
+              } else {
+                var callResult = await driverFunc(request.data)
+                sendResponseA({
+                  result: callResult,
+                })
+              }
             }
           } catch (e) {
-            console.log(e)
+            sendResponseA({
+              error: e.toString(),
+            })
           }
         })()
         return true

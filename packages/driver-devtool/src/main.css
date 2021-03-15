@@ -398,7 +398,7 @@ header h1 {
 }
 
 .results-container {
-  padding: 0 20px;
+  /* padding: 0 20px; */
   box-sizing: border-box;
   height: 100%;
   overflow: auto

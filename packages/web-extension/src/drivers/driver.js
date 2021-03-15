@@ -20,13 +20,13 @@ const {
 } = buildInDrivers;
 
 var _cacheState = {}
-const _customDrivers = [];
+const _customDrivers = {};
 
 export function addCustomDriver(name, driverClass) {
-  _customDrivers.push({
+  _customDrivers[name] = {
     name: name,
     handler: driverClass
-  })
+  }
   console.log('addCustomDriver', _customDrivers)
 }
 
@@ -115,9 +115,8 @@ export function getDriver(account) {
     return new Discuz(account.config)
   }
 
-  const matchedDrivers = _customDrivers.filter(_ => _.name == account.type)
-  if(matchedDrivers.length) {
-    const driverInCustom = matchedDrivers[0]
+  if(_customDrivers[account.type]) {
+    const driverInCustom = _customDrivers[account.type]
     return new driverInCustom['handler'](account)
   }
 

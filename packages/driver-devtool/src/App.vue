@@ -16,8 +16,13 @@
             </a>
           </div>
           <div class="action-item" id="run-code">
-            <a class="ai-button" @click="runCode()">
-              <v-icon name="play" scale="0.8"/>测试
+            <a class="ai-button" @click="runCode({ testSync: false })">
+              <v-icon name="upload" scale="0.8"/>图片上传
+            </a>
+          </div>
+          <div class="action-item" id="run-code">
+            <a class="ai-button" @click="runCode({ testSync: true })">
+              <v-icon name="sync" scale="0.8"/>文章同步
             </a>
           </div>
         </nav>
@@ -116,8 +121,8 @@
             </li>
           </ul>
         </div>
-        <div id="editor">
-          <div class="pannel-main">
+        <div id="editor" :class="{hasLog: logs.length }">
+          <div class="pannel-main code-area">
             <codemirror
                   v-model="currentEditFile.content"
                   :options="getFileCodeOptions(currentEditFile)"
@@ -125,14 +130,16 @@
             </codemirror>
           </div>
           <div class="gutter gutter-vertical" style="height: 1px;"></div>
-          <div class="pannel-main" style="height: calc(30% - 0.5px);">
+          <div class="pannel-main" style="height: calc(30% - 0.5px);" id="console-area">
               <div class="windowLabelCont">
                 <span class="windowLabel">Console</span>
               </div>
               <div class="vue-codemirror">
                 <div class="CodeMirror cm-s-monokai">
-                  <div class="results-container">
-                    <p v-for="log in logs">{{ log}}</p>
+                  <div class="results-container" ref="logContainer">
+                    <div class="console-logs">
+                        <li v-for="log in logs" :class="'log-'+log.cat"><pre v-highlightjs>{{ log.content }}</pre></li>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -225,6 +232,7 @@ export default {
   components: { ScaleLoader },
   data() {
     return {
+      enableAutoDeploy: false,
       logs: [],
       files: [],
       currentEditFile: {},
@@ -232,30 +240,11 @@ export default {
       editorFiles: [],
       visible: false,
       submitting: false,
-      list: [
-        // {
-        //   id: 0,
-        //   title: "MRC question1",
-        //   date: "19/1/10",
-        //   desc: "navigator.battery navigator.getBattery()"
-        // },
-        // {
-        //   id:  1,
-        //   title: "MRC question",
-        //   date: "19/1/10",
-        //   desc:
-        //     'try{(function(oa){function wc(a,b){if(null===this||void 0===this)throw new TypeError("Array.prototype.forEach called on null or undefined");if("function"!==typeof a)throw new TypeError(a+" is not a fu...'
-        // }
-      ],
       value: '',
       extensionInstalled: false,
       checkCount: 0,
       allAccounts: [],
-      currentArtitle: {},
       taskStatus: {},
-      markdownOption: {
-        // boxShadow: false
-      },
     }
   },
 
@@ -268,16 +257,13 @@ export default {
     }
   },
   mounted() {
-
-    // if(this.list.length) this.currentArtitle = this.list[0];
-    // this.loadDoc()
     var self = this;
     ;(function check() {
           self.extensionInstalled = typeof window.$syncer != 'undefined';
           self.checkCount++;
           if(self.extensionInstalled) {
             window.$syncer.startInspect(function(args) {
-              console.log('log', args)
+              console.log('log', args, 'self.addLog', self.addLog)
               self.addLog(args);
             });
             self.loadAccounts()
@@ -287,23 +273,46 @@ export default {
           setTimeout(check, 800);
     })();
 
-
+    window.goBottom = this.goBottom
+  },
+  computed: {
+    currentDriverName() {
+      return this.currentEditFile && this.currentEditFile.fileName.split('.')[0]
+    }
   },
   methods: {
     ...files,
-    addLog(args) {
-      if(this.logs.length > 100) {
+    addLog(args, category = 'inspect') {
+      if(this.logs.length > 50) {
         this.logs.shift();
       }
-      this.logs.push(JSON.stringify(args))
+      console.log('add log', this.logs.length)
+      this.logs.push({
+        cat: category,
+        content: args.map(_ => {
+          if(typeof _ == 'object') return JSON.stringify(_)
+          return _;
+        }).join("\t")
+      });
+      this.$nextTick(() => {
+        this.goBottom();
+      })
+    },
+    addDebugLog(args) {
+      return this.addLog(args, 'debug')
+    },
+    goBottom() {
+      if(this.$refs.logContainer) {
+        this.$refs.logContainer.scrollTop = this.$refs.logContainer.scrollHeight;
+      }
     },
     afterExtension() {
       this.loadState();
       this.$nextTick(_ => {
         this.initFileManager();
+        this.initEditor();
+        this.editorAfterProjectLoad()
       })
-
-
     },
     loadState () {
       var state = window.localStorage.getItem("state");
@@ -318,7 +327,6 @@ export default {
       }
       this.files = state.files
       console.log('this.files', this.files)
-      this.editorAfterProjectLoad()
     },
     saveState() {
       var state = {
@@ -334,16 +342,23 @@ export default {
         lastSave: Date.now()
       }
       window.localStorage.setItem("state", JSON.stringify(state));
+      console.log('enableAutoDeploy', this.enableAutoDeploy)
+      if(this.enableAutoDeploy) {
+        console.log('deploy after save')
+        try {
+          this.deployCode(true);
+        } catch (e) {}
+      }
     },
     loadAccounts() {
       var allAccounts = []
       var accounts = []
       var self = this
       function getAccounts() {
-        window.$syncer.getAccounts(function(resp) {
-            console.log('allAccounts', resp)
-            self.allAccounts = resp
-        })
+        // window.$syncer.getAccounts(function(resp) {
+        //     console.log('allAccounts', resp)
+        //     self.allAccounts = resp
+        // })
         // chrome.extension.sendMessage(
         //   {
         //     action: 'getAccount',
@@ -357,104 +372,92 @@ export default {
       getAccounts()
     },
 
-    deployCode() {
+    async deployCode(silent = false) {
       var driverName = this.currentEditFile.fileName.split('.')[0]
       var driverCode = this.currentEditFile.content;
       // console.log(this.currentEditFile)
-      window.$syncer.updateDriver({
-        name: driverName,
-        code: driverCode,
-        dev: true,
-        patch: true
-      })
-    },
+      const deployResult = await new Promise((resolve, reject) => {
+        window.$syncer.updateDriver({
+          name: driverName,
+          code: driverCode,
+          dev: true,
+          patch: true
+        }, (res) => {
+          console.log('updateDriver.res', res)
+          resolve(res.result);
+       })
+      }); 
 
-    async doSubmit() {
-      var self = this
-      function getPost() {
-        var post = {}
-        post.title = self.currentArtitle.title
-        post.content = self.$refs.editor.d_render
-        post.markdown = self.currentArtitle.content
-        // post.thumb = document.body.getAttribute('data-msg_cdn_url');
-        // post.desc = document.body.getAttribute('data-msg_desc');
-        console.log(post)
-        return post
+      if(deployResult.status) {
+        // 第一次部署成功后，自动部署
+        this.enableAutoDeploy = true
       }
 
-      var selectedAc = this.allAccounts.filter((a) => {
-        return a.checked
+      if(!silent) this.addDebugLog([deployResult])
+    },
+
+    async runCode({ testSync = false}) {
+      const targetAccount = {
+        type: this.currentDriverName
+      }
+      // test find account
+      var callArgs = {
+        methodName: 'getMetaData',
+        account: {
+          type: this.currentDriverName
+        }
+      }
+      var accountResult = await new Promise((resolve, reject) => {
+        window.$syncer.magicCall(callArgs, res => {
+          resolve(res)
+        })
       })
 
-      // console.log(selectedAc, this.$refs.editor.d_render);
-      // return;
-      this.$message('准备同步')
-       window.$syncer.addTask({
-           post: getPost(),
-           accounts: selectedAc,
-       }, function(status) {
-           self.taskStatus = status
-           console.log('status', status)
-       }, function(){
-           console.log('send')
-       })
+      this.addDebugLog([accountResult])
+      console.log('accountResult', accountResult)
+      if(accountResult.error) {
+        return
+      }
 
-    //   chrome.extension.sendMessage(
-    //     {
-    //       action: 'addTask',
-    //       task: {
-    //         post: getPost(),
-    //         accounts: selectedAc,
-    //       },
-    //     },
-    //     function (resp) {}
-    //   )
+      // test image upload
+      var articleFiles = this.files.filter(_ => _.fileName == 'article.json');
+      if(articleFiles.length == 0) {
+        alert('请创建一个名为“article.json”的json文件作为测试文章数据')
+        return
+      }
+      
+      var articleData = JSON.parse(articleFiles[0].content)
+      this.addDebugLog(['测试图片上传'])
+      var testImageSrc = articleData.thumnail || 'https://mmbiz.qpic.cn/mmbiz_jpg/VUsUpGDa4qdFYthOpjEqaqDPnS3WVhTKToFr9cPhObPwEw1NP5fQLNrqqjIqOxZRppCibZchwWkqh7zia3lEhoDQ/0?wx_fmt=jpeg';
+      var actionData = {
+        src: testImageSrc,
+        account: targetAccount
+      }
 
-      this.submitting = true
-      this.taskStatus = {}
-    },
+      const uploadResult = await new Promise((resolve, reject) => {
+          window.$syncer.uploadImage(actionData, (res) => {
+              console.log('handleImageUpload.res', res)
+              resolve(res.result);
+          })
+      }); 
 
+      this.addDebugLog([uploadResult])
 
-
-
-    open(item) {
-      this.currentArtitle = item
-    },
-    async imgAdd(pos, $file) {
-      // var dri = new Segmentfault();
-    //   var dri = new Juejin()
-    //   var finalUrl = await dri.uploadFileByForm($file)
-    var sortOrderTypes = [
-        "weixin",
-        "zhihu",
-        "jianshu",
-        "toutiao",
-        "weibo",
-        "douban",
-        "segmentfault"
-    ].map(_ => this.allAccounts.filter(a => a.type === _)[0]).filter(_ => _);
-
-    if(sortOrderTypes.length === 0) {
-        this.$message('当前未登陆任何自媒体平台，无法自动上传图片')
-        return;
-    }
-
-    var base64Url = await toBase64($file);
-    var accountCurrent = sortOrderTypes[0];
-    var actionData = {
-        src: base64Url,
-        account: accountCurrent
-    }
-    console.log('actionData', actionData);
-    window.$syncer.uploadImage(actionData, (res) => {
-        console.log('res', res)
-        if(accountCurrent.type === 'zhihu') {
-          res.result.url = [res.result.url, '_r.jpg'].join('');
-        }
-        this.$refs.editor.$img2Url(pos, res.result.url)
-    })
-    console.log('imgAdd', pos, $file, sortOrderTypes, this.allAccounts)
-    //   this.$refs.editor.$img2Url(pos, finalUrl)
+      if(testSync) {
+        // test article publish
+        window.$syncer.addTask({
+          post: {
+            title: articleData.title,
+            content: articleData.content
+          },
+          accounts: [targetAccount],
+        }, function(status) {
+            // self.taskStatus = status
+          console.log('status', status)
+        }, function(){
+          console.log('send')
+        })
+      }
     },
   },
 }
@@ -462,25 +465,6 @@ export default {
 <style>
 
 
-.article-list {
-  height: 100%;
-  width: 350px;
-}
-
-
-.v-note-wrapper {
-    padding-top: 110px;
-}
-
-.article-all {
-  color: #878787;
-  height: 100%;
-  width: 350px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  position: relative;
-  margin-top: 110px;
-}
 
 #app,
 html,
@@ -490,225 +474,6 @@ body,
   overflow: hidden;
 }
 
-.editor-main {
-  background: white;
-  border-left: 1px solid #ececec;
-  bottom: 0;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
-  min-width: 403px;
-  transition: top 0.5s ease-in-out 0.2s;
-  margin-left: 350px;
-  height: 100%;
-  z-index: 3;
-}
-
-.article-item {
-  height: 120px;
-  cursor: pointer;
-  margin: 0 auto;
-  text-align: left;
-  overflow: hidden;
-  position: relative;
-  transition: opacity 0.2s ease-in-out, height 0.2s ease-in-out,
-    width 0.2s ease-in-out;
-}
-
-.article-item .main-content {
-  color: #878787;
-  left: 24px;
-  overflow: hidden;
-  overflow-wrap: break-word;
-  position: absolute;
-  right: 24px;
-  top: 12px;
-  word-wrap: break-word;
-  bottom: 15px;
-}
-
-.article-item .title {
-  transition: color 0.1s ease-in-out, width 0s ease-in-out 0.1s;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-family: caecilia, times, serif;
-  font-size: 16px;
-  font-weight: 400;
-  color: #4a4a4a;
-  margin-bottom: 3px;
-  max-height: 40px;
-  overflow: hidden;
-  overflow-wrap: break-word;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  word-wrap: break-word;
-  line-height: 20px;
-  width: 302px;
-}
-
-.article-item .date {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-family: gotham, helvetica, arial, sans-serif;
-  font-size: 11px;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-}
-
-.article-item .desc {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-family: gotham, helvetica, arial, sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 17px;
-}
-
-.article-item * {
-  box-sizing: border-box;
-}
-
-.article-item:hover .date,
-.article-item:hover .title,
-.article-item:hover .desc {
-  color: #fff;
-}
-
-.item-divider {
-  border-top: 1px solid #ececec;
-  left: 20px;
-  right: 20px;
-  top: 0;
-  position: absolute;
-}
-
-.article-item:hover .item-divider {
-  border-top: none;
-}
-
-.article-item .hover-overlay {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  opacity: 0;
-  background-color: rgba(43, 181, 92, 0.9);
-  transition: opacity 0.1s ease-in-out;
-}
-
-.article-item.selected .selected-overlay {
-  border: 3px solid #d9d9d9;
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-}
-
-.hover-container {
-  position: absolute;
-  opacity: 0;
-  top: 0;
-  right: 0;
-  transition: opacity 0.1s ease-in-out;
-}
-
-.hover-container .icon {
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  margin: 8px 12px 0 0;
-  color: white;
-  font-size: 20px;
-  text-align: center;
-  line-height: 24px;
-}
-
-.article-item:hover .hover-overlay {
-  opacity: 1;
-}
-
-.article-item:hover .hover-container {
-  opacity: 1;
-}
-
-.top-tools {
-  padding: 10px 24px;
-  font-size: 13px;
-  text-align: right;
-  border-bottom: 1px solid #d9d9d9;
-  width: 350px;
-}
-
-.top-tools .btn {
-  font-size: 13px;
-}
-
-.v-note-wrapper .v-note-op {
-  border-top: 1px solid #f2f6fc;
-  border-radius: 0px;
-}
-
-.v-note-wrapper {
-  height: 100%;
-  position: absolute !important;
-  width: 100%;
-  top: 0;
-  border-left: none !important;
-  box-sizing: border;
-}
-
-.top-tools,
-.post-title {
-  position: absolute;
-  z-index: 1502;
-  top: 60px;
-}
-
-.post-title input {
-  border: none;
-  height: 45px;
-  outline: none;
-  font-size: 20px;
-  font-family: caecilia, times, serif;
-  font-size: 28px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-weight: 300;
-  width: 700px;
-  padding-left: 24px;
-}
-
-.not-article {
-  padding: 10px 20px;
-  font-size: 12px;
-  color: #666;
-}
-
-.major-actions {
-  position: absolute;
-  right: 15px;
-  top: 12px;
-  z-index: 888;
-}
-
-.all-pubaccounts {
-}
-
-.account-item img {
-  margin-right: 5px;
-}
-
-.account-item {
-  height: 36px;
-  line-height: 36px;
-  padding: 0 15px;
-  font-size: 14px;
-}
 
 .header-bar {
     height: 60px;
@@ -721,5 +486,48 @@ body,
 
 .header-bar a:hover {
     text-decoration: none;
+}
+
+ .console-logs {
+    /* padding-top: 66px */
+}
+
+.console-logs li {
+  list-style: none;
+  border-bottom: 1px solid #eee;
+  padding-left: 20px;
+}
+
+.console-logs li pre {
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.console-logs li:first-child {
+  /* border-top: 1px solid #eee; */
+}
+
+#editor #console-area, 
+#editor .gutter {
+  display: none;
+}
+
+#editor .code-area{
+  height: calc(100% - 0.5px);
+}
+
+
+#editor.hasLog #console-area, 
+#editor.hasLog .gutter {
+  display: block;
+}
+
+#editor.hasLog .code-area{
+  height: calc(70% - 0.5px);
+}
+
+#console-area .windowLabelCont {
+  border-bottom: 1px solid #eee;
 }
 </style>

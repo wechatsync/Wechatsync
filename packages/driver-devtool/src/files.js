@@ -234,7 +234,7 @@ export default {
     },
 
     getFileCodeOptions(file){
-        console.log('getFileCodeOptions', file)
+        // console.log('getFileCodeOptions', file)
        var Options = {
         tabSize: 2,
         styleActiveLine: false,
@@ -265,8 +265,7 @@ export default {
         if(file.fileName && (file.fileName.indexOf('java') > -1)){
         Options.mode = 'text/x-java';
         }
-
-        console.log('getFileCodeOptions', Options)
+        // console.log('getFileCodeOptions', Options)
         return Options;
     },
 
