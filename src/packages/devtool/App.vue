@@ -105,7 +105,8 @@
             <li
               v-if="file"
               class="editor-file"
-              :class="{ active: currentEditFileName == file.fileName }"
+              :class="{ active: currentEditFileName == file.fileName } 
+                  "
               v-for="(file, index) in editorFiles"
             >
               <a @click="selectFile(file)">{{ file.fileName }}</a>
