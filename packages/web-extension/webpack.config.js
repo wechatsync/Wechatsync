@@ -71,7 +71,6 @@ module.exports = env => {
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: '"development"',
-        WECHAT_ENV: '"development"',
       },
     }),
   ]
@@ -79,7 +78,6 @@ module.exports = env => {
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: '"production"',
-        WECHAT_ENV: '"production"',
       },
     }),
     new ZipPlugin({
@@ -145,5 +143,10 @@ module.exports = env => {
       }),
       ...(prodMode ? prodPlugins : devPlugins),
     ],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
+      },
+    },
   }
 }
