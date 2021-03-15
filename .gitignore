@@ -2,7 +2,7 @@
 node_modules/
 build/
 md/
-./devtool/
+build/devtool/
 .DS_Store
 WechatSync.zip
 *.iml
