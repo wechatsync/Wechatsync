@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "name": "markdown-editor",
+  "version": "1.0.0",
+  "description": "The Online Markdown Editor for WechatSync",
+  "scripts": {
+    "start": "webpack serve",
+    "build": "webpack --env production"
+  },
+  "dependencies": {
+    "mavon-editor": "^2.7.6",
+    "pouchdb": "^7.1.1",
+    "pouchdb-find": "^7.1.1",
+    "vue": "^2.6.12",
+    "vue-moment": "^4.1.0",
+    "vue-router": "^3.5.1",
+    "vue-spinner": "^1.0.4",
+    "vuex": "^3.6.2"
+  },
+  "license": "ISC"
+}
