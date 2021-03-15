@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <title>同步助手 - 调试工具</title>
+    <link href="https://fonts.googleapis.com/css?family=Grand+Hotel|Open+Sans:400,600|Raleway:200,300,400,600,700,800"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="assets/fonts/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="boot.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- wechatsync.com Baidu tongji analytics -->
+    <script>
+        var _hmt = _hmt || [];
+        (function () {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?9b799c9c9f628aece0b71b72ce013bab";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+    <script>
+        !function () {
+            var analytics = window.analytics = window.analytics || []; if (!analytics.initialize) if (analytics.invoked) window.console && console.error && console.error("Segment snippet included twice."); else {
+                analytics.invoked = !0; analytics.methods = ["trackSubmit", "trackClick", "trackLink", "trackForm", "pageview", "identify", "reset", "group", "track", "ready", "alias", "debug", "page", "once", "off", "on"]; analytics.factory = function (t) { return function () { var e = Array.prototype.slice.call(arguments); e.unshift(t); analytics.push(e); return analytics } }; for (var t = 0; t < analytics.methods.length; t++) { var e = analytics.methods[t]; analytics[e] = analytics.factory(e) } analytics.load = function (t, e) { var n = document.createElement("script"); n.type = "text/javascript"; n.async = !0; n.src = "https://cdn.segment.com/analytics.js/v1/" + t + "/analytics.min.js"; var a = document.getElementsByTagName("script")[0]; a.parentNode.insertBefore(n, a); analytics._loadOptions = e }; analytics.SNIPPET_VERSION = "4.1.0";
+                analytics.load("cnCHdmxnAgsvURAZMWNwjALLb7KneUUU");
+                analytics.page();
+            }
+        }();
+    </script>
+</head>
+
+<body>
+    <main id="app">
+        <router-view />
+    </main>
+    <!-- built files will be auto injected -->
+</body>
+</html>

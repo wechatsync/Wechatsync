@@ -2,7 +2,11 @@
 node_modules/
 build/
 md/
-devtool/
+build/devtool/
 .DS_Store
 WechatSync.zip
 *.iml
+yarn-error.log
+dist
+zip
+package-json.lock
