@@ -1114,7 +1114,7 @@ function CodeBlockToPlainTextOther(pre) {
     const codeStr = element.text()
     text.push('<code>' + escapeHtml(codeStr) + '</code>')
   }
-  return text.join('\n')
+  return text.join(String.fromCharCode(10))
 }
 
 function CodeBlockToPlainText(pre) {
@@ -1129,12 +1129,12 @@ function CodeBlockToPlainText(pre) {
     const element = lines.eq(index)
     const codeStr = element[0].innerText
     console.log('codeStr', codeStr)
-    var codeLines = codeStr.split('\n')
+    var codeLines = codeStr.split(String.fromCharCode(10))
     codeLines.forEach((codeLine) => {
       text.push('<code>' + escapeHtml(codeLine) + '</code>')
     })
   }
-  return text.join('\n')
+  return text.join(String.fromCharCode(10))
 }
 
 class ZhiHuDriver {

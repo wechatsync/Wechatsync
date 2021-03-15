@@ -362,10 +362,10 @@ class Syner {
                 // await setDriver(driver)
                 console.log('newDriver.isPatch', patchCodeVm)
               } catch (e) {
-
                 sendResponseA({
                   result: {
                     error: 'initvm failed',
+                    detail: e.toString(),
                     status: 0
                   },
                 })
