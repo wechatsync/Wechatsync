@@ -31,6 +31,13 @@ export function addCustomDriver(name, driverClass) {
 }
 
 export function getDriver(account) {
+
+  // 保证在内置的前面
+  if(_customDrivers[account.type]) {
+    const driverInCustom = _customDrivers[account.type]
+    return new driverInCustom['handler'](account)
+  }
+
   if (account.type == 'wordpress') {
     return new WordpressDriver(
       account.params.wpUrl,
@@ -115,10 +122,6 @@ export function getDriver(account) {
     return new Discuz(account.config)
   }
 
-  if(_customDrivers[account.type]) {
-    const driverInCustom = _customDrivers[account.type]
-    return new driverInCustom['handler'](account)
-  }
 
   throw Error('not supprt account type')
 }

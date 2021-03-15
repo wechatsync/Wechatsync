@@ -138,7 +138,7 @@
                 <div class="CodeMirror cm-s-monokai">
                   <div class="results-container" ref="logContainer">
                     <div class="console-logs">
-                        <li v-for="log in logs" :class="'log-'+log.cat"><pre v-highlightjs>{{ log.content }}</pre></li>
+                        <li v-for="log in rencetLogs" :class="'log-'+log.cat" :key="log.guid"><pre v-highlightjs>{{ log.content }}</pre></li>
                     </div>
                   </div>
                 </div>
@@ -278,22 +278,29 @@ export default {
   computed: {
     currentDriverName() {
       return this.currentEditFile && this.currentEditFile.fileName.split('.')[0]
+    },
+    rencetLogs() {
+      return this.logs
     }
   },
   methods: {
     ...files,
     addLog(args, category = 'inspect') {
-      if(this.logs.length > 50) {
-        this.logs.shift();
-      }
+      // if(this.logs.length > 60) {
+      //   this.logs = this.logs.slice(-60, this.logs.length)
+      // }
       console.log('add log', this.logs.length)
       this.logs.push({
+        uid: Date.now() + (Math.floor(Math.random() * 10000)),
+        time: Date.now(),
         cat: category,
         content: args.map(_ => {
           if(typeof _ == 'object') return JSON.stringify(_)
           return _;
         }).join("\t")
       });
+      // this.$forceUpdate()
+      // console.log(this.rencetLogs[this.rencetLogs.length -1])
       this.$nextTick(() => {
         this.goBottom();
       })
