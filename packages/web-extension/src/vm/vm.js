@@ -22,6 +22,7 @@ export function getDriverProvider(code) {
     setCache: setCache,
     initliazeFrame: initliazeFrame,
     requestFrameMethod: requestFrameMethod,
+    modifyRequestHeaders: modifyRequestHeaders
   }
 
   for (var k in sanbox) {
@@ -109,6 +110,42 @@ function initliazeFrame(src, type, forceOpen) {
   }
 }
 
+var _rules = {}
+function modifyRequestHeaders(ulrPrefix, headers, inspectUrls, handler) {
+  // once
+  if(!_rules[ulrPrefix]) {
+    _rules[ulrPrefix] = headers
+  }
+
+  chrome.webRequest.onBeforeSendHeaders.addListener(
+    function(details) {
+      try {
+        var macthedUrl = details.url.indexOf(ulrPrefix) > -1
+        if (macthedUrl) {
+          details.requestHeaders = details.requestHeaders.map(_ => {
+            if(headers[_.name]) {
+              _.value = headers[_.name]
+            }
+            return _
+          })
+        }
+        // call
+        if (handler) {
+          handler(details)
+        }
+      } catch (e) {
+        console.log('modify headers error', e)
+      }
+      return { requestHeaders: details.requestHeaders }
+    },
+    {
+      urls: inspectUrls,
+    },
+    ['blocking', 'requestHeaders', 'extraHeaders',]
+  )
+}
+
 window.setCache = setCache
 window.requestFrameMethod = requestFrameMethod
 window.initliazeFrame = initliazeFrame
+window.modifyRequestHeaders = modifyRequestHeaders

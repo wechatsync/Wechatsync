@@ -469,7 +469,7 @@ export default {
       const uploadResult = await new Promise((resolve, reject) => {
           window.$syncer.uploadImage(actionData, (res) => {
               console.log('handleImageUpload.res', res)
-              resolve(res.result);
+              resolve(res);
           })
       }); 
 
