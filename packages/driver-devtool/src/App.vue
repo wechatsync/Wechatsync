@@ -232,6 +232,20 @@ import exampleCodes from "./example.js"
 
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue'
 
+function throttle(fn,wait){
+  var timer = null;
+  return function(){
+      var context = this;
+      var args = arguments;
+      if(!timer){
+          timer = setTimeout(function(){
+              fn.apply(context,args);
+              timer = null;
+          },wait)
+      }
+  }
+}
+
 export default {
   name: '',
   components: { ScaleLoader },
@@ -279,6 +293,7 @@ export default {
     })();
 
     window.goBottom = this.goBottom
+    this.throttleDeployCode = throttle(this.deployCode, 10 * 1000);
   },
   computed: {
     currentDriverName() {
@@ -358,7 +373,7 @@ export default {
       if(this.enableAutoDeploy) {
         console.log('deploy after save')
         try {
-          this.deployCode(true);
+          this.throttleDeployCode(true);
         } catch (e) {}
       }
     },
