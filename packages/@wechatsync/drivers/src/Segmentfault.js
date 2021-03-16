@@ -25,11 +25,6 @@ export default class Segmentfault {
       link.style['background-image'].replace('url("', '').replace('")', '')
     )
 
-    // if (!segIframe) {
-    //   segIframe = document.createElement('iframe')
-    //   segIframe.src = 'https://segmentfault.com/write?freshman=1'
-    //   document.body.append(segIframe)
-    // }
     initliazeFrame('https://segmentfault.com/write?freshman=1', 'segment')
 
     return {

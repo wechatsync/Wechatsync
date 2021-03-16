@@ -1,5 +1,6 @@
 const path = require('path')
 const webpack = require('webpack')
+const { merge } = require('webpack-merge')
 const { VueLoaderPlugin } = require('vue-loader')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const Dotenv = require('dotenv-webpack')
@@ -56,6 +57,17 @@ module.exports = env => {
         }),
       ],
     },
+    plugins: [
+      new webpack.DefinePlugin({
+        'process.env': {
+          NODE_ENV: '"production"',
+        },
+      }),
+      new ZipPlugin({
+        path: path.resolve(__dirname, 'zip'),
+        filename: 'WechatSync.zip',
+      }),
+    ],
   }
   const devConfigs = {
     mode: 'development',
@@ -65,37 +77,22 @@ module.exports = env => {
         vue: 'vue/dist/vue.js',
       },
     },
+    plugins: [
+      new webpack.DefinePlugin({
+        'process.env': {
+          NODE_ENV: '"development"',
+        },
+      }),
+    ],
   }
 
-  const devPlugins = [
-    new webpack.DefinePlugin({
-      'process.env': {
-        NODE_ENV: '"development"',
-        WECHAT_ENV: '"development"',
-      },
-    }),
-  ]
-  const prodPlugins = [
-    new webpack.DefinePlugin({
-      'process.env': {
-        NODE_ENV: '"production"',
-        WECHAT_ENV: '"production"',
-      },
-    }),
-    new ZipPlugin({
-      path: path.resolve(__dirname, 'zip'),
-      filename: 'WechatSync.zip',
-    }),
-  ]
-
-  return {
+  const commonConfigs = {
     entry,
     output: {
       filename: '[name]',
       path: path.resolve(__dirname, 'dist'),
       clean: true,
     },
-    ...(prodMode ? prodConfigs : devConfigs),
     module: {
       rules: [
         {
@@ -143,7 +140,13 @@ module.exports = env => {
         ),
         safe: true,
       }),
-      ...(prodMode ? prodPlugins : devPlugins),
     ],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
+      },
+    },
   }
+
+  return merge(commonConfigs, prodMode ? prodConfigs : devConfigs)
 }

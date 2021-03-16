@@ -1,6 +1,8 @@
 {
     "cSpell.words": [
+        "Sval",
         "WECHAT",
         "wechatsync"
-    ]
+    ],
+    "editor.formatOnSave": true
 }

@@ -6931,7 +6931,7 @@ supports-color@^7.0.0, supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
-sval@^0.4.6:
+sval@^0.4.8:
   version "0.4.8"
   resolved "https://registry.npm.taobao.org/sval/download/sval-0.4.8.tgz#e7de37bed520f5537fe9e368b871880266c99a12"
   integrity sha1-5943vtUg9VN/6eNouHGIAmbJmhI=

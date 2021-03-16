@@ -27,17 +27,6 @@ export default class FocusDriver {
 
 
   async preEditPost(post) {
-    // var div = $('<div>');
-    // $('body').append(div);
-    // div.html(post.content);
-
-    // // var doc = div;
-    // // doc.clone()
-    // var documentClone = document.cloneNode(true);
-    // var article = new Readability(documentClone).parse();
-
-    // div.remove();
-    // console.log(article);
     var rexp = new RegExp('>[\ts ]*<', 'g')
     var result = post.content.replace(rexp, '><')
     post.content = result
@@ -83,7 +72,7 @@ export default class FocusDriver {
       data: formdata,
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-   
+
     if(res.data.code != 200) {
       console.log(res.data);
       throw new Error('upload failed')
