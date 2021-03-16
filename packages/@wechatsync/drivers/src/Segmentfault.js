@@ -1,8 +1,4 @@
-const { processDocCode, makeImgVisible } = require('./tools/code')
-import TurndownService from 'turndown'
-
-
-export default class Segmentfault {
+export default class SegmentfaultAdapter {
   constructor() {
     this.name = 'segmentfault'
   }
@@ -43,7 +39,7 @@ export default class Segmentfault {
   async addPost(post) {
     // console.log('addPost', segIframe)
 
-    var turndownService = new TurndownService()
+    var turndownService = new turndown()
     turndownService.addRule('codefor', {
       filter: ['pre'],
       replacement: function (content) {
@@ -127,8 +123,8 @@ export default class Segmentfault {
       // var doc = $('<div>').append(org.clone());
       var doc = div
       // var pres = doc.find("pre");
-      processDocCode(div)
-      makeImgVisible(div)
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
 
       var tempDoc = $('<div>').append(doc.clone())
       post.content =

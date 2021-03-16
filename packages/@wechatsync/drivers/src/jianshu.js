@@ -1,7 +1,7 @@
 var NoteVersionCaches = {}
 var defaultNoteBookId
 
-export default class JianShuDriver {
+export default class JianShuAdapter {
   constructor() {
     this.name = 'jianshu'
     // chrome.cookies.getAll({ domain: "zhihu.com"},  function(cookies){

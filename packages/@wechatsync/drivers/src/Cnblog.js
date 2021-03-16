@@ -18,7 +18,7 @@
 // https://me.csdn.net/api/user/show
 // https://passport.cnblogs.com/user/LoginInfo?callback=jQuery17083998854357229_1570784103705&_=1570784103764
 
-export default class Cnblog {
+export default class CnblogAdapter {
   constructor() {
     this.name = 'cnblog'
   }

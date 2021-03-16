@@ -1,4 +1,4 @@
-export default class YiDian {
+export default class YiDianAdapter {
   constructor() {
     this.skipReadImage = true
   }

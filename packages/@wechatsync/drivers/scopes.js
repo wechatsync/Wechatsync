@@ -2,7 +2,7 @@ import axios from "axios"
 import md5 from "js-md5"
 import juice from "juice/client"
 import turndown from "turndown"
-import tools from './src/tools/'
+import tools from './tools'
 
 export default {
   tools,

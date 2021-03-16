@@ -1,5 +1,5 @@
 
-export default class FocusDriver {
+export default class FocusAdapter {
   constructor() {
     this.name = 'weibo'
   }

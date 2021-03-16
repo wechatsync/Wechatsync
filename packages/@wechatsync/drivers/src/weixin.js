@@ -1,6 +1,6 @@
 var weixinMetaCache = null
 
-export default class WeixinDriver {
+export default class WeixinAdapter {
   constructor() {
     this.meta = weixinMetaCache
     this.name = 'weixin'
@@ -78,7 +78,7 @@ export default class WeixinDriver {
     post.title = metaObj['og:title']
     post.content = doc.find('#js_content').html()
     post.thumb = metaObj['og:image']
-    post.desc = metaObj['og:description'] 
+    post.desc = metaObj['og:description']
     post.link = metaObj['og:url'];
     console.log('post', post, doc)
     return post
@@ -197,7 +197,7 @@ export default class WeixinDriver {
     formdata.append('lastModifiedDate', new Date().toString())
     formdata.append('size', blob.size)
     formdata.append('file', blob, new Date().getTime() + '.jpg')
-    
+
     var ticket_id = this.meta.commonData.data.user_name,
       ticket = this.meta.commonData.data.ticket,
       svr_time =  this.meta.commonData.data.time,
@@ -415,14 +415,14 @@ export default class WeixinDriver {
    center          { text-align: center }
    :link, :visited { text-decoration: underline }
    :focus          { outline: thin dotted invert }
-   
+
    /* Begin bidirectionality settings (do not change) */
    BDO[DIR="ltr"]  { direction: ltr; unicode-bidi: bidi-override }
    BDO[DIR="rtl"]  { direction: rtl; unicode-bidi: bidi-override }
-   
+
    *[DIR="ltr"]    { direction: ltr; unicode-bidi: embed }
    *[DIR="rtl"]    { direction: rtl; unicode-bidi: embed }
-   
+
    @media print {
      h1            { page-break-before: always }
      h1, h2, h3,
@@ -437,20 +437,20 @@ export default class WeixinDriver {
    h6 {
      font-weight: bold;
    }
-   
+
    h1 {
      font-size: 1.25em;
      line-height: 1.4em;
    }
-   
+
    h2 {
      font-size: 1.125em;
    }
-   
+
    h3 {
      font-size: 1.05em;
    }
-   
+
    h4,
    h5,
    h6 {

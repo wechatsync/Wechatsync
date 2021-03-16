@@ -39,7 +39,7 @@ class Mp163 {
   }
 
   async editPost(post_id, post) {
-    
+
     // todo
     return {
       status: 'success',
@@ -62,7 +62,7 @@ class Mp163 {
       data: formdata,
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-  
+
     return [
       {
         url: res.data.data.url,

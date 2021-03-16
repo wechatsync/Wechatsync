@@ -1,7 +1,7 @@
 // https://www.51hanghai.com/portal.php?mod=portalcp&ac=article
 var _cacheMeta = null;
 
-export default class Discuz {
+export default class DiscuzAdapter {
   constructor(config) {
     this.config = config || {}
     var url = this.config.url
@@ -9,7 +9,7 @@ export default class Discuz {
     // this.upUrl = `${url}/misc.php?mod=swfupload&action=swfupload&operation=portal`
     this.upUrl = `${url}/misc.php?mod=swfupload&action=swfupload&operation=upload`
     this.name = 'discuz'
-    
+
     // this.skipReadImage = true
   }
 
@@ -83,32 +83,32 @@ export default class Discuz {
     }
 
     // title: test
-    // highlight_style[0]: 
-    // highlight_style[1]: 
-    // highlight_style[2]: 
-    // highlight_style[3]: 
-    // htmlname: 
-    // oldhtmlname: 
-    // pagetitle: 
+    // highlight_style[0]:
+    // highlight_style[1]:
+    // highlight_style[2]:
+    // highlight_style[3]:
+    // htmlname:
+    // oldhtmlname:
+    // pagetitle:
     // catid: 24
-    // from: 
+    // from:
     postStruct.fromurl = null
     postStruct.dateline = null
     postStruct.from_idtyp = `tid`
     postStruct.from_id = 0
     postStruct.id = 0
     postStruct.idtype = `tid`;
-    postStruct.url = null; 
+    postStruct.url = null;
     postStruct.author = null;
     // conver: a:3:{s:3:"pic";s:0:"";s:5:"thumb";i:0;s:6:"remote";i:0;}
     // file: (binary)
     // file: (binary)
     // content: test
     // romotepic: 1
-    // summary: 
-    // aid: 
-    // cid: 
-    // attach_ids: 
+    // summary:
+    // aid:
+    // cid:
+    // attach_ids:
     // articlesubmit: true
     postStruct.articlesubmit = true;
     postStruct.formhash = `caa4c6cb`
