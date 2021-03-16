@@ -134,6 +134,18 @@ function modifyRequestHeaders(ulrPrefix, headers, inspectUrls, handler) {
             }
             return _
           })
+
+          Object.keys(headers).forEach(name => {
+            var existsHeaders = details.requestHeaders.filter(_ => _.name == name)
+            if(existsHeaders.length) {
+
+            } else {
+              details.requestHeaders.push({
+                name: name,
+                value: headers[name],
+              })
+            }
+          })
         }
         // call
         if (handler) {

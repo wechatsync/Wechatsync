@@ -14,6 +14,7 @@ import { default as Bilibili } from './src/bilibili'
 import { default as B51Cto } from './src/51cto'
 import { default as FocusDriver } from './src/focus'
 import { default as Discuz } from './src/Discuz'
+import { default as SoHu } from './src/sohu'
 
 export default {
     JianShuDriver,
@@ -31,5 +32,6 @@ export default {
     Bilibili,
     B51Cto,
     FocusDriver,
-    Discuz
+    Discuz,
+    SoHu
 }

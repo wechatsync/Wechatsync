@@ -16,7 +16,8 @@ const {
   Bilibili,
   B51Cto,
   FocusDriver,
-  Discuz
+  Discuz,
+  SoHu
 } = buildInDrivers;
 
 var _cacheState = {}
@@ -122,6 +123,9 @@ export function getDriver(account) {
     return new Discuz(account.config)
   }
 
+  if (account.type == 'sohu') {
+    return new SoHu(account)
+  }
 
   throw Error('not supprt account type')
 }
