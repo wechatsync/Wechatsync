@@ -16,6 +16,11 @@
             </a>
           </div>
           <div class="action-item" id="run-code">
+            <a class="ai-button" @click="runCode({ forceAccount: true })">
+              <v-icon name="user-alt" scale="0.8"/>账号识别
+            </a>
+          </div>
+          <div class="action-item" id="run-code">
             <a class="ai-button" @click="runCode({ testSync: false })">
               <v-icon name="upload" scale="0.8"/>图片上传
             </a>
@@ -227,6 +232,20 @@ import exampleCodes from "./example.js"
 
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue'
 
+function throttle(fn,wait){
+  var timer = null;
+  return function(){
+      var context = this;
+      var args = arguments;
+      if(!timer){
+          timer = setTimeout(function(){
+              fn.apply(context,args);
+              timer = null;
+          },wait)
+      }
+  }
+}
+
 export default {
   name: '',
   components: { ScaleLoader },
@@ -274,6 +293,7 @@ export default {
     })();
 
     window.goBottom = this.goBottom
+    this.throttleDeployCode = throttle(this.deployCode, 10 * 1000);
   },
   computed: {
     currentDriverName() {
@@ -353,7 +373,7 @@ export default {
       if(this.enableAutoDeploy) {
         console.log('deploy after save')
         try {
-          this.deployCode(true);
+          this.throttleDeployCode(true);
         } catch (e) {}
       }
     },
@@ -403,7 +423,8 @@ export default {
       if(!silent) this.addDebugLog([deployResult])
     },
 
-    async runCode({ testSync = false}) {
+    async runCode({ testSync = false, forceAccount = false }) {
+      
       const targetAccount = {
         type: this.currentDriverName
       }
@@ -426,6 +447,10 @@ export default {
         return
       }
 
+      if(forceAccount) {
+        return
+      }
+
       // test image upload
       var articleFiles = this.files.filter(_ => _.fileName == 'article.json');
       if(articleFiles.length == 0) {
@@ -444,7 +469,7 @@ export default {
       const uploadResult = await new Promise((resolve, reject) => {
           window.$syncer.uploadImage(actionData, (res) => {
               console.log('handleImageUpload.res', res)
-              resolve(res.result);
+              resolve(res);
           })
       }); 
 

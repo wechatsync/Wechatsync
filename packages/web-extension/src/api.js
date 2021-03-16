@@ -173,6 +173,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponseA) {
 })
 
 var _statushandler = null;
+var _sensitiveAPIWhiteList = [
+  'https://www.wechatsync.com', 
+  'https://developer.wechatsync.com', 
+  'http://localhost:8080'
+]
+
 
 window.addEventListener('message', function (evt) {
   // if (evt.origin == 'https://www.wechatsync.com') {
@@ -215,7 +221,7 @@ window.addEventListener('message', function (evt) {
          )
       }
 
-      if (evt.origin == 'https://www.wechatsync.com' || evt.origin == 'http://localhost:8080') {
+      if (_sensitiveAPIWhiteList.indexOf(evt.origin) > -1) {
         if (action.method == 'updateDriver') {
           chrome.extension.sendMessage(
             {
