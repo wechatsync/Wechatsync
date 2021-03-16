@@ -144,13 +144,13 @@
             <li v-if="loading">数据加载中...</li>
           </ul>
         </div>
-        <!-- 
+        <!--
         <div
           class="alert alert-primary mr-3 ml-3 mt-4"
           role="alert"
         >本项目为非营利性项目，广泛的用户群体是我维护的主要动力，如果觉得不错请分享给你的朋友！谢谢！</div>-->
 
-      
+
         <div class="tool-bottom">
           <button
             class="btn btn-outline-info"
@@ -244,8 +244,7 @@
 <script>
 var userInfo = localStorage.getItem('userInfo')
 import VersionChecker from './versionCheckver'
-import { initliazeDriver, getDriverProvider } from '../vm/vm'
-var compareVer = require('compare-ver')
+import { getDriverProvider } from '@/runtime'
 
 var loginForm
 var currentVersion = '1.0.8'

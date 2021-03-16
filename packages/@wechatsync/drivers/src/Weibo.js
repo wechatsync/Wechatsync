@@ -109,17 +109,6 @@ export default class WeiboDriver {
   }
 
   async preEditPost(post) {
-    // var div = $('<div>');
-    // $('body').append(div);
-    // div.html(post.content);
-
-    // // var doc = div;
-    // // doc.clone()
-    // var documentClone = document.cloneNode(true);
-    // var article = new Readability(documentClone).parse();
-
-    // div.remove();
-    // console.log(article);
     var rexp = new RegExp('>[\ts ]*<', 'g')
     var result = post.content.replace(rexp, '><')
     post.content = result

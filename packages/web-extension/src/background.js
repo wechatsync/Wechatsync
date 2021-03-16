@@ -3,7 +3,7 @@ import Store from './db/store'
 import { upImage } from './util/image'
 
 import { getGuid } from './util/util'
-import { initliazeDriver, getDriverProvider } from './vm/vm'
+import { initializeDriver, getDriverProvider, initDevRuntimeEnvironment } from '@/runtime'
 
 var localDriver = require('./drivers/driver')
 
@@ -14,7 +14,7 @@ var logWatchers = {}
 
 
 var rawLogFun = console.log
-console.log = function (message) {
+console.log = function () {
   rawLogFun.apply(null, arguments)
   try {
     var args = [].slice.apply(arguments)
@@ -69,7 +69,7 @@ async function setDriver(driver) {
 
 async function loadDriver() {
   try {
-    const driver = await initliazeDriver()
+    const driver = await initializeDriver()
     await setDriver(driver)
     // window.currentDriver = driver
     // window.driverMeta = driver.getMeta()
@@ -92,7 +92,7 @@ async function loadDriver() {
     // }
     // console.log('driver', driver)
   } catch (e) {
-    console.log('initliazeDriver failed', e)
+    console.log('initializeDriver failed', e)
   }
   afterDriver()
 }
@@ -353,7 +353,7 @@ class Syner {
                   })
                 }
                 // const codeStartTag = "// DEVTOOL_PLACEHOLDER_INSERT"
-                // const driver = await initliazeDriver({
+                // const driver = await initializeDriver({
                 //   beforeCreate(result) {
                 //     result.driver = result.driver.replace(codeStartTag, codeStartTag + "\n\n" + request.data.code)
                 //     console.log('beforeCreate', result.driver)
@@ -765,17 +765,6 @@ class Syner {
   }
 }
 
-// import vm from "../vm/vm";
-// const sanbox = { console: console };
-// const context = vm.createContext(sanbox);
-// try {
-//   var instance = vm.runInContext(`console.log("vm Hello world"); module.exports = { a: function() { console.log('method a')}}`, context);
-//   console.log(instance);
-//   instance.a();
-// } catch (err) {
-//   console.error(err);
-// }
-
 console.log('background.js')
 function afterDriver() {
   var syncer = new Syner()
@@ -791,6 +780,7 @@ function afterDriver() {
   if (process.env.WECHAT_ENV == 'production') {
     loadDriver()
   } else {
+    initDevRuntimeEnvironment();
     window.driverMeta = localDriver.getMeta()
     afterDriver()
     console.log('dvelopment driver')

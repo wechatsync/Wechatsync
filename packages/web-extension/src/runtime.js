@@ -1,6 +1,30 @@
-// import vm from "../../vm/vm";
 import Sval from 'sval'
 import svalScopes from "@wechatsync/drivers/scopes";
+
+function getRuntimeScopes () {
+  return {
+    ...svalScopes,
+    console: console,
+    $: $,
+    DOMParser: DOMParser,
+    document: document,
+    Blob: Blob,
+    Promise: Promise,
+    setCache: setCache,
+    initializeFrame: initializeFrame,
+    requestFrameMethod: requestFrameMethod,
+  };
+}
+
+export function initDevRuntimeEnvironment () {
+  const scopes = getRuntimeScopes();
+
+  Object.keys(scopes).forEach(key => {
+    if (!window.hasOwnProperty(key)) {
+      window[key] = scopes[key];
+    }
+  })
+}
 
 export function getDriverProvider(code) {
   const options = {
@@ -11,36 +35,21 @@ export function getDriverProvider(code) {
   }
 
   const interpreter = new Sval(options)
-  const sanbox = {
-    ...svalScopes,
-    console: console,
-    $: $,
-    DOMParser: DOMParser,
-    document: document,
-    Blob: Blob,
-    Promise: Promise,
-    setCache: setCache,
-    initliazeFrame: initliazeFrame,
-    requestFrameMethod: requestFrameMethod,
-  }
+  const scopes = getRuntimeScopes();
 
-  for (var k in sanbox) {
-    interpreter.import(k, sanbox[k])
+  for (var k in scopes) {
+    interpreter.import(k, scopes[k])
   }
-  // const context = vm.createContext(sanbox);
-  // const instance = vm.runInContext(code, context);
-  console.log(code)
   interpreter.run(code)
 
   return interpreter.exports
 }
 
-window.initliazeDriver = initliazeDriver
+window.initializeDriver = initializeDriver
 
-export function initliazeDriver(conf) {
-  return new Promise((resolve, reject) => {
+export function initializeDriver(conf) {
+  return new Promise((resolve) => {
     function createDriver(driverRemote) {
-      // console.log(window.driver);
       const code = driverRemote ? driverRemote : window.driver
       const driver = getDriverProvider(code)
       resolve(driver)
@@ -52,7 +61,6 @@ export function initliazeDriver(conf) {
       }
       createDriver(result.driver)
     })
-    // return driver;
   })
 }
 
@@ -61,13 +69,12 @@ function setCache(name, value) {
   d[name] = value;
   chrome.storage.local.set(d,
     function() {
-      console.log('cachhe seted')
+      console.log('cache set')
       // loadDriver()
     }
   )
 }
 
-var segIframe = null
 var abb = {}
 var frameStack = {}
 
@@ -97,7 +104,7 @@ function requestFrameMethod(d, name) {
   })
 }
 
-function initliazeFrame(src, type, forceOpen) {
+function initializeFrame(src, type, forceOpen) {
   if (!frameStack[type]) {
      if (!forceOpen) {
        frameStack[type] = document.createElement('iframe')
@@ -108,7 +115,3 @@ function initliazeFrame(src, type, forceOpen) {
      }
   }
 }
-
-window.setCache = setCache
-window.requestFrameMethod = requestFrameMethod
-window.initliazeFrame = initliazeFrame
