@@ -16,6 +16,11 @@
             </a>
           </div>
           <div class="action-item" id="run-code">
+            <a class="ai-button" @click="runCode({ forceAccount: true })">
+              <v-icon name="user-alt" scale="0.8"/>账号识别
+            </a>
+          </div>
+          <div class="action-item" id="run-code">
             <a class="ai-button" @click="runCode({ testSync: false })">
               <v-icon name="upload" scale="0.8"/>图片上传
             </a>
@@ -403,7 +408,8 @@ export default {
       if(!silent) this.addDebugLog([deployResult])
     },
 
-    async runCode({ testSync = false}) {
+    async runCode({ testSync = false, forceAccount = false }) {
+      
       const targetAccount = {
         type: this.currentDriverName
       }
@@ -423,6 +429,10 @@ export default {
       this.addDebugLog([accountResult])
       console.log('accountResult', accountResult)
       if(accountResult.error) {
+        return
+      }
+
+      if(forceAccount) {
         return
       }
 

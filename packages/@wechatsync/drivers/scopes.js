@@ -1,8 +1,12 @@
 import axios from "axios"
 import md5 from "js-md5"
-import juice from "juice/client";
+import juice from "juice/client"
+import turndown from "turndown"
+const tools = require('./src/tools/')
 
 export default {
+  tools,
+  turndown,
   axios,
   md5,
   juice,
