@@ -1,6 +1,6 @@
 var _cacheMeta = null
 
-export default class B51Cto {
+export default class _51CtoAdapter {
   constructor(config) {
     // this.skipReadImage = true
     this.config = config
@@ -101,10 +101,10 @@ export default class B51Cto {
         cate_id: '',
         custom_id: '',
         tag: '',
-        abstract:'', 
+        abstract:'',
         is_hide: 0,
         did: '',
-        blog_id: '', 
+        blog_id: '',
         is_old: 1,
         _csrf: _cacheMeta.csrf,
         // editorValue: null,

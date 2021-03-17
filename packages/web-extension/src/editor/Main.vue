@@ -426,7 +426,7 @@ export default {
     },
     async imgAdd(pos, $file) {
       // var dri = new Segmentfault();
-      var dri = new Juejin()
+      var dri = new JuejinAdapter()
       var finalUrl = await dri.uploadFileByForm($file)
       // console.log(pos, $file, finalUrl)
       this.$refs.editor.$img2Url(pos, finalUrl)

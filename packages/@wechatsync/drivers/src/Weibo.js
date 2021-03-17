@@ -3,7 +3,7 @@ var cacheWeiboUser = null
 
 // fetch("https://card.weibo.com/article/v3/aj/editor/draft/save?uid=1820387812&id=402", { "credentials": "include", "headers": { "accept": "application/json, text/plain, */*", "accept-language": "zh-CN,zh;q=0.9", "content-type": "application/x-www-form-urlencoded" }, "referrer": "https://card.weibo.com/article/v3/editor", "referrerPolicy": "no-referrer-when-downgrade", "body": "id=402&title=aaaaaaaaaaa&updated=2019-10-10%2016%3A06%3A43&subtitle=&type=&status=0&publish_at=&error_msg=&error_code=0&collection=%5B%5D&free_content=&content=%3Cp%20align%3D%22justify%22%3Eaaaaaaaaaaaaa%3C%2Fp%3E&cover=https%3A%2F%2Fwx3.sinaimg.cn%2Flarge%2F6c80e9e4ly1g7t62jq7uzj202s01kdfz.jpg&summary=aaa&writer=&extra=null&is_word=0&article_recommend=%5B%5D&follow_to_read=1&isreward=1&pay_setting=%7B%22ispay%22%3A0%2C%22isvclub%22%3A0%7D&source=0&action=1&save=1", "method": "POST", "mode": "cors" });
 
-export default class WeiboDriver {
+export default class WeiboAdapter {
   constructor() {
     this.name = 'weibo'
   }

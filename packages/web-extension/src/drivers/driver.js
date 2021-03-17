@@ -1,23 +1,23 @@
 import buildInDrivers from "@wechatsync/drivers";
 
 const {
-  JianShuDriver,
-  ZhiHuDriver,
-  WordpressDriver,
-  ToutiaoDriver,
-  Weibo,
-  Segmentfault,
-  Juejin,
-  CSDN,
-  Cnblog,
-  Weixin,
-  YiDian,
-  Douban,
-  Bilibili,
-  B51Cto,
-  FocusDriver,
-  Discuz,
-  SoHu
+  JianShuAdapter,
+  ZhiHuAdapter,
+  WordpressAdapter,
+  ToutiaoAdapter,
+  WeiboAdapter,
+  SegmentfaultAdapter,
+  JuejinAdapter,
+  CSDNAdapter,
+  CnblogAdapter,
+  WeixinAdapter,
+  YiDianAdapter,
+  DoubanAdapter,
+  BilibiliAdapter,
+  _51CtoAdapter,
+  FocusAdapter,
+  DiscuzAdapter,
+  SoHuAdapter
 } = buildInDrivers;
 
 var _cacheState = {}
@@ -40,7 +40,7 @@ export function getDriver(account) {
   }
 
   if (account.type == 'wordpress') {
-    return new WordpressDriver(
+    return new WordpressAdapter(
       account.params.wpUrl,
       account.params.wpUser,
       account.params.wpPwd
@@ -48,15 +48,15 @@ export function getDriver(account) {
   }
 
   if (account.type == 'zhihu') {
-    return new ZhiHuDriver()
+    return new ZhiHuAdapter()
   }
 
   if (account.type == 'jianshu') {
-    return new JianShuDriver()
+    return new JianShuAdapter()
   }
 
   if (account.type == 'typecho') {
-    return new WordpressDriver(
+    return new WordpressAdapter(
       account.params.wpUrl,
       account.params.wpUser,
       account.params.wpPwd,
@@ -65,54 +65,54 @@ export function getDriver(account) {
   }
 
   if (account.type == 'toutiao') {
-    return new ToutiaoDriver()
+    return new ToutiaoAdapter()
   }
 
   if (account.type == 'bilibili') {
-    return new Bilibili({
+    return new BilibiliAdapter({
       globalState: _cacheState,
       state: _cacheState[account.type],
     })
   }
 
   if (account.type == 'weibo') {
-    return new Weibo()
+    return new WeiboAdapter()
   }
 
   if (account.type == 'sohufocus') {
-    return new FocusDriver()
+    return new FocusAdapter()
   }
 
   if (account.type == '51cto') {
-    return new B51Cto()
+    return new _51CtoAdapter()
   }
 
   if (account.type == 'segmentfault') {
-    return new Segmentfault(account)
+    return new SegmentfaultAdapter(account)
   }
 
   if (account.type == 'juejin') {
-    return new Juejin(account)
+    return new JuejinAdapter(account)
   }
 
   if (account.type == 'csdn') {
-    return new CSDN(account)
+    return new CSDNAdapter(account)
   }
 
   if (account.type == 'cnblog') {
-    return new Cnblog(account)
+    return new CnblogAdapter(account)
   }
   if (account.type == 'weixin') {
-    return new Weixin(account)
+    return new WeixinAdapter(account)
   }
 
   if (account.type == 'yidian') {
-    return new YiDian(account)
+    return new YiDianAdapter(account)
   }
 
   if(account.type == 'douban') {
     console.log(account.type)
-    return new Douban({
+    return new DoubanAdapter({
       globalState: _cacheState,
       state: _cacheState[account.type],
     })
@@ -120,11 +120,11 @@ export function getDriver(account) {
 
   if(account.type == 'discuz') {
     console.log('discuz', account)
-    return new Discuz(account.config)
+    return new DiscuzAdapter(account.config)
   }
 
   if (account.type == 'sohu') {
-    return new SoHu(account)
+    return new SoHuAdapter(account)
   }
 
   throw Error('not supprt account type')
@@ -133,25 +133,25 @@ export function getDriver(account) {
 export async function getPublicAccounts() {
   console.log('getPublicAccounts')
   var drivers = [
-    new Segmentfault(),
-    new CSDN(),
-    new Juejin(),
-    new Cnblog(),
-    new Weibo(),
-    new ZhiHuDriver(),
-    new JianShuDriver(),
-    new ToutiaoDriver(),
-    new Weixin(),
-    new YiDian(),
-    new Douban(),
-    new Bilibili(),
-    new B51Cto(),
-    new FocusDriver(),
+    new SegmentfaultAdapter(),
+    new CSDNAdapter(),
+    new JuejinAdapter(),
+    new CnblogAdapter(),
+    new WeiboAdapter(),
+    new ZhiHuAdapter(),
+    new JianShuAdapter(),
+    new ToutiaoAdapter(),
+    new WeixinAdapter(),
+    new YiDianAdapter(),
+    new DoubanAdapter(),
+    new BilibiliAdapter(),
+    new _51CtoAdapter(),
+    new FocusAdapter(),
   ]
 
   var customDiscuzEndpoints = ['https://www.51hanghai.com'];
   customDiscuzEndpoints.forEach(_ => {
-    drivers.push(new Discuz({
+    drivers.push(new DiscuzAdapter({
       url: _,
    }));
   })

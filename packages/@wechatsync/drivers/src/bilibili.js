@@ -1,4 +1,4 @@
-export default class Bilibili {
+export default class BilibiliAdapter {
   constructor(config) {
     // this.skipReadImage = true
     this.config = config
@@ -76,8 +76,8 @@ export default class Bilibili {
   async uploadFile(file) {
     var src = file.src
     var csrf = this.config.state.csrf
-    
-    var uploadUrl ='https://api.bilibili.com/x/article/creative/article/upcover'  
+
+    var uploadUrl ='https://api.bilibili.com/x/article/creative/article/upcover'
     var file = new File([file.bits], 'temp', {
       type: file.type,
     })

@@ -18,7 +18,7 @@
 
 // https://me.csdn.net/api/user/show
 
-export default class CSDN {
+export default class CSDNAdapter {
   constructor() {
     this.name = 'csdn'
   }

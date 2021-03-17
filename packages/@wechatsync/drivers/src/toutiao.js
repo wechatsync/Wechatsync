@@ -5,7 +5,7 @@
 // title_id: 1607584898506_1559572462858242
 // extra: {"content_word_cnt":7,"gd_ext":{"entrance":"hotspots","from_page":"publisher_mp","enter_from":"PC","device_platform":"mp","is_message":0}}
 // mp_editor_stat: {"a_justify":1}
-// educluecard: 
+// educluecard:
 // draft_form_data: {"coverType":2}
 // pgc_feed_covers: []
 // claim_origin: 0
@@ -22,9 +22,9 @@
 // is_refute_rumor: 0
 // save: 0
 // timer_status: 0
-// timer_time: 
+// timer_time:
 
-export default class ToutiaoDriver {
+export default class ToutiaoAdapter {
   constructor() {
     // this.skipReadImage = true
     this.name = 'toutiao'

@@ -1,11 +1,8 @@
-const { processDocCode, makeImgVisible } = require('./tools/code')
-import TurndownService from 'turndown'
-
-export default class Juejin {
+export default class JuejinAdapter {
   constructor(ac) {
     this.version = '0.0.2'
     this.name = 'juejin'
-    
+
 		// modify origin headers
     modifyRequestHeaders('api.juejin.cn', {
     	Origin: 'https://juejin.cn',
@@ -39,8 +36,8 @@ export default class Juejin {
   }
 
   async editPost(post_id, post) {
-    console.log('TurndownService', TurndownService)
-    var turndownService = new TurndownService()
+    console.log('TurndownService', turndown)
+    var turndownService = new turndown()
     turndownService.addRule('codefor', {
       filter: ['pre'],
       replacement: function (content) {
@@ -92,8 +89,8 @@ export default class Juejin {
       console.log('zihu.Juejin')
       div.html(post.content)
       var doc = div
-      processDocCode(div)
-      makeImgVisible(div)
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
 
       var tempDoc = $('<div>').append(doc.clone())
       post.content =

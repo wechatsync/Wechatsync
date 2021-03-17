@@ -46,7 +46,7 @@ function CodeBlockToPlainText(pre) {
   return text.join('\n')
 }
 
-export default class ZhiHuDriver {
+export default class ZhiHuAdapter {
   constructor() {
     // this.skipReadImage = true
     this.version = '0.0.1'
