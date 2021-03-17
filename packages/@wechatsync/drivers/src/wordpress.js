@@ -1,14 +1,14 @@
 function xmlrpcWrapper(conf) {
   return new Promise((resolve, reject) => {
     $.xmlrpc(conf).then(
-      function (response, status, xhr) {
+      function(response, status, xhr) {
         resolve({
           response,
           status,
           xhr,
         })
       },
-      function (jqXHR, status, error) {
+      function(jqXHR, status, error) {
         reject({
           jqXHR,
           status,
@@ -19,7 +19,7 @@ function xmlrpcWrapper(conf) {
   })
 }
 
-export default class WordpressDriver {
+export default class WordpressAdapter {
   constructor(url, user, pwd, isTypecho) {
     this.url = url
     this.user = user
@@ -42,7 +42,7 @@ export default class WordpressDriver {
       methodName: 'wp.getUsersBlogs',
       params: params,
     })
-    console.log('end');
+    console.log('end')
     res.icon = chrome.extension.getURL('images/wordpress.ico')
     return res
   }
@@ -104,7 +104,7 @@ export default class WordpressDriver {
 
   editImg(img, source) {
     // img.attr('web_uri', source.images[0].origin_web_uri)
-    img.removeAttr('data-src');
+    img.removeAttr('data-src')
   }
 
   uploadFile(file) {
@@ -122,5 +122,3 @@ export default class WordpressDriver {
     })
   }
 }
-
-window.WordpressDriver = WordpressDriver

@@ -1,8 +1,5 @@
 var metaCache = null
 
-import TurndownService from 'turndown'
-import markdownToDraft from './tools/mtd'
-
 
 const ImageRegexp = /^!\[([^\]]*)]\s*\(([^)"]+)( "([^)"]+)")?\)/
 const imageBlock = (remarkable) => {
@@ -58,7 +55,7 @@ function getFormData(obj) {
 }
 
 
-export default class Douban {
+export default class DoubanAdapter {
   constructor(config) {
     this.config = config
     this.meta = metaCache
@@ -107,7 +104,7 @@ export default class Douban {
 
   async editPost(post_id, post) {
     // console.log('editPost', post.post_thumbnail)
-    var turndownService = new TurndownService()
+    var turndownService = new turndown()
     var markdown = turndownService.turndown(post.post_content)
     console
       .log(markdown)
@@ -118,7 +115,7 @@ export default class Douban {
       return imageBlocks.length > 1 ? imageBlocks.join('\n![]') : _
     }).join("\n");
 
-    const draftjsState = JSON.stringify(markdownToDraft(markdown, {
+    const draftjsState = JSON.stringify(tools.markdownToDraft(markdown, {
       remarkablePlugins: [imageBlock],
       blockTypes: {
         image_open: function(item, generateUniqueKey) {

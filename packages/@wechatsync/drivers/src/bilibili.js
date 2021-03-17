@@ -1,4 +1,4 @@
-export default class Bilibili {
+export default class BilibiliAdapter {
   constructor(config) {
     // this.skipReadImage = true
     this.config = config

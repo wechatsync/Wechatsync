@@ -1,10 +1,10 @@
 var _souhuCacheMeta = null
 
-export default class Sohu {
+export default class SoHuAdapter {
   constructor() {
     this.version = '0.0.1'
     this.name = 'sohu'
-    
+
     // modify origin headers
     modifyRequestHeaders('mp.sohu.com/mpbp', {
         Origin: 'https://mp.sohu.com',
@@ -42,7 +42,7 @@ export default class Sohu {
   }
 
   async editPost(post_id, post) {
-    
+
     var postStruct = {
         title: post.post_title,
         brief: '',
@@ -59,14 +59,14 @@ export default class Sohu {
         isAd: 0,
         accountId: _souhuCacheMeta.id
     }
-    
+
     var res = await $.ajax({
       url: 'https://mp.sohu.com/mpbp/bp/news/v4/news/draft',
       type: 'POST',
       dataType: 'JSON',
       data: postStruct,
     })
-    
+
     if(!res.success) throw new Error(res.msg)
     var post_id = res.data
     console.log(res)
@@ -93,7 +93,7 @@ export default class Sohu {
       data: formdata,
       headers: { 'Content-Type': 'multipart/form-data' },
     })
- 
+
     return [
       {
         url: res.data.url,
