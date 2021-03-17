@@ -51,7 +51,7 @@
         </div>
 
        <div
-          class="alert alert-success mr-3 ml-3 mt-4"
+          class="alert alert-secondary mr-3 ml-3 mt-4"
           role="alert"
           v-if="!dismiss_donate"
         >
@@ -68,6 +68,9 @@
           <p>
             如果觉得本工具不错，还请分享给你的朋友！！<br>
             如果你是开发者、欢迎参与进来<a href="https://github.com/wechatsync/Wechatsync/blob/master/CONTRIBUTING.md" target="_blank">wechatsync/Wechatsync</a>
+          </p>
+          <p>
+            使用教程: <a href="https://www.wechatsync.com/blog/?utm_source=tip" target="_blank">传送门</a>
           </p>
           <hr />
           <p class="mb-0 text-right">by <a href="https://blog.dev4eos.com/about/?utm_source=syncslogon" target="_blank">fun</a></p>
@@ -157,6 +160,15 @@
             @click="faq()"
           >
             问题反馈
+          </button>
+
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            style="margin-right: 10px"
+            @click="howtouse()"
+          >
+            如何使用
           </button>
 
           <!-- <button
@@ -306,6 +318,7 @@ export default {
         // },
       ],
       isLogin: true,
+      updatingDriver: false,
       cats: {},
     }
   },
@@ -334,17 +347,19 @@ export default {
     }
     this.checkVewVersion()
     this.driverVersion = winBackgroundPage.currentDriver.getMeta()
-    this.checkRemoteDriver()
+    // this.checkRemoteDriver()
   },
   methods: {
-    checkRemoteDriver() {
-      console.log('checkRemoteDriver', window.remoteDriver)
+    updateDriverWithSrc(bundleFile) {
+      if (this.updatingDriver) return
+      this.updatingDriver = true
       try {
-        var driverVersion = winBackgroundPage.currentDriver.getMeta()
-        var netVersion = driverVersion.versionNumber + 1
-        var nextVersionFile = `https://cdn.jsdelivr.net/gh/lljxx1/extension-libs@latest/syncr-${netVersion}.js`
+        // var driverVersion = winBackgroundPage.currentDriver.getMeta()
+        // var netVersion = driverVersion.versionNumber + 1
+        // var nextVersionFile = `https://cdn.jsdelivr.net/gh/lljxx1/extension-libs@latest/syncr-${netVersion}.js`
         var script = document.createElement('script')
         script.onload = () => {
+          this.updatingDriver = false
           if (window.driver) {
             var remoteDriver = getDriverProvider(window.driver)
             var driverMeta = remoteDriver.getMeta()
@@ -362,14 +377,51 @@ export default {
         }
 
         script.onerror = () => {
+          this.updatingDriver = false
           console.log('new version not found', netVersion, driverVersion)
         }
 
-        script.src = nextVersionFile
+        script.src = bundleFile
 
         setTimeout(() => {
           document.body.appendChild(script)
-        }, 10000)
+        }, 3000)
+      } catch (e) {
+        console.log('checkRemoteDriver', e)
+      }
+      // this.updatingDriver = false
+    },
+    checkRemoteDriver() {
+      console.log('checkRemoteDriver', window.remoteDriver)
+      try {
+        var driverVersion = winBackgroundPage.currentDriver.getMeta()
+        var netVersion = driverVersion.versionNumber + 1
+        var nextVersionFile = `https://cdn.jsdelivr.net/gh/lljxx1/extension-libs@latest/syncr-${netVersion}.js`
+        this.updateDriverWithSrc(nextVersionFile)
+        // var script = document.createElement('script')
+        // script.onload = () => {
+        //   if (window.driver) {
+        //     var remoteDriver = getDriverProvider(window.driver)
+        //     var driverMeta = remoteDriver.getMeta()
+        //     console.log('new version found', driverMeta)
+        //     chrome.storage.local.set(
+        //       {
+        //         driver: window.driver,
+        //       },
+        //       function () {
+        //         console.log('driver seted')
+        //         winBackgroundPage.loadDriver()
+        //       }
+        //     )
+        //   }
+        // }
+        // script.onerror = () => {
+        //   console.log('new version not found', netVersion, driverVersion)
+        // }
+        // script.src = nextVersionFile
+        // setTimeout(() => {
+        //   document.body.appendChild(script)
+        // }, 10000)
         // var remoteDriver = getDriverProvider(window.remoteDriver);
         // var driverMeta = remoteDriver.getMeta();
         // var hasNew = compareVer.gt(driverMeta.version, driverVersion.version);
@@ -379,6 +431,14 @@ export default {
       }
       // getDriverProvider
     },
+    howtouse() {
+      this.syncArticle();
+      setTimeout(() => {
+        chrome.tabs.create({
+          url: 'https://www.wechatsync.com/blog/?utm_source=how-to-use',
+        })
+      }, 2000)
+    },
     faq() {
       chrome.tabs.create({
         url: 'https://support.qq.com/products/105772',
@@ -386,7 +446,7 @@ export default {
     },
     syncArticle() {
       // alert("打开一篇公众号文章或任何文章页，即可看到同步按钮");
-      this.$message('打开一篇公众号文章或任何文章页，即可看到同步按钮')
+      this.$message('打开一篇公众号文章，左上角标题旁可看到同步按钮。或者网页右键可以看到【提取正文并同步】')
     },
     writeArticle() {
       chrome.tabs.create({
@@ -442,6 +502,14 @@ export default {
       console.log('hasUpdate', hasUpdate)
       if (hasUpdate > 0) this.hasUpdate = true
       this.remoteStatus = checker.getStatus()
+
+      if (this.driverVersion) {
+        var driverHasUpdate = await checker.compare(this.driverVersion.version, 'driverVersion')
+        if (driverHasUpdate > 0 && this.remoteStatus.driverUrl) {
+          // updating
+          this.updateDriverWithSrc(this.remoteStatus.driverUrl)
+        }
+      }
     },
     dontShowNotify() {
       localStorage.setItem('dismiss_donate', 1)
