@@ -1,6 +1,6 @@
 
 
-const TurndownService = turndown
+// const TurndownService = turndown
 
 function createUuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -97,7 +97,7 @@ export default class CSDNAdapter {
   async editPost(post_id, post) {
 		// 支持HTML
     if(!post.markdown) {
-      var turndownService = new TurndownService()
+      var turndownService = new turndown()
     	turndownService.addRule('codefor', {
         filter: ['pre'],
         replacement: function (content) {
