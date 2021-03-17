@@ -1,26 +1,47 @@
-// https://mp.csdn.net/mdeditor/saveArticle
-// title: 996.ICU项目Stars构成分析
-// markdowncontent:
-// 996.ICU项目Stars构成分析
-// content: <p>996.ICU项目Stars构成分析</p>
-// id:
-// readType: public
-// tags:
-// status: 2
-// categories:
-// type:
-// original_link:
-// authorized_status: undefined
-// articleedittype: 1
-// Description:
-// resource_url:
-// csrf_token:
-// https://me.csdn.net/api/user/show
-// https://passport.cnblogs.com/user/LoginInfo?callback=jQuery17083998854357229_1570784103705&_=1570784103764
+
+function getCookie(name, cookieStr) {
+  let arr,
+    reg = new RegExp('(^| )' + name + '=([^;]*)(;|$)')
+  if ((arr = cookieStr.match(reg))) {
+    return unescape(arr[2])
+  } else {
+    return ''
+  }
+}
+
+function parseTokenAndToHeaders(details, cookieKey, headerKey) {
+  var cookieHeader = details.requestHeaders.filter(h => {
+    return h.name.toLowerCase() == 'cookie'
+  })
+  if (cookieHeader.length) {
+    var cookieStr = cookieHeader[0].value
+    var _xsrf = getCookie(cookieKey, cookieStr)
+    if (_xsrf) {
+      details.requestHeaders.push({
+        name: headerKey,
+        value: _xsrf,
+      })
+    }
+  }
+}
+
 
 export default class CnblogAdapter {
   constructor() {
     this.name = 'cnblog'
+    //
+    this.skipReadImage = true
+    modifyRequestHeaders('i.cnblogs.com/', {
+    	Origin: 'https://i.cnblogs.com',
+      Referer: 'https://i.cnblogs.com/'
+    }, [
+    	'*://i.cnblogs.com/*',
+    ], function(details) {
+			// parse token from cookie inject to headers
+      if (details.url.indexOf('i.cnblogs.com/api') > -1) {
+        parseTokenAndToHeaders(details, 'XSRF-TOKEN', 'x-xsrf-token')
+      }
+    })
   }
 
   async getMetaData() {
@@ -39,51 +60,74 @@ export default class CnblogAdapter {
       avatar: img.src,
       type: 'cnblog',
       displayName: 'CnBlog',
-      supportTypes: ['markdown'],
+      supportTypes: ['markdown', 'html'],
       home: 'https://i.cnblogs.com/EditArticles.aspx?IsDraft=1',
-      icon: 'https://common.cnblogs.com/favicon.ico',
+      icon: 'https://i.cnblogs.com/favicon.ico',
     }
   }
 
+  async uploadFile(file) {
+    //
+    return [
+      {
+        url: file.src,
+      }
+    ]
+  }
+
   async addPost(post) {
-    var postId = null
-    try {
-      var res = await $.ajax({
-        url: 'https://i.cnblogs.com/EditArticles.aspx?opt=1',
-        type: 'POST',
-        dataType: 'JSON',
-        headers: {},
-        data: {
-          __VIEWSTATE: '',
-          __VIEWSTATEGENERATOR: '',
-          Editor$Edit$txbTitle: post.post_title,
-          Editor$Edit$EditorBody: post.markdown,
-          Editor$Edit$Advanced$ckbPublished: 'on',
-          Editor$Edit$Advanced$chkDisplayHomePage: 'on',
-          Editor$Edit$Advanced$chkComments: 'on',
-          Editor$Edit$Advanced$chkMainSyndication: 'on',
-          Editor$Edit$Advanced$txbEntryName: '',
-          Editor$Edit$Advanced$txbExcerpt: '',
-          Editor$Edit$Advanced$txbTag: '',
-          Editor$Edit$Advanced$tbEnryPassword: '',
-          Editor$Edit$lkbDraft: '存为草稿',
+    if(!post.markdown) {
+      var turndownService = new turndown()
+    	turndownService.addRule('codefor', {
+        filter: ['pre'],
+        replacement: function (content) {
+          return ['```', content, '```'].join('\n')
         },
       })
+    	var markdown = turndownService.turndown(post.post_content)
+    	console.log(markdown);
+    	post.markdown = markdown
+    }
+    var postId = null
+    try {
+      var res = await axios.post('https://i.cnblogs.com/api/posts', {
+          "id": null,
+          "postType": 2,
+          "accessPermission": 0,
+          "title": post.post_title,
+          "url": null,
+          "postBody": post.markdown,
+          "categoryIds": null,
+          "inSiteCandidate": false,
+          "inSiteHome": false,
+          "siteCategoryId": null,
+          "blogTeamIds": null,
+          "isPublished": false,
+          "displayOnHomePage": false,
+          "isAllowComments": true,
+          "includeInMainSyndication": true,
+          "isPinned": false,
+          "isOnlyForRegisterUser": false,
+          "isUpdateDateAdded": false,
+          "entryName": null,
+          "description": null,
+          "tags": null,
+          "password": null,
+          "datePublished": new Date().toISOString(),
+          "isMarkdown": true,
+          "isDraft": true,
+          "autoDesc": null,
+          "changePostType": false,
+          "blogId": 0,
+          "author": null,
+          "removeScript": false,
+          "clientInfo": null,
+          "changeCreatedTime": false,
+          "canChangeCreatedTime": false
+        })
       console.log('CNBLOG addPost', res)
+      postId = res.data.id
     } catch (e) {
-      var parser = new DOMParser()
-      var htmlDoc = parser.parseFromString(e.responseText, 'text/html')
-      var editLink = htmlDoc.getElementById('TipsPanel_LinkEdit')
-      var ErrorPanel = htmlDoc.getElementsByClassName('ErrorPanel')[0]
-      if (editLink) {
-        postId = editLink.href.split('postid=')[1]
-        console.log('CNBLOG error', editLink, editLink.href.query)
-      } else {
-        if (ErrorPanel) {
-          throw Error(ErrorPanel.innerText)
-        }
-      }
-      console.log('CNBLOG error', e.responseText, htmlDoc, editLink)
     }
 
     return {
@@ -97,9 +141,27 @@ export default class CnblogAdapter {
       status: 'success',
       post_id: post_id,
       draftLink:
-        'https://i.cnblogs.com/EditArticles.aspx?postid=' +
-        post_id +
-        '&update=1',
+        'https://i.cnblogs.com/articles/edit;postId=' + post_id,
+    }
+  }
+
+  async preEditPost(post) {
+    var div = $('<div>')
+    $('body').append(div)
+    try {
+      div.html(post.content)
+      var doc = div
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
+      var tempDoc = $('<div>').append(doc.clone())
+      post.content =
+        tempDoc.children('div').length == 1
+          ? tempDoc.children('div').html()
+          : tempDoc.html()
+
+      console.log('after.predEdit', post.content)
+    } catch (e) {
+      console.log('preEdit.error', e)
     }
   }
 }

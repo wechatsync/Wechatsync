@@ -53,7 +53,7 @@ export default class CSDNAdapter {
       displayName: 'CSDN',
       supportTypes: ['markdown', 'html'],
       home: 'https://mp.csdn.net/',
-      icon: 'https://csdnimg.cn/public/favicon.ico',
+      icon: 'https://g.csdnimg.cn/static/logo/favicon32.ico',
     }
   }
 
@@ -131,6 +131,26 @@ export default class CSDNAdapter {
       status: 'success',
       post_id: post_id,
       draftLink: 'https://editor.csdn.net/md?articleId=' + post_id,
+    }
+  }
+
+  async preEditPost(post) {
+    var div = $('<div>')
+    $('body').append(div)
+    try {
+      div.html(post.content)
+      var doc = div
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
+      var tempDoc = $('<div>').append(doc.clone())
+      post.content =
+        tempDoc.children('div').length == 1
+          ? tempDoc.children('div').html()
+          : tempDoc.html()
+
+      console.log('after.predEdit', post.content)
+    } catch (e) {
+      console.log('preEdit.error', e)
     }
   }
 }

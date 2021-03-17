@@ -68,19 +68,6 @@ export default class _51CtoAdapter {
   }
 
   async editPost(post_id, post) {
-    // var pgc_feed_covers = []
-    // if (post.post_thumbnail_raw && post.post_thumbnail_raw.images) {
-    //   pgc_feed_covers.push({
-    //     id: 0,
-    //     url: post.post_thumbnail_raw.url,
-    //     uri: post.post_thumbnail_raw.images[0].origin_web_uri,
-    //     origin_uri: post.post_thumbnail_raw.images[0].origin_web_uri,
-    //     ic_uri: '',
-    //     thumb_width: post.post_thumbnail_raw.images[0].width,
-    //     thumb_height: post.post_thumbnail_raw.images[0].height,
-    //   })
-    // }
-    // var csrf = this.config.state.csrf
     var postStruct = {}
 
     if (post.markdown) {

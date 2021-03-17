@@ -60,6 +60,13 @@ export default class DoubanAdapter {
     this.config = config
     this.meta = metaCache
     this.name = 'douban'
+
+    modifyRequestHeaders('www.douban.com/', {
+    	Origin: 'https://www.douban.com',
+      Referer: 'https://www.douban.com'
+    }, [
+    	'*://www.douban.com/*',
+    ])
   }
 
   async getMetaData() {
@@ -212,7 +219,7 @@ export default class DoubanAdapter {
     // review[donate]:
     // review[original]:
     // ck: O4jk
-    if(state.is_review) {
+    if(state && state.is_review) {
       if(state.subject == 'music') {
         draftLink = state.url;
         requestUrl = 'https://music.douban.com/j/review/create'
@@ -266,7 +273,7 @@ export default class DoubanAdapter {
       type: file.type
     });
 
-    if(state.is_review) {
+    if(state && state.is_review) {
       if(state.subject == 'music') {
         requestUrl =  'https://music.douban.com/j/review/upload_image';
         formdata.append('review_id', '')
@@ -302,5 +309,4 @@ export default class DoubanAdapter {
       },
     ]
   }
-
 }

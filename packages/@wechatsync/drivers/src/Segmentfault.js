@@ -1,6 +1,12 @@
 export default class SegmentfaultAdapter {
   constructor() {
     this.name = 'segmentfault'
+    modifyRequestHeaders('gateway.segmentfault.com/', {
+    	Origin: 'https://segmentfault.com',
+      Referer: 'https://segmentfault.com/'
+    }, [
+    	'*://gateway.segmentfault.com/*',
+    ])
   }
 
   async getMetaData() {
@@ -21,8 +27,6 @@ export default class SegmentfaultAdapter {
       link.style['background-image'].replace('url("', '').replace('")', '')
     )
 
-    initliazeFrame('https://segmentfault.com/write?freshman=1', 'segment')
-
     return {
       uid: uid,
       title: uid,
@@ -37,52 +41,61 @@ export default class SegmentfaultAdapter {
   }
 
   async addPost(post) {
-    // console.log('addPost', segIframe)
-
-    var turndownService = new turndown()
-    turndownService.addRule('codefor', {
-      filter: ['pre'],
-      replacement: function (content) {
-        // content = content.replace(new RegExp("` ", "g"), "\n");
-        // content = content.replace(new RegExp("`", "g"), "");
-        return ['```', content, '```'].join('\n')
-      },
-    })
-
-    var markdown = turndownService.turndown(post.post_content)
-    post.markdown = markdown
-    console.log(markdown)
-
-    var data = await requestFrameMethod(
-      {
-        type: 'sendPost',
-        data: {
-          type: 1,
-          url: '',
-          blogId: 0,
-          isTiming: 0,
-          created: '',
-          weibo: 0,
-          license: 0,
-          tags: '',
-          title: post.post_title,
-          text: post.markdown,
-          articleId: '',
-          draftId: '',
-          id: '',
-        },
-      },
-      'segment'
-    )
-
-    console.log('data', data)
     return {
       status: 'success',
-      post_id: data.data,
+      post_id: 0
     }
   }
 
   async editPost(post_id, post) {
+    if(!post.markdown) {
+      var turndownService = new turndown()
+      turndownService.addRule('codefor', {
+        filter: ['pre'],
+        replacement: function (content) {
+          return ['```', content, '```'].join('\n')
+        },
+      })
+
+      var markdown = turndownService.turndown(post.post_content)
+      post.markdown = markdown
+      console.log(markdown)
+    }
+
+    const pageHtml = await $.get('https://segmentfault.com/write')
+    const markStr = 'window.g_initialProps = '
+    const authIndex = pageHtml.indexOf(markStr)
+    if(authIndex == -1) {
+    	throw new Error('登录失效 authIndex=' + authIndex)
+    }
+
+    const authTokenStr = pageHtml.substring(authIndex + markStr.length, pageHtml.indexOf(`;
+	</script>`, authIndex))
+
+    const pageConfig = new Function(
+      'var config = ' +
+        authTokenStr +
+        '; return config;'
+    )();
+
+    const token = pageConfig.global.sessionInfo.key
+
+    var postStruct = {
+      "title":post.post_title,
+      "tags":[],
+      "text": post.markdown,
+      "object_id":"",
+      "type":"article"
+    }
+
+    var res = await axios.post('https://gateway.segmentfault.com/draft', postStruct, {
+    	headers: {
+      	token: token,
+        accept: '*/*',
+    		'content-type': 'application/json',
+      }
+    })
+    post_id = res.data.id
     return {
       status: 'success',
       post_id: post_id,
@@ -100,8 +113,7 @@ export default class SegmentfaultAdapter {
       data: formdata,
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    var url = 'https://image-static.segmentfault.com/' + res.data[2]
-    //  return url;
+    var url = res.data[1]
     return [
       {
         id: res.data[2],
