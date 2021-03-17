@@ -66,7 +66,7 @@
           </button>
           <h4 class="alert-heading">谢谢支持！</h4>
           <p>
-            如果觉得本工具不错，还请分享给你的朋友！谢谢你的支持！<br>
+            如果觉得本工具不错，还请分享给你的朋友！！<br>
             如果你是开发者、欢迎参与进来<a href="https://github.com/wechatsync/Wechatsync/blob/master/CONTRIBUTING.md" target="_blank">wechatsync/Wechatsync</a>
           </p>
           <hr />

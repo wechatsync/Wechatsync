@@ -52,19 +52,23 @@ export function getDriverProvider(code) {
 
 window.initializeDriver = initializeDriver
 
-export function initializeDriver(conf) {
-  return new Promise((resolve) => {
+export function initializeDriver(conf = {}) {
+  return new Promise((resolve, reject) => {
     function createDriver(driverRemote) {
+      console.log('initializeDriver', driverRemote ? 'remote' : 'local')
       const code = driverRemote ? driverRemote : window.driver
       const driver = getDriverProvider(code)
       resolve(driver)
     }
-
     chrome.storage.local.get(['driver'], function (result) {
-      if(conf.beforeCreate) {
-        conf.beforeCreate(result)
+      try {
+        if(conf.beforeCreate) {
+          conf.beforeCreate(result)
+        }
+        createDriver(result.driver)
+      } catch (e) {
+        reject(e)
       }
-      createDriver(result.driver)
     })
   })
 }

@@ -778,6 +778,7 @@ function afterDriver() {
 ;(async () => {
   console.log('WECHAT_ENV', process.env.WECHAT_ENV)
   if (process.env.WECHAT_ENV == 'production') {
+    console.log('load driver')
     loadDriver()
   } else {
     initDevRuntimeEnvironment();
