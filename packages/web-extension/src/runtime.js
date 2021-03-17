@@ -13,7 +13,8 @@ function getRuntimeScopes () {
     setCache: setCache,
     initializeFrame: initializeFrame,
     requestFrameMethod: requestFrameMethod,
-    modifyRequestHeaders: modifyRequestHeaders
+    modifyRequestHeaders: modifyRequestHeaders,
+    CryptoJS: CryptoJS
   };
 }
 
@@ -122,7 +123,7 @@ function modifyRequestHeaders(ulrPrefix, headers, inspectUrls, handler) {
   if(!_rules[ulrPrefix]) {
     _rules[ulrPrefix] = headers
   }
-
+  console.log('modifyRequestHeaders', ulrPrefix)
   chrome.webRequest.onBeforeSendHeaders.addListener(
     function(details) {
       try {
