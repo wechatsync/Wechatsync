@@ -20,7 +20,7 @@ export default class Juejin {
     console.log(data)
     return {
       uid: data.data.user_id,
-      title: data.data.username,
+      title: data.data.user_name,
       avatar: data.data.avatar_large,
       type: 'juejin',
       displayName: '掘金',

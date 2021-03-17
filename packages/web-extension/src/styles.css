@@ -66,14 +66,7 @@ html {
   width: 425px;
   height: 500px;
   max-height: 700px;
-  // overflow: hidden;
   background-color: #f7f7f7;
-}
-
-.authing-login-form-wrapper,
-._authing_form-wrapper {
-  // height: 550px !important;
-  // max-height: 550px !important;
 }
 
 .tab-bar {
@@ -236,15 +229,12 @@ html {
 .account-types {
   margin: 0;
   padding: 0;
-  // padding-bottom: 53px;
 }
 
 .account-types li {
   list-style: none;
   line-height: 30px;
   padding: 10px 15px 10px 15px;
-  // background: white;
-  // border-bottom: 1px solid #eee;
   cursor: pointer;
   background: #f6f6f6;
   border-bottom: 1px solid #e9e9e9;
@@ -262,8 +252,8 @@ html {
 .authing-form .row {
   padding: 15px;
 }
-/* #14EDD0 */
 
+/* #14EDD0 */
 .account-types li a {
-  color: #212529
+  color: #212529;
 }

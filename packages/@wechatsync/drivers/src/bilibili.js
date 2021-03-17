@@ -9,6 +9,9 @@ export default class Bilibili {
     var res = await $.ajax({
       url: 'https://api.bilibili.com/x/web-interface/nav?build=0&mobi_app=web',
     })
+    if(!res.data.isLogin) {
+      throw new Error('not login')
+    }
     // console.log(res);
     return {
       uid: res.data.mid,
@@ -72,12 +75,11 @@ export default class Bilibili {
     }
   }
 
-
   async uploadFile(file) {
     var src = file.src
     var csrf = this.config.state.csrf
-    
-    var uploadUrl ='https://api.bilibili.com/x/article/creative/article/upcover'  
+
+    var uploadUrl ='https://api.bilibili.com/x/article/creative/article/upcover'
     var file = new File([file.bits], 'temp', {
       type: file.type,
     })

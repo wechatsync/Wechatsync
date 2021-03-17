@@ -6,12 +6,14 @@
       </a>
       添加账号
     </header>
-    <div> 
-      <p v-if="!type" class="mt-2 mb-2 ml-3">
-        除WordPress、Typecho平台外
-        <br />其它平台只要在当前浏览器登录过即可被识别到账号，无需在此添加
-      </p>
-    </div>
+    <div style="
+    background: #e91e63;
+    color: #efefef;
+    padding: 5px 0;
+"><p class=" ml-3 mb-0">
+      除WordPress、Typecho平台外
+      <br>其它平台只要在当前浏览器登录过即可被识别到账号，无需在此添加
+    </p></div>
     <ul class="account-types" style="padding-bottom: 53px" v-if="!type">
       <li @click="add(driver.type)" v-for="driver in drivers">
         <img :src="driver.icon" class="icon" height="20" />
@@ -21,13 +23,11 @@
         <span v-if="!driver.home">{{ driver.name }}</span>
         <img src="/images/arrow-right-light.png" style="float: right" />
       </li>
-      <!-- <li @click="add('typecho')">
-        <img src="/images/typecho.ico" class="icon" height="20">
-        添typecho账号
-        <img src="/images/arrow-right-light.png" style="float: right;">
-      </li>-->
+      <p class="mt-2 mb-2 ml-3">
+        <a href="https://www.wechatsync.com/?utm_source=extension-add-accoun#supports" target="_blank" class="mt-2 btn btn-outline-secondary">所有支持平台</a>
+        <a href="https://developer.wechatsync.com/?utm_source=extension-add-account" target="_blank" class="mt-2 ml-3 btn btn-info">添加平台</a>
+      </p>
     </ul>
-   
     <div
       v-if="type == 'wordpress' || type == 'typecho'"
       class="add-account-form"
@@ -134,31 +134,31 @@ export default {
             'https://cdn2.jianshu.io/assets/favicons/favicon-e743bfb1821442341c3ab15bdbe804f7ad97676bd07a770ccc9483473aa76f06.ico',
           name: '简书',
         },
-        {
-          type: 'juejin',
-          home: 'https://juejin.im/editor/drafts',
-          icon: 'https://gold-cdn.xitu.io/favicons/favicon.ico',
-          name: '掘金',
-        },
-        {
-          type: 'csdn',
-          home: 'https://i.csdn.net',
-          icon: 'https://csdnimg.cn/public/favicon.ico',
-          name: 'CSDN',
-        },
-        {
-          type: 'segmentfault',
-          home: 'https://segmentfault.com/user/draft',
-          icon:
-            'https://static.segmentfault.com/v-5d8c9d24/global/img/favicon.ico',
-          name: 'Segmentfault',
-        },
-        {
-          type: 'cnblog',
-          home: 'https://i.cnblogs.com/EditArticles.aspx?IsDraft=1',
-          icon: 'https://common.cnblogs.com/favicon.ico',
-          name: '博客园',
-        },
+        // {
+        //   type: 'juejin',
+        //   home: 'https://juejin.im/editor/drafts',
+        //   icon: 'https://gold-cdn.xitu.io/favicons/favicon.ico',
+        //   name: '掘金',
+        // },
+        // {
+        //   type: 'csdn',
+        //   home: 'https://i.csdn.net',
+        //   icon: 'https://csdnimg.cn/public/favicon.ico',
+        //   name: 'CSDN',
+        // },
+        // {
+        //   type: 'segmentfault',
+        //   home: 'https://segmentfault.com/user/draft',
+        //   icon:
+        //     'https://static.segmentfault.com/v-5d8c9d24/global/img/favicon.ico',
+        //   name: 'Segmentfault',
+        // },
+        // {
+        //   type: 'cnblog',
+        //   home: 'https://i.cnblogs.com/EditArticles.aspx?IsDraft=1',
+        //   icon: 'https://common.cnblogs.com/favicon.ico',
+        //   name: '博客园',
+        // },
       ],
     }
   },
@@ -200,9 +200,15 @@ export default {
             self.checking = false
             self.$router.back()
           },
-          function (jqXHR, status, error) {
+          function (res) {
+            const {error, jqXHR, status } = res
             self.checking = false
-            console.log('getMetaData', error, arguments)
+            // console.log('getMetaData', res)
+            if(status == 'error') {
+              alert(jqXHR.responseText)
+              return
+            }
+
             if (jqXHR.status == 'parsererror') {
               if (jqXHR.error.code == 403) {
                 alert('账号或密码错误')

@@ -64,13 +64,10 @@
           >
             <span aria-hidden="true">&times;</span>
           </button>
-          <h4 class="alert-heading">谢谢使用！</h4>
+          <h4 class="alert-heading">谢谢支持！</h4>
           <p>
-            本项目为非营利性项目。广泛的用户群体是我维护的主要动力。
-            <!-- <br> -->
-            如果觉得不错还请分享给你的朋友！谢谢！<br>
-            如果你是开发者并且对本项目感兴趣、欢迎参与进来
-            <a href="https://github.com/wechatsync/Wechatsync" target="_blank">wechatsync/Wechatsync</a>
+            如果觉得本工具不错，还请分享给你的朋友！谢谢你的支持！<br>
+            如果你是开发者、欢迎参与进来<a href="https://github.com/wechatsync/Wechatsync/blob/master/CONTRIBUTING.md" target="_blank">wechatsync/Wechatsync</a>
           </p>
           <hr />
           <p class="mb-0 text-right">by <a href="https://blog.dev4eos.com/about/?utm_source=syncslogon" target="_blank">fun</a></p>
@@ -140,17 +137,9 @@
               </a>
               <!-- <img src="/images/arrow-right-light.png" style="float: right;"> -->
             </li>
-
             <li v-if="loading">数据加载中...</li>
           </ul>
         </div>
-        <!--
-        <div
-          class="alert alert-primary mr-3 ml-3 mt-4"
-          role="alert"
-        >本项目为非营利性项目，广泛的用户群体是我维护的主要动力，如果觉得不错请分享给你的朋友！谢谢！</div>-->
-
-
         <div class="tool-bottom">
           <button
             class="btn btn-outline-info"
@@ -170,14 +159,14 @@
             问题反馈
           </button>
 
-          <button
+          <!-- <button
             class="btn btn-outline-secondary"
             type="button"
             style="margin-right: 10px"
             @click="goDonate()"
           >
             捐赠
-          </button>
+          </button> -->
 
           <button
             class="btn btn-outline-secondary float-right"
@@ -230,10 +219,14 @@
             ><img src="/images/logo.png" height="60" /> <br />
             <p style="font-size: 22px; color: #222">文章同步助手</p></a
           >
-          <div style="color: #777; margin-top: 80px">
-            <p>插件版本： {{ currentVersion }}</p>
+          <div style="color: #777; margin-top: 50px">
+            <p>插件版本：{{ currentVersion }}</p>
             <p v-if="driverVersion">内核版本： {{ driverVersion.version }}</p>
             <p>Github: <a href="https://github.com/wechatsync/Wechatsync" target="_blank">wechatsync/Wechatsync</a></p>
+            <p>官网: <a href="https://www.wechatsync.com/?utm_source=extension_about" target="_blank">https://www.wechatsync.com/</a></p>
+            <p>
+              <a href="https://dun.mianbaoduo.com/@fun" target="_blank" class="mt-2 btn btn-outline-secondary">请作者吃饭<span style="">😋</span></a>
+            </p>
           </div>
         </div>
       </section>
@@ -311,7 +304,7 @@ export default {
         //     name: '设置'
         // },
       ],
-      isLogin: false,
+      isLogin: true,
       cats: {},
     }
   },
