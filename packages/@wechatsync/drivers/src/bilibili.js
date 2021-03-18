@@ -9,6 +9,9 @@ export default class BilibiliAdapter {
     var res = await $.ajax({
       url: 'https://api.bilibili.com/x/web-interface/nav?build=0&mobi_app=web',
     })
+    if(!res.data.isLogin) {
+      throw new Error('not login')
+    }
     // console.log(res);
     return {
       uid: res.data.mid,
@@ -71,7 +74,6 @@ export default class BilibiliAdapter {
         res.data.aid,
     }
   }
-
 
   async uploadFile(file) {
     var src = file.src

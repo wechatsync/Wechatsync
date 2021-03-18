@@ -67,6 +67,8 @@
       "libs/juqery.js",
       "libs/jquery.xmlrpc.min.js",
       "libs/aliyun-oss-sdk.min.js",
+      "libs/hmac-sha256.js",
+      "libs/enc-base64-min.js",
       "libs/google-analytics-bundle.js",
       "background.js"
     ]

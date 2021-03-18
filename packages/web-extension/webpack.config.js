@@ -61,6 +61,7 @@ module.exports = env => {
       new webpack.DefinePlugin({
         'process.env': {
           NODE_ENV: '"production"',
+          WECHAT_ENV: '"production"'
         },
       }),
       new ZipPlugin({

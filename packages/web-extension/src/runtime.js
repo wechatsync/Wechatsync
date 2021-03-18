@@ -13,7 +13,11 @@ function getRuntimeScopes () {
     setCache: setCache,
     initializeFrame: initializeFrame,
     requestFrameMethod: requestFrameMethod,
-    modifyRequestHeaders: modifyRequestHeaders
+    modifyRequestHeaders: modifyRequestHeaders,
+    CryptoJS: CryptoJS,
+    helpers: {
+      parseTokenAndToHeaders: parseTokenAndToHeaders
+    }
   };
 }
 
@@ -48,19 +52,23 @@ export function getDriverProvider(code) {
 
 window.initializeDriver = initializeDriver
 
-export function initializeDriver(conf) {
-  return new Promise((resolve) => {
+export function initializeDriver(conf = {}) {
+  return new Promise((resolve, reject) => {
     function createDriver(driverRemote) {
+      console.log('initializeDriver', driverRemote ? 'remote' : 'local')
       const code = driverRemote ? driverRemote : window.driver
       const driver = getDriverProvider(code)
       resolve(driver)
     }
-
     chrome.storage.local.get(['driver'], function (result) {
-      if(conf.beforeCreate) {
-        conf.beforeCreate(result)
+      try {
+        if(conf.beforeCreate) {
+          conf.beforeCreate(result)
+        }
+        createDriver(result.driver)
+      } catch (e) {
+        reject(e)
       }
-      createDriver(result.driver)
     })
   })
 }
@@ -117,12 +125,21 @@ function initializeFrame(src, type, forceOpen) {
 }
 
 const _rules = {}
+
+/**
+ * 从webRequest中替换headers或监听请求
+ * @function
+ * @param {string} ulrPrefix - 要修改的链接匹配串
+ * @param {string} headers - 要修改为的headers.
+ * @param {array} inspectUrls - 需要监听的url结构.
+ * @param {function} handler - 或者自己处理的回调函数.
+ */
 function modifyRequestHeaders(ulrPrefix, headers, inspectUrls, handler) {
   // once
   if(!_rules[ulrPrefix]) {
     _rules[ulrPrefix] = headers
   }
-
+  console.log('modifyRequestHeaders', ulrPrefix)
   chrome.webRequest.onBeforeSendHeaders.addListener(
     function(details) {
       try {
@@ -161,4 +178,38 @@ function modifyRequestHeaders(ulrPrefix, headers, inspectUrls, handler) {
     },
     ['blocking', 'requestHeaders', 'extraHeaders',]
   )
+}
+
+
+function getCookie(name, cookieStr) {
+  let arr,
+    reg = new RegExp('(^| )' + name + '=([^;]*)(;|$)')
+  if ((arr = cookieStr.match(reg))) {
+    return unescape(arr[2])
+  } else {
+    return ''
+  }
+}
+
+/**
+ * 从webRequest Header头中找到某个Cookie再以某个Key插入Header头中
+ * @function
+ * @param {object} details - webRequest回调
+ * @param {string} cookieKey - Cookie名称.
+ * @param {string} headerKey - 插入Header中的名称.
+ */
+function parseTokenAndToHeaders(details, cookieKey, headerKey) {
+  var cookieHeader = details.requestHeaders.filter(h => {
+    return h.name.toLowerCase() == 'cookie'
+  })
+  if (cookieHeader.length) {
+    var cookieStr = cookieHeader[0].value
+    var _xsrf = getCookie(cookieKey, cookieStr)
+    if (_xsrf) {
+      details.requestHeaders.push({
+        name: headerKey,
+        value: _xsrf,
+      })
+    }
+  }
 }

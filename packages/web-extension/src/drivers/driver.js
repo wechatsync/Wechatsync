@@ -17,7 +17,9 @@ const {
   _51CtoAdapter,
   FocusAdapter,
   DiscuzAdapter,
-  SoHuAdapter
+  SoHuAdapter,
+  BaiJiaHaoAdapter,
+  OsChinaAdapter
 } = buildInDrivers;
 
 var _cacheState = {}
@@ -110,6 +112,10 @@ export function getDriver(account) {
     return new YiDianAdapter(account)
   }
 
+  if (account.type == 'baijiahao') {
+    return new BaiJiaHaoAdapter(account)
+  }
+
   if(account.type == 'douban') {
     console.log(account.type)
     return new DoubanAdapter({
@@ -127,10 +133,31 @@ export function getDriver(account) {
     return new SoHuAdapter(account)
   }
 
+  if (account.type == 'oschina') {
+    return new OsChinaAdapter(account)
+  }
+
   throw Error('not supprt account type')
 }
 
+const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
+  arr.slice(i * size, i * size + size)
+);
+
+let _cacheUsers = null
+let _lastFetch = null
+
 export async function getPublicAccounts() {
+
+  // 限制100s 保证不会太频繁请求平台
+  if(_lastFetch != null) {
+    const isTooQuickly = (Date.now() - _lastFetch) < 100 * 1000
+    if (isTooQuickly) {
+      console.log('too quickly return by cache')
+      return _cacheUsers
+    }
+  }
+
   console.log('getPublicAccounts')
   var drivers = [
     new SegmentfaultAdapter(),
@@ -147,6 +174,9 @@ export async function getPublicAccounts() {
     new BilibiliAdapter(),
     new _51CtoAdapter(),
     new FocusAdapter(),
+    new BaiJiaHaoAdapter(),
+    new SoHuAdapter(),
+    new OsChinaAdapter()
   ]
 
   var customDiscuzEndpoints = ['https://www.51hanghai.com'];
@@ -166,15 +196,40 @@ export async function getPublicAccounts() {
   }
 
   var users = []
-  for (let index = 0; index < drivers.length; index++) {
-    const driver = drivers[index]
+
+  const stepItems = chunk(drivers, 20);
+  const startTime = Date.now()
+  for (let index = 0; index < stepItems.length; index++) {
     try {
-      var user = await driver.getMetaData()
-      users.push(user)
+      const stepItem = stepItems[index];
+      const results = await Promise.all(
+        stepItem.map((driver) => {
+          return new Promise((resolve, reject) => {
+            driver.getMetaData().then(resolve, function() {
+              resolve(null)
+            })
+          })
+        })
+      );
+      const successAccounts = results.filter(_ => _)
+      users = users.concat(successAccounts)
     } catch (e) {
-      console.log(e)
+      console.log("chunkPromise", e);
     }
   }
+  // for (let index = 0; index < drivers.length; index++) {
+  //   const driver = drivers[index]
+  //   try {
+  //     var user = await driver.getMetaData()
+  //     users.push(user)
+  //   } catch (e) {
+  //     console.log(e)
+  //   }
+  // }
+  const spend = Date.now() - startTime
+  console.log('getPublicAccounts spend', spend, 'driverCount', drivers.length)
+  _lastFetch = Date.now()
+  _cacheUsers = users
   return users
 }
 
@@ -231,7 +286,7 @@ function urlHandler(details) {
 
 export function getMeta() {
   return {
-    version: '0.0.11',
+    version: '0.0.12',
     versionNumber: 12,
     log: '',
     urlHandler: urlHandler,
