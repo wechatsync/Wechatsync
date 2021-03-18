@@ -113,6 +113,9 @@ export default class SegmentfaultAdapter {
       data: formdata,
       headers: { 'Content-Type': 'multipart/form-data' },
     })
+    if(res.data[0] == 1) {
+      throw new Error(res.data[1])
+    }
     var url = res.data[1]
     return [
       {

@@ -18,7 +18,8 @@ const {
   FocusAdapter,
   DiscuzAdapter,
   SoHuAdapter,
-  BaiJiaHaoAdapter
+  BaiJiaHaoAdapter,
+  OsChinaAdapter
 } = buildInDrivers;
 
 var _cacheState = {}
@@ -132,6 +133,10 @@ export function getDriver(account) {
     return new SoHuAdapter(account)
   }
 
+  if (account.type == 'oschina') {
+    return new OsChinaAdapter(account)
+  }
+
   throw Error('not supprt account type')
 }
 
@@ -170,7 +175,8 @@ export async function getPublicAccounts() {
     new _51CtoAdapter(),
     new FocusAdapter(),
     new BaiJiaHaoAdapter(),
-    new SoHuAdapter()
+    new SoHuAdapter(),
+    new OsChinaAdapter()
   ]
 
   var customDiscuzEndpoints = ['https://www.51hanghai.com'];

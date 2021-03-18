@@ -92,16 +92,14 @@ export function upImage(driver, src, postId, name) {
               }
             )
             .catch(function(e) {
-              console.log('uploadFile', e)
+              console.log('uploadFile.catch', e)
+              reject(e)
             })
         } catch (e) {
-          console.log('uploadFile', e)
+          console.log('uploadFile.error', e)
+          reject(e)
         }
       })();
-      // getDataUrl(src, function (bUrl) {
-      //   console.log('upImage', src, bUrl)
-      //   var baseCode = bUrl.replace('data:image/png;base64,', '')
-      // })
     }
   })
 }

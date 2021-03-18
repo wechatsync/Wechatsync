@@ -237,7 +237,7 @@
             <p>Github: <a href="https://github.com/wechatsync/Wechatsync" target="_blank">wechatsync/Wechatsync</a></p>
             <p>官网: <a href="https://www.wechatsync.com/?utm_source=extension_about" target="_blank">https://www.wechatsync.com/</a></p>
             <p>
-              <a href="https://developer.wechatsync.com/?utm_source=extension-about" target="_blank" class="mt-2 mr-3 btn btn-info">开发者工具</a>
+              <a href="https://developer.wechatsync.com/?utm_source=extension-about" target="_blank" class="mt-2 mr-2 btn btn-info">开发者工具</a>
               <a href="https://dun.mianbaoduo.com/@fun" target="_blank" class="mt-2 btn btn-outline-secondary">请作者吃饭<span style="">😋</span></a>
             </p>
           </div>
@@ -437,7 +437,7 @@ export default {
         chrome.tabs.create({
           url: 'https://www.wechatsync.com/blog/?utm_source=how-to-use',
         })
-      }, 2000)
+      }, 3000)
     },
     faq() {
       chrome.tabs.create({
