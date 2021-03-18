@@ -413,7 +413,7 @@ export default {
           console.log('updateDriver.res', res)
           resolve(res.result);
        })
-      }); 
+      });
 
       if(deployResult.status) {
         // 第一次部署成功后，自动部署
@@ -424,7 +424,7 @@ export default {
     },
 
     async runCode({ testSync = false, forceAccount = false }) {
-      
+
       const targetAccount = {
         type: this.currentDriverName
       }
@@ -457,7 +457,7 @@ export default {
         alert('请创建一个名为“article.json”的json文件作为测试文章数据')
         return
       }
-      
+
       var articleData = JSON.parse(articleFiles[0].content)
       this.addDebugLog(['测试图片上传'])
       var testImageSrc = articleData.thumnail || 'https://mmbiz.qpic.cn/mmbiz_jpg/VUsUpGDa4qdFYthOpjEqaqDPnS3WVhTKToFr9cPhObPwEw1NP5fQLNrqqjIqOxZRppCibZchwWkqh7zia3lEhoDQ/0?wx_fmt=jpeg';
@@ -471,7 +471,7 @@ export default {
               console.log('handleImageUpload.res', res)
               resolve(res);
           })
-      }); 
+      });
 
       this.addDebugLog([uploadResult])
 
@@ -512,7 +512,7 @@ body,
     line-height: 42px;;
     /* position: absolute; */
     width: 100%;
-    border: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
     z-index: 888;
 }
 
@@ -540,7 +540,7 @@ body,
   /* border-top: 1px solid #eee; */
 }
 
-#editor #console-area, 
+#editor #console-area,
 #editor .gutter {
   display: none;
 }
@@ -550,7 +550,7 @@ body,
 }
 
 
-#editor.hasLog #console-area, 
+#editor.hasLog #console-area,
 #editor.hasLog .gutter {
   display: block;
 }
