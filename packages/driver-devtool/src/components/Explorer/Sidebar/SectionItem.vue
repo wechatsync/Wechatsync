@@ -2,9 +2,13 @@
   <li
     :class="['select-item', active ? 'active' : '']"
     @click="!active && $emit('on-active', id)"
+    tabindex="0"
+    @keyup.enter="startRename"
+    @keyup.delete="confirmDelete"
+    @contextmenu.prevent="onContextmenu"
   >
     <div class="icon">
-      <v-icon :name="iconName" />
+      <v-icon :name="icon.name" :style="icon.style" />
     </div>
     <div class="content">
       <input
@@ -14,9 +18,10 @@
         ref="editor"
         class="editor"
         v-if="isEditing"
-        @keyup.enter="confirmModify"
+        @keyup.stop
+        @keyup.enter="submitModify"
         @keyup.esc="giveupModify"
-        @blur="confirmModify"
+        @blur="giveupModify"
       />
       <span v-else>{{ name }}</span>
     </div>
@@ -25,6 +30,7 @@
 </template>
 
 <script>
+import { getIconInfo } from '@/utils/file'
 export default {
   props: {
     name: {
@@ -48,15 +54,8 @@ export default {
     }
   },
   computed: {
-    iconName() {
-      const extRegExp = /\.(md|js)$/
-      const extType = extRegExp.exec(this.editingName)?.[1]
-      const ext2Icon = {
-        md: 'brands/markdown',
-        js: 'brands/js-square',
-      }
-
-      return ext2Icon[extType] || 'stream'
+    icon() {
+      return getIconInfo(this.editingName)
     },
   },
   methods: {
@@ -68,17 +67,33 @@ export default {
         this.editingName = this.name
       }
     },
-    confirmModify() {
+    submitModify() {
       if (this.editingName && this.editingName !== this.name) {
         this.$emit('on-change', {
           id: this.id,
           name: this.editingName,
         })
-        this.isEditing = false
       }
+
       if (this.isNew) {
         this.$emit('on-create-finish')
+      } else {
+        this.isEditing = false
       }
+    },
+    confirmDelete() {
+      if (window.confirm(`确定删除 “${this.name}” ？此操作不可撤销。`)) {
+        this.$emit('on-delete', this.id)
+      }
+    },
+    startRename() {
+      this.isEditing = true
+    },
+    onContextmenu(event) {
+      this.$emit('on-contextmenu', event, {
+        rename: this.startRename,
+        delete: this.confirmDelete,
+      })
     },
   },
 }
@@ -87,7 +102,7 @@ export default {
 <style lang="scss" scoped>
 .select-item {
   list-style: none;
-  padding: 0.4em 0.6em;
+  padding: 0.4em 1em;
   vertical-align: middle;
   cursor: pointer;
   display: flex;

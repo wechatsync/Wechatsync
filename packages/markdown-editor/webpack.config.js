@@ -2,17 +2,17 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { VueLoaderPlugin } = require('vue-loader')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const Dotenv = require("dotenv-webpack");
+const Dotenv = require('dotenv-webpack')
 const TerserPlugin = require('terser-webpack-plugin')
 const projectRoot = path.resolve(__dirname, '../../')
 
-module.exports = (env) => {
+module.exports = env => {
   const prodMode = env.production
   const prodConfigs = {
     mode: 'production',
     resolve: {
       alias: {
-        vue: 'vue/dist/vue.min.js'
+        vue: 'vue/dist/vue.min.js',
       },
     },
     optimization: {
@@ -21,7 +21,7 @@ module.exports = (env) => {
         new TerserPlugin({
           test: /\.js(\?.*)?$/i,
         }),
-      ]
+      ],
     },
   }
   const devConfigs = {
@@ -32,7 +32,7 @@ module.exports = (env) => {
     },
     resolve: {
       alias: {
-        vue: 'vue/dist/vue.js'
+        vue: 'vue/dist/vue.js',
       },
     },
   }
@@ -50,7 +50,7 @@ module.exports = (env) => {
           test: /\.(sa|sc|c)ss$/i,
           use: [
             prodMode ? MiniCssExtractPlugin.loader : 'style-loader',
-            'css-loader'
+            'css-loader',
           ],
         },
         {
@@ -64,8 +64,10 @@ module.exports = (env) => {
         {
           test: /\.js?$/,
           loader: 'babel-loader',
-          exclude: (file) =>
-            /node_modules/.test(file) && !/\.vue\.js/.test(file),
+          exclude: file => /node_modules/.test(file) && !/\.vue\.js/.test(file),
+          options: {
+            rootMode: 'upward',
+          },
         },
         {
           test: /\.vue$/,
@@ -75,7 +77,7 @@ module.exports = (env) => {
     },
     plugins: [
       new MiniCssExtractPlugin({
-        filename: 'styles.css'
+        filename: 'styles.css',
       }),
       new HtmlWebpackPlugin({
         template: 'src/index.html',
@@ -87,7 +89,7 @@ module.exports = (env) => {
           prodMode ? '.env.production' : '.env.development'
         ),
         safe: true,
-      })
+      }),
     ],
   }
 }

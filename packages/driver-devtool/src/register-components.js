@@ -4,9 +4,20 @@
  */
 
 import Vue from 'vue'
-import splitPane from 'vue-splitpane'
 
+// splitPane
+import splitPane from 'vue-splitpane'
 Vue.component('split-pane', splitPane)
+
+// contextmenu
+import contextmenu from 'v-contextmenu'
+import 'v-contextmenu/dist/index.css'
+Vue.use(contextmenu)
+
+// prefect-scrollbar
+import PerfectScrollbar from 'vue2-perfect-scrollbar'
+import 'vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css'
+Vue.use(PerfectScrollbar)
 
 // https://webpack.js.org/guides/dependency-management/#require-context
 // https://cn.vuejs.org/v2/guide/components-registration.html#基础组件的自动化全局注册

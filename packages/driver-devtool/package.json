@@ -10,14 +10,16 @@
   "author": "fun",
   "license": "ISC",
   "dependencies": {
-    "lodash": "^4.17.21",
     "v-contextmenu": "^2.9.0",
     "vue": "^2.6.12",
     "vue-awesome": "^4.1.0",
     "vue-codemirror": "^4.0.6",
     "vue-router": "^3.5.1",
-    "vue-spinner": "^1.0.4",
+    "vue-runtime-helpers": "^1.1.2",
     "vue-splitpane": "^1.0.6",
-    "vuex": "^3.6.2"
+    "vue2-perfect-scrollbar": "^1.5.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.13.0"
   }
 }

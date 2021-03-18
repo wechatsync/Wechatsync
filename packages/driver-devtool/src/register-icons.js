@@ -6,6 +6,8 @@ import 'vue-awesome/icons/folder-open'
 import 'vue-awesome/icons/brands/markdown'
 import 'vue-awesome/icons/brands/js-square'
 import 'vue-awesome/icons/stream'
+import 'vue-awesome/icons/circle'
+import 'vue-awesome/icons/times'
 
 Vue.component('v-icon', Icon)
 

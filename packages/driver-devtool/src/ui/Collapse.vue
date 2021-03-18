@@ -24,19 +24,15 @@ export default {
       default: true,
       required: false,
     },
-    onChange: {
-      type: Function,
-      default() {},
-    },
   },
   data() {
     return {
       isActive: this.defaultActive,
     }
   },
-  methods: {
-    onToggle() {
-      this.isActive = !this.isActive
+  watch: {
+    isActive() {
+      this.$emit('collapse-toggle', this.isActive)
     },
   },
 }
@@ -49,7 +45,7 @@ $transition: transform 0.2s ease-in-out;
   flex-direction: column;
   height: 100%;
   .header {
-    padding: 0.2em 0.5em;
+    padding: 0.2em 1em;
     background-color: var(--background-color);
     display: flex;
     align-items: center;

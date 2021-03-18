@@ -76,6 +76,9 @@ module.exports = env => {
               /node_modules/.test(file) &&
               !/\.vue\.js/.test(file) &&
               !/node_modules\/vue\-awesome/.test(file),
+            options: {
+              rootMode: 'upward',
+            },
           },
           {
             test: /\.vue$/,
