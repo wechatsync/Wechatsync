@@ -1,9 +1,5 @@
 import { openedFiles } from '@/store/state'
 
-export function save() {
-  openedFiles.save()
-}
-
 export function getData() {
   return openedFiles.data
 }

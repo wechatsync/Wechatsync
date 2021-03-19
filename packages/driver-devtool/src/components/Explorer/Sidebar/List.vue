@@ -73,8 +73,11 @@ export default {
   cursor: pointer;
   input {
     display: none;
+    & + svg {
+      fill: var(--icon-unselected-color);
+    }
     &:checked + svg {
-      fill: var(--selected-icon-color);
+      fill: var(--icon-selected-color);
     }
   }
 }

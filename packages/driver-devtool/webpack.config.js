@@ -71,6 +71,7 @@ module.exports = env => {
           },
           {
             test: /\.js?$/,
+            resourceQuery: { not: [/raw/] },
             loader: 'babel-loader',
             exclude: file =>
               /node_modules/.test(file) &&
@@ -85,15 +86,8 @@ module.exports = env => {
             loader: 'vue-loader',
           },
           {
-            test: /\.md$/,
-            use: [
-              {
-                loader: 'vue-loader',
-              },
-              {
-                loader: 'vue-markdown-loader',
-              },
-            ],
+            resourceQuery: /raw/,
+            type: 'asset/source',
           },
         ],
       },

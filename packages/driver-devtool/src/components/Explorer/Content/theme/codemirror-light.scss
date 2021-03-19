@@ -3,12 +3,6 @@
 $selection-bg: #d9d9d9;
 $focus-selection-bg: rgba(#d9d9d9, 0.8);
 
-.cm-s-light.CodeMirror {
-  background-color: var(--background-color);
-}
-.cm-s-light .CodeMirror-gutters {
-  background-color: var(--background-color);
-}
 .CodeMirror-selected {
   background: $selection-bg;
 }

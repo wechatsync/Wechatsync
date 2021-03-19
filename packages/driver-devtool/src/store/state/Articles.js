@@ -27,13 +27,15 @@ export default class Articles extends SectionBase {
         {
           id: uniqueId(idPrefix),
           name: '默认文章.md',
-          content: require('@/assets/defaultTestArticle.md'),
+          content: require('@/assets/defaultTestArticle.md?raw'),
           dirty: false,
         },
         {
           id: uniqueId(idPrefix),
           name: '默认文章.json',
-          content: JSON.stringify(require('@/assets/defaultTestArticle.json')),
+          content: JSON.stringify(
+            require('@/assets/defaultTestArticle.json?raw')
+          ),
           dirty: false,
         },
       ],
@@ -41,7 +43,7 @@ export default class Articles extends SectionBase {
   }
   save() {
     super.save()
-    set(TCStoreName, this.testIds)
+    set(this.TCStoreName, this.testIds)
   }
   getTestIds() {
     return this.testIds

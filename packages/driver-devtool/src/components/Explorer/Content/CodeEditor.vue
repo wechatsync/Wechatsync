@@ -17,7 +17,7 @@ import 'codemirror/mode/javascript/javascript.js'
 import 'codemirror/mode/markdown/markdown.js'
 import 'codemirror/mode/xml/xml.js'
 // theme css
-import './theme/codemirror-base.css'
+import './theme/codemirror-base.scss'
 import './theme/codemirror-light.scss'
 import './theme/codemirror-dark.scss'
 // require active-line.js
@@ -62,13 +62,27 @@ import {
 } from '@/utils/debug'
 
 import { changeProperty, isAdapter } from '@/store/controller/section'
-
+import {
+  addThemeChangeListener,
+  removeThemeChangeListener,
+} from '@/utils/theme'
 export default {
   components: {
     codemirror,
   },
+  data() {
+    return {
+      theme: window.__theme,
+    }
+  },
   props: {
     active: Object,
+  },
+  mounted() {
+    addThemeChangeListener(this.onThemeChange)
+  },
+  beforeDestroy() {
+    removeThemeChangeListener(this.onThemeChange)
   },
   computed: {
     options() {
@@ -103,7 +117,7 @@ export default {
         keyMap: 'sublime',
         matchBrackets: false,
         showCursorWhenSelecting: true,
-        theme: 'light',
+        theme: this.theme,
         lineWrapping: true,
         extraKeys: isMac
           ? {
@@ -121,7 +135,6 @@ export default {
       }
     },
   },
-
   methods: {
     onCmCodeChange(newCode) {
       changeProperty({
@@ -138,6 +151,9 @@ export default {
       if (isAdapter(this.active)) {
         deployCode(this.active)
       }
+    },
+    onThemeChange(theme) {
+      this.theme = theme
     },
   },
 }

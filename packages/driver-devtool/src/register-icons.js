@@ -10,6 +10,8 @@ import 'vue-awesome/icons/circle'
 import 'vue-awesome/icons/times'
 import 'vue-awesome/icons/code'
 import 'vue-awesome/icons/check'
+import 'vue-awesome/icons/sun'
+import 'vue-awesome/icons/moon'
 
 Vue.component('v-icon', Icon)
 

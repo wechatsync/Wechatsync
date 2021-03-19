@@ -1,6 +1,8 @@
 import { getFileName, getFileType } from './file'
 import log from './log'
 import { getTestCases } from '@/store/controller/section'
+import matter from 'gray-matter'
+import marked from 'marked'
 
 export async function deployCode({ name, content }) {
   log.addLog('部署代码到插件...')
@@ -43,8 +45,15 @@ async function testUserInfoGather(driverName) {
 async function testImageUpload(driverName) {
   log.addLog(['图片上传测试...'])
 
+  const testCases = getTestCases()
+
+  if (!testCases.length) {
+    window.confirm('没有选择任何测试文章，请在侧边栏添加并选择')
+    return
+  }
+
   const uploadResults = await Promise.all(
-    getTestCases().map(test => {
+    testCases.map(test => {
       const { name, content } = test
       const extType = getFileType(name)
 
@@ -52,9 +61,9 @@ async function testImageUpload(driverName) {
       if (extType === 'json') {
         testImageSrc = content.thumnail
       } else if (extType === 'md') {
-        // front-matter image
+        testImageSrc = matter(content).data?.image
       }
-      testImageSrc ||= 'http://placekitten.com/g/200/300'
+      testImageSrc ||= 'https://fakeimg.pl/350x200/?text=WechatSync'
 
       const actionData = {
         src: testImageSrc,
@@ -77,8 +86,16 @@ async function testImageUpload(driverName) {
 
 // 测试文章同步
 async function testArticleUpload(driverName) {
-  getTestCases().forEach(test => {
+  const testCases = getTestCases()
+
+  if (!testCases.length) {
+    window.confirm('没有选择任何测试文章，请在侧边栏添加并选择')
+    return
+  }
+
+  testCases.forEach(test => {
     const { name, content } = test
+    const fileName = getFileName(name)
     const extType = getFileType(name)
 
     const payload = {
@@ -87,9 +104,18 @@ async function testArticleUpload(driverName) {
     }
 
     if (extType === 'json') {
-      Object.assign(payload, content)
+      const json = JSON.parse(content)
+      Object.assign(payload, {
+        title: json.title,
+        content: json.content,
+      })
     } else if (extType === 'md') {
-      // front matter
+      const { content, data } = matter(test.content)
+      Object.assign(payload, {
+        title: data.title || fileName,
+        content: marked(content),
+        markdown: content,
+      })
     }
     window.$syncer.addTask(
       {

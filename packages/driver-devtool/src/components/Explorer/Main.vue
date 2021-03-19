@@ -42,11 +42,7 @@ import Navbar from './Navbar.vue'
 import Sidebar from './Sidebar/List.vue'
 import ContentContainer from './Content/Container.vue'
 import { save as saveSection } from '@/store/controller/section'
-import { save as saveOpenedFiles } from '@/store/controller/openedFiles'
-import {
-  save as saveActiveItem,
-  getData as getActiveItem,
-} from '@/store/controller/activeItem'
+import { getData as getActiveItem } from '@/store/controller/activeItem'
 
 export default {
   components: { Navbar, Sidebar, ContentContainer },
@@ -55,10 +51,10 @@ export default {
       activeItem: getActiveItem(),
     }
   },
-  beforeDestroy() {
-    saveSection()
-    saveOpenedFiles()
-    saveActiveItem()
+  mounted() {
+    window.addEventListener('beforeunload', function () {
+      saveSection()
+    })
   },
   errorCaptured(err) {
     const errorMap = new Map([

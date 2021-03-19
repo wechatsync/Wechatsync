@@ -1,3 +1,7 @@
+---
+title: "Markdown"
+image: "http://placekitten.com/g/300/300"
+---
 # # Precibus terrarum confecta misero
 
 ## Oras Iuppiter Lernaeae est quoque pectora

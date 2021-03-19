@@ -10,6 +10,8 @@
   "author": "fun",
   "license": "ISC",
   "dependencies": {
+    "gray-matter": "^4.0.2",
+    "marked": "^2.0.1",
     "v-contextmenu": "^2.9.0",
     "vue": "^2.6.12",
     "vue-awesome": "^4.1.0",

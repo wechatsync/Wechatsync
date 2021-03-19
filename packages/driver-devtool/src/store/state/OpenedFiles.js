@@ -9,10 +9,13 @@ export default class OpenedFiles {
   }
   add(index, id) {
     this.data.splice(index, 0, id)
-    set(this.storeName, this.data)
+    this.save()
   }
   remove(id) {
     this.data.splice(this.data.indexOf(id), 1)
+    this.save()
+  }
+  save() {
     set(this.storeName, this.data)
   }
 }

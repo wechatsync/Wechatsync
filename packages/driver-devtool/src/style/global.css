@@ -9,21 +9,42 @@
 }
 
 :root {
+  --space-width: 0.5em;
+  --h-padding-width: 1rem;
+}
+
+body {
+  background-color: #eee;
   --font-primary-color: #1f2329;
   --font-secondary-color: #5f636d;
   --theme-primary-color: #00b0d5;
   --line-color: #dee0e3;
   --outline-color: #ddd;
-  --hover-secondary-bg-color: #5f636d;
   --icon-default-color: #5f636d;
+  --icon-unselected-color: #b2b8c7;
+  --icon-selected-color: #00b0d5;
   --foreground-color: #f6f7f9;
   --background-color: #fff;
-  --select-background-color: #eee;
-  --selected-icon-color: #00b0d5;
   --shadow-color: rgba(0, 0, 0, 0.08);
+  --toggle-bg-color: #0f1114;
+  --toggle-icon-color: #f8d731;
+}
 
-  --space-width: 0.5em;
-  --h-padding-width: 1rem;
+body.dark {
+  background-color: #17191e;
+  --font-primary-color: #fff;
+  --font-secondary-color: #c0c0c0;
+  --theme-primary-color: #00b0d5;
+  --line-color: #474a4f;
+  --outline-color: #d0b284;
+  --icon-default-color: #fff;
+  --icon-unselected-color: #72807f;
+  --icon-selected-color: #00b0d5;
+  --foreground-color: #21252b;
+  --background-color: #282c34;
+  --shadow-color: rgba(0, 0, 0, 0.08);
+  --toggle-bg-color: #0f1114;
+  --toggle-icon-color: #f8d731;
 }
 
 body {
