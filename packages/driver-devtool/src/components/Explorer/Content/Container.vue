@@ -1,7 +1,7 @@
 <template>
   <div class="container">
-    <tab-bar :active="activeItem" v-on="$listeners"></tab-bar>
-    <div class="main">
+    <tab-bar :active="activeItem"></tab-bar>
+    <div class="main" v-if="!!this.activeId">
       <split-pane
         split="horizontal"
         :default-percent="100"
@@ -9,7 +9,7 @@
         className="split-pane-resizer-content"
       >
         <template slot="paneL">
-          <code-editor :active="activeItem" v-on="$listeners"></code-editor>
+          <code-editor :active="activeItem"></code-editor>
         </template>
         <!-- <template slot="paneR">
           <console></console>
@@ -23,15 +23,15 @@
 import CodeEditor from './CodeEditor.vue'
 import Console from './Console.vue'
 import TabBar from './TabBar.vue'
+import { getById } from '@/store/controller/section'
 export default {
   components: { TabBar, CodeEditor, Console },
   props: {
     activeId: String,
-    query: Function,
   },
   computed: {
     activeItem() {
-      return this.query(this.activeId) || {}
+      return getById(this.activeId) || {}
     },
   },
 }

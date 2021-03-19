@@ -8,14 +8,9 @@
             class="action-icon"
             @click.stop="isAdding = !isAdding"
           />
-          <label for="file-import" class="file-import" @click.stop>
+          <label class="file-import" @click.stop>
             <v-icon name="folder-open" class="action-icon" />
-            <input
-              type="file"
-              id="file-import"
-              @change="importFile"
-              accept="text/*"
-            />
+            <input type="file" @change="importFile" accept="text/*" />
           </label>
         </div>
       </template>
@@ -40,16 +35,16 @@
             :name="item.name"
             :id="item.id"
             :active="activeId === item.id"
-            v-on="$listeners"
             v-contextmenu:contextmenu
           >
+            <slot name="item" v-bind:id="item.id" />
           </sidebar-section-item>
         </ul>
         <sidebar-section-item
           v-if="isAdding"
           isNew
-          @on-change="createNewFile"
-          @create-finish="isAdding = false"
+          @submit="createNewFile"
+          @cancel="isAdding = false"
         />
       </template>
     </collapse>
@@ -57,8 +52,9 @@
 </template>
 
 <script>
-import { uniqueId } from '@/utils/file'
 import SidebarSectionItem from './SectionItem.vue'
+import { create } from '@/store/controller/section'
+import { setId as setActiveId } from '@/store/controller/activeItem'
 export default {
   components: { SidebarSectionItem },
   data() {
@@ -82,25 +78,41 @@ export default {
       this.sectionStyleObject.flex = isOpen ? 1 : 0
     },
     createNewFile({ name }) {
-      this.$emit('on-create', {
-        id: uniqueId(this.idPrefix),
+      const newId = create({
+        idPrefix: this.idPrefix,
         name,
         content: '',
       })
+      this.isAdding = false
+      setActiveId(newId)
     },
     importFile(event) {
+      const { idPrefix } = this
       const input = event.target
       const fileObject = input.files[0]
+      const newFilePayload = {}
       if (fileObject) {
         const fileName = fileObject.name
         const fileReader = new FileReader()
 
         fileReader.onload = () => {
-          this.$emit('on-create', {
-            id: uniqueId(this.idPrefix),
-            name: fileName,
-            content: fileReader.result,
-          })
+          try {
+            Object.assign(newFilePayload, {
+              idPrefix,
+              name: fileName || `Untitled-${+new Date()}`,
+              content: fileReader.result,
+            })
+            setActiveId(create(newFilePayload))
+          } catch (e) {
+            if (e.message === 'Name Duplicate') {
+              Object.assign(newFilePayload, {
+                idPrefix,
+                name: `${fileName}-${+new Date()}`,
+                content: fileReader.result,
+              })
+              setActiveId(create(newFilePayload))
+            }
+          }
         }
         fileReader.readAsText(fileObject)
       }

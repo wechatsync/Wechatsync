@@ -1,7 +1,7 @@
 <template>
   <li
     :class="['select-item', active ? 'active' : '']"
-    @click="!active && $emit('on-active', id)"
+    @click="doActive"
     tabindex="0"
     @keyup.enter="startRename"
     @keyup.delete="confirmDelete"
@@ -19,8 +19,8 @@
         v-if="isEditing"
         @keyup.stop
         @keyup.enter="submitModify"
-        @keyup.esc="giveupModify"
-        @blur="giveupModify"
+        @keyup.esc="cancelModify"
+        @blur="cancelModify"
       />
       <span :label="name" v-else>{{ name }}</span>
     </div>
@@ -30,6 +30,8 @@
 
 <script>
 import { getIconInfo } from '@/utils/file'
+import { rename, trash } from '@/store/controller/section'
+import { setId as setActiveId } from '@/store/controller/activeItem'
 export default {
   props: {
     name: {
@@ -58,35 +60,41 @@ export default {
     },
   },
   methods: {
-    giveupModify() {
+    cancelModify() {
       if (this.isNew) {
-        this.$emit('create-finish')
+        this.$emit('cancel')
       } else {
         this.isEditing = false
         this.editingName = this.name
       }
     },
     submitModify() {
-      if (this.editingName && this.editingName !== this.name) {
-        this.$emit('on-change', {
-          id: this.id,
-          name: this.editingName,
-        })
-      }
-
       if (this.isNew) {
-        this.$emit('create-finish')
+        this.$emit('submit', { name: this.editingName })
       } else {
+        if (this.editingName && this.editingName !== this.name) {
+          rename({
+            id: this.id,
+            name: this.editingName,
+          })
+          setActiveId(this.id)
+        }
         this.isEditing = false
       }
     },
     confirmDelete() {
       if (window.confirm(`确定删除 “${this.name}” ？此操作不可撤销。`)) {
-        this.$emit('on-delete', this.id)
+        trash(this.id)
+        if (this.active) {
+          setActiveId('')
+        }
       }
     },
     startRename() {
       this.isEditing = true
+    },
+    doActive() {
+      !this.active && setActiveId(this.id)
     },
   },
 }

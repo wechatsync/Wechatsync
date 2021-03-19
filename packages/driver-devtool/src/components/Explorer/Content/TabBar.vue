@@ -23,14 +23,19 @@
 
 <script>
 import Tabs from '@/ui/Tabs.vue'
-import OpenedFiles from '@/state/OpenedFiles'
+import {
+  getData as getOpenedFiles,
+  remove as removeOpenedFile,
+  add as addOpenedFile,
+} from '@/store/controller/openedFiles'
+import { getById } from '@/store/controller/section'
+import { setId as setActiveId } from '@/store/controller/activeItem'
 import { getIconInfo } from '@/utils/file'
 export default {
   components: { Tabs },
   data() {
-    this.$OpenedFilesInstance = new OpenedFiles()
     return {
-      ids: this.$OpenedFilesInstance.data,
+      ids: getOpenedFiles(),
     }
   },
   props: {
@@ -51,13 +56,15 @@ export default {
     items() {
       return this.ids
         .map((id) => {
-          const { name, dirty } = this.$parent.query(id) ?? {}
-          return {
-            id,
-            name,
-            icon: getIconInfo(name),
-            dirty,
-            active: id === this.active.id,
+          const item = getById(id)
+          if (item) {
+            return {
+              id,
+              name: item.name,
+              icon: getIconInfo(item.name),
+              dirty: item.dirty,
+              active: id === this.active.id,
+            }
           }
         })
         .filter(Boolean)
@@ -68,9 +75,9 @@ export default {
       if (this.active.id === id) {
         const index = this.ids.indexOf(id)
         const nextId = this.ids[index - 1] || this.ids[index + 1]
-        nextId && this.$emit('on-active', nextId)
+        setActiveId(nextId || '')
       }
-      this.$OpenedFilesInstance.remove(id)
+      removeOpenedFile(id)
     },
     openActiveFile(currentId, prevId) {
       if (!currentId) return
@@ -79,11 +86,11 @@ export default {
         // 滚动定位
       } else {
         const index = prevId ? this.ids.indexOf(prevId) + 1 : this.ids.length
-        this.$OpenedFilesInstance.add(index, currentId)
+        addOpenedFile(index, currentId)
       }
     },
     activeFile(id) {
-      id !== this.active.id && this.$emit('on-active', id)
+      id !== this.active.id && setActiveId(id)
     },
   },
 }

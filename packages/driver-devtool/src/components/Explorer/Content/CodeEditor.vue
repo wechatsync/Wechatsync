@@ -17,6 +17,7 @@ import 'codemirror/mode/javascript/javascript.js'
 import 'codemirror/mode/markdown/markdown.js'
 import 'codemirror/mode/xml/xml.js'
 // theme css
+import './theme/codemirror-base.css'
 import './theme/codemirror-light.scss'
 import './theme/codemirror-dark.scss'
 // require active-line.js
@@ -53,6 +54,14 @@ import 'codemirror/addon/fold/markdown-fold.js'
 import 'codemirror/addon/fold/xml-fold.js'
 
 import { getEditorMode } from '@/utils/file'
+import {
+  deployCode,
+  runAccountTest,
+  runArticleSyncTest,
+  runImageSyncTest,
+} from '@/utils/debug'
+
+import { changeProperty, isAdapter } from '@/store/controller/section'
 
 export default {
   components: {
@@ -63,8 +72,18 @@ export default {
   },
   computed: {
     options() {
+      const { name } = this.active
       const isMac = CodeMirror.keyMap.default == CodeMirror.keyMap.macDefault
       const save = this.onSave.bind(this)
+      const testAccount = function () {
+        runAccountTest(name)
+      }
+      const testImage = function () {
+        runImageSyncTest(name)
+      }
+      const testArticle = function () {
+        runArticleSyncTest(name)
+      }
       return {
         tabSize: 2,
         styleActiveLine: false,
@@ -74,7 +93,7 @@ export default {
         foldGutter: true,
         gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
         highlightSelectionMatches: { showToken: /\w/, annotateScrollbar: true },
-        mode: getEditorMode(this.active.name),
+        mode: getEditorMode(name),
         // hint.js options
         hintOptions: {
           // 当匹配只有一项的时候是否自动补全
@@ -85,12 +104,19 @@ export default {
         matchBrackets: false,
         showCursorWhenSelecting: true,
         theme: 'light',
+        lineWrapping: true,
         extraKeys: isMac
           ? {
               'Cmd-S': save,
+              'Cmd-1': testAccount,
+              'Cmd-2': testImage,
+              'Cmd-3': testArticle,
             }
           : {
               'Ctrl-S': save,
+              'Ctrl-1': testAccount,
+              'Ctrl-2': testImage,
+              'Ctrl-3': testArticle,
             },
       }
     },
@@ -98,17 +124,20 @@ export default {
 
   methods: {
     onCmCodeChange(newCode) {
-      this.$emit('on-change', {
+      changeProperty({
         id: this.active.id,
         content: newCode,
         dirty: true,
       })
     },
     onSave() {
-      this.$emit('on-change', {
+      changeProperty({
         id: this.active.id,
         dirty: false,
       })
+      if (isAdapter(this.active)) {
+        deployCode(this.active)
+      }
     },
   },
 }

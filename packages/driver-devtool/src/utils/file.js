@@ -1,5 +1,8 @@
+export function getFileName(name) {
+  return name.split('.')[0]
+}
 export function getFileType(name) {
-  const extRegExp = /\.(md|js)$/
+  const extRegExp = /\.([^.]+)$/
   const extType = extRegExp.exec(name)?.[1]
   return extType
 }
@@ -7,6 +10,12 @@ export function getFileType(name) {
 export function getIconInfo(name) {
   const extType = getFileType(name)
   const ext2Icon = {
+    json: {
+      name: 'code',
+      style: {
+        fill: 'rgb(81, 154, 186)',
+      },
+    },
     md: {
       name: 'brands/markdown',
       style: {
@@ -34,6 +43,10 @@ export function getIconInfo(name) {
 export function getEditorMode(name) {
   const extType = getFileType(name)
   const ext2Mode = {
+    json: {
+      name: 'javascript',
+      json: true,
+    },
     md: 'markdown',
     js: 'javascript',
   }

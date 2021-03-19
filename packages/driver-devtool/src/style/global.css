@@ -19,6 +19,7 @@
   --foreground-color: #f6f7f9;
   --background-color: #fff;
   --select-background-color: #eee;
+  --selected-icon-color: #00b0d5;
   --shadow-color: rgba(0, 0, 0, 0.08);
 
   --space-width: 0.5em;

@@ -1,10 +1,9 @@
 import { uniqueId } from '@/utils/file'
-import BaseSection from './BaseSection'
+import SectionBase from './SectionBase'
 
-export default class Adapters extends BaseSection {
+export default class Adapters extends SectionBase {
   constructor() {
-    super()
-    return super.constructor('adapters', 'adapters')
+    super('adapters', 'adapters')
   }
   defaultItemModel() {
     return {

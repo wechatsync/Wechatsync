@@ -8,6 +8,8 @@ import 'vue-awesome/icons/brands/js-square'
 import 'vue-awesome/icons/stream'
 import 'vue-awesome/icons/circle'
 import 'vue-awesome/icons/times'
+import 'vue-awesome/icons/code'
+import 'vue-awesome/icons/check'
 
 Vue.component('v-icon', Icon)
 

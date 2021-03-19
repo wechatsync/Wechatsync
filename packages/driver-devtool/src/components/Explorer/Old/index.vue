@@ -281,9 +281,4 @@ body,
 #editor.hasLog .code-area {
   height: calc(70% - 0.5px);
 }
-
-<style lang='scss' scoped > .app {
-  height: 100vh;
-  overflow: auto;
-}
 </style>
