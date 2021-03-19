@@ -1,20 +1,12 @@
 <template>
   <div class="sidebar">
-    <v-contextmenu ref="contextmenu" @hide="contextMenuTriggers = []">
-      <v-contextmenu-item @click="selectContextMenuItem('rename')"
-        >重命名</v-contextmenu-item
-      >
-      <v-contextmenu-item @click="selectContextMenuItem('delete')"
-        >删除</v-contextmenu-item
-      >
-    </v-contextmenu>
     <sidebar-section
-      v-for="section in sections"
+      v-for="(section, index) in options.sections"
       :key="section.key"
       :activeId="activeId"
+      :style="{ flex: options.flex[index] }"
       v-bind="section"
       v-on="$listeners"
-      @on-contextmenu="showContextMenu"
     />
   </div>
 </template>
@@ -27,24 +19,7 @@ export default {
   },
   props: {
     activeId: String,
-    sections: Array,
-  },
-  data() {
-    return {
-      contextMenuTriggers: [],
-    }
-  },
-  methods: {
-    showContextMenu(event, trigger) {
-      this.$refs.contextmenu.show({
-        top: event.clientY,
-        left: event.clientX,
-      })
-      this.contextMenuTriggers = [trigger]
-    },
-    selectContextMenuItem(type) {
-      this.contextMenuTriggers.forEach((trigger) => trigger[type]?.())
-    },
+    options: Object,
   },
 }
 </script>
@@ -54,8 +29,6 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-section {
-  flex: 1;
+  background-color: var(--foreground-color);
 }
 </style>

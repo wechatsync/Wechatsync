@@ -13,14 +13,16 @@
   --font-secondary-color: #5f636d;
   --theme-primary-color: #00b0d5;
   --line-color: #dee0e3;
-  --outline-color: #d1d5da;
+  --outline-color: #ddd;
   --hover-secondary-bg-color: #5f636d;
   --icon-default-color: #5f636d;
   --foreground-color: #f6f7f9;
   --background-color: #fff;
+  --select-background-color: #eee;
   --shadow-color: rgba(0, 0, 0, 0.08);
 
   --space-width: 0.5em;
+  --h-padding-width: 1rem;
 }
 
 body {
@@ -39,6 +41,9 @@ body {
 
 *:focus {
   outline-color: var(--outline-color);
+  outline-width: 1px;
+  outline-offset: -1px;
+  outline-style: solid;
 }
 
 .clearfix::before,

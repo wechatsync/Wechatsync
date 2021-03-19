@@ -4,16 +4,16 @@
     <div class="main">
       <split-pane
         split="horizontal"
-        :default-percent="80"
+        :default-percent="100"
         :min-percent="10"
         className="split-pane-resizer-content"
       >
         <template slot="paneL">
-          <code-editor :fileName="activeItem.name"></code-editor>
+          <code-editor :active="activeItem" v-on="$listeners"></code-editor>
         </template>
-        <template slot="paneR">
+        <!-- <template slot="paneR">
           <console></console>
-        </template>
+        </template> -->
       </split-pane>
     </div>
   </div>

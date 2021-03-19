@@ -45,7 +45,7 @@ $transition: transform 0.2s ease-in-out;
   flex-direction: column;
   height: 100%;
   .header {
-    padding: 0.2em 1em;
+    padding: 0.2em var(--h-padding-width);
     background-color: var(--background-color);
     display: flex;
     align-items: center;

@@ -17,7 +17,7 @@
               marginRight: '-3px',
               height: '100%',
             }"
-            :sections="sidebarSections"
+            :options="sidebarOptions"
             :activeId="activeItem.id"
             @on-active="onActiveItem"
             @on-change="onChangeItem"
@@ -67,8 +67,11 @@ export default {
     }
   },
   computed: {
-    sidebarSections() {
-      return [this.articles, this.adapters]
+    sidebarOptions() {
+      return {
+        sections: [this.articles, this.adapters],
+        flex: [0, 1],
+      }
     },
   },
   methods: {
@@ -76,23 +79,32 @@ export default {
       this.$activeItemInstance.set({ id: itemId })
     },
     onChangeItem(data) {
-      const { id } = data
-      if (this.$articlesInstance.in(id)) {
-        this.$articlesInstance.merge(id, data)
-      } else if (this.$adaptersInstance.in(id)) {
-        this.$adaptersInstance.merge(id, data)
+      console.trace()
+      try {
+        const { id } = data
+        if (this.$articlesInstance.in(id)) {
+          this.$articlesInstance.merge(id, data)
+        } else if (this.$adaptersInstance.in(id)) {
+          this.$adaptersInstance.merge(id, data)
+        }
+        this.$activeItemInstance.set({ id })
+      } catch (e) {
+        window.confirm(e.message)
       }
-      this.$activeItemInstance.set({ id })
     },
     onAddItem(data) {
-      const { id } = data
-      if (this.$articlesInstance.in(id)) {
-        this.$articlesInstance.add(data)
-      } else if (this.$adaptersInstance.in(id)) {
-        this.$adaptersInstance.add(data)
-      }
+      try {
+        const { id } = data
+        if (this.$articlesInstance.in(id)) {
+          this.$articlesInstance.add(data)
+        } else if (this.$adaptersInstance.in(id)) {
+          this.$adaptersInstance.add(data)
+        }
 
-      this.$activeItemInstance.set({ id })
+        this.$activeItemInstance.set({ id })
+      } catch (e) {
+        window.confirm(e.message)
+      }
     },
     onDeleteItem(id) {
       if (this.$articlesInstance.in(id)) {
@@ -105,11 +117,9 @@ export default {
       return this.$articlesInstance.get(id) ?? this.$adaptersInstance.get(id)
     },
   },
-  mounted() {
-    window.addEventListener('beforeunload', () => {
-      this.$adaptersInstance.save()
-      this.$$articlesInstance.save()
-    })
+  beforeDestroy() {
+    this.$adaptersInstance.save()
+    this.$$articlesInstance.save()
   },
 }
 </script>

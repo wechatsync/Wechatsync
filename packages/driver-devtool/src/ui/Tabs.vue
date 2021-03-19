@@ -39,8 +39,11 @@ ul {
   white-space: nowrap;
   height: 2em;
   li {
-    padding: 0.5em 1em;
+    padding: 0 1em;
     display: inline-block;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
     cursor: pointer;
   }
 }

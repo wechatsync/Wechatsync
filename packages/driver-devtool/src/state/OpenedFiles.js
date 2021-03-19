@@ -7,19 +7,12 @@ export default class OpenedFiles {
     this.data = get(this.storeName) || []
     return this
   }
-  add(prevId, currentId) {
-    const index = prevId ? this.data.indexOf(prevId) : -1
-
-    if (index > -1) {
-      this.data.splice(index + 1, 0, currentId)
-    } else {
-      this.data.push(currentId)
-    }
+  add(index, id) {
+    this.data.splice(index, 0, id)
     set(this.storeName, this.data)
   }
   remove(id) {
-    const index = this.data.indexOf(id)
-    this.data.splice(index, 1)
+    this.data.splice(this.data.indexOf(id), 1)
     set(this.storeName, this.data)
   }
 }

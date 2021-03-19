@@ -5,7 +5,6 @@
     tabindex="0"
     @keyup.enter="startRename"
     @keyup.delete="confirmDelete"
-    @contextmenu.prevent="onContextmenu"
   >
     <div class="icon">
       <v-icon :name="icon.name" :style="icon.style" />
@@ -23,7 +22,7 @@
         @keyup.esc="giveupModify"
         @blur="giveupModify"
       />
-      <span v-else>{{ name }}</span>
+      <span :label="name" v-else>{{ name }}</span>
     </div>
     <slot />
   </li>
@@ -61,7 +60,7 @@ export default {
   methods: {
     giveupModify() {
       if (this.isNew) {
-        this.$emit('on-create-finish')
+        this.$emit('create-finish')
       } else {
         this.isEditing = false
         this.editingName = this.name
@@ -76,7 +75,7 @@ export default {
       }
 
       if (this.isNew) {
-        this.$emit('on-create-finish')
+        this.$emit('create-finish')
       } else {
         this.isEditing = false
       }
@@ -88,12 +87,6 @@ export default {
     },
     startRename() {
       this.isEditing = true
-    },
-    onContextmenu(event) {
-      this.$emit('on-contextmenu', event, {
-        rename: this.startRename,
-        delete: this.confirmDelete,
-      })
     },
   },
 }
@@ -107,7 +100,7 @@ export default {
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   &.active {
     background-color: var(--background-color);
   }
@@ -123,8 +116,8 @@ export default {
   display: inline-block;
   flex: 1;
   overflow: hidden;
-  overflow-y: visible;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .editor {
   outline: none;
@@ -132,5 +125,6 @@ export default {
   display: inline-block;
   width: 100%;
   background-color: inherit;
+  padding: 0;
 }
 </style>

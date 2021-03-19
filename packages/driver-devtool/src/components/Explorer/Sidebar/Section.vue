@@ -20,6 +20,19 @@
         </div>
       </template>
       <template v-slot:default>
+        <v-contextmenu
+          ref="contextmenu"
+          @contextmenu="recordContextMenuTrigger"
+        >
+          <v-contextmenu-item
+            @click="contextMenuTrigger && contextMenuTrigger.startRename()"
+            >重命名</v-contextmenu-item
+          >
+          <v-contextmenu-item
+            @click="contextMenuTrigger && contextMenuTrigger.confirmDelete()"
+            >删除</v-contextmenu-item
+          >
+        </v-contextmenu>
         <ul class="select-list">
           <sidebar-section-item
             v-for="item in items"
@@ -28,6 +41,7 @@
             :id="item.id"
             :active="activeId === item.id"
             v-on="$listeners"
+            v-contextmenu:contextmenu
           >
           </sidebar-section-item>
         </ul>
@@ -35,7 +49,7 @@
           v-if="isAdding"
           isNew
           @on-change="createNewFile"
-          @on-create-finish="isAdding = false"
+          @create-finish="isAdding = false"
         />
       </template>
     </collapse>
@@ -50,9 +64,8 @@ export default {
   data() {
     return {
       isAdding: false,
-      sectionStyleObject: {
-        flex: 1,
-      },
+      sectionStyleObject: {},
+      contextMenuTrigger: null,
     }
   },
   props: {
@@ -62,6 +75,9 @@ export default {
     idPrefix: String,
   },
   methods: {
+    recordContextMenuTrigger(vNode) {
+      this.contextMenuTrigger = vNode.componentInstance
+    },
     adjustHeight(isOpen) {
       this.sectionStyleObject.flex = isOpen ? 1 : 0
     },

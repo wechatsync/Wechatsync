@@ -1,16 +1,21 @@
 <template>
-  <codemirror v-model="code" :options="options"> </codemirror>
+  <codemirror
+    :key="active.id"
+    :value="active.content || ''"
+    :options="options"
+    @input="onCmCodeChange"
+  >
+  </codemirror>
 </template>
 
 <script>
+import CodeMirror from 'codemirror'
 import { codemirror } from 'vue-codemirror'
 import 'codemirror/lib/codemirror.css'
 // language
 import 'codemirror/mode/javascript/javascript.js'
 import 'codemirror/mode/markdown/markdown.js'
 import 'codemirror/mode/xml/xml.js'
-// theme css
-// import "codemirror/theme/monokai.css";
 // theme css
 import './theme/codemirror-light.scss'
 import './theme/codemirror-dark.scss'
@@ -48,25 +53,18 @@ import 'codemirror/addon/fold/markdown-fold.js'
 import 'codemirror/addon/fold/xml-fold.js'
 
 import { getEditorMode } from '@/utils/file'
+
 export default {
   components: {
     codemirror,
   },
   props: {
-    // defaultCode: {
-    //   type: String,
-    //   default: '',
-    // },
-    fileName: String,
+    active: Object,
   },
-  data() {
-    return {
-      code: '',
-    }
-  },
-
   computed: {
     options() {
+      const isMac = CodeMirror.keyMap.default == CodeMirror.keyMap.macDefault
+      const save = this.onSave.bind(this)
       return {
         tabSize: 2,
         styleActiveLine: false,
@@ -76,7 +74,7 @@ export default {
         foldGutter: true,
         gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
         highlightSelectionMatches: { showToken: /\w/, annotateScrollbar: true },
-        mode: getEditorMode(this.fileName),
+        mode: getEditorMode(this.active.name),
         // hint.js options
         hintOptions: {
           // 当匹配只有一项的时候是否自动补全
@@ -84,10 +82,33 @@ export default {
         },
         //快捷键 可提供三种模式 sublime、emacs、vim
         keyMap: 'sublime',
-        matchBrackets: true,
+        matchBrackets: false,
         showCursorWhenSelecting: true,
         theme: 'light',
+        extraKeys: isMac
+          ? {
+              'Cmd-S': save,
+            }
+          : {
+              'Ctrl-S': save,
+            },
       }
+    },
+  },
+
+  methods: {
+    onCmCodeChange(newCode) {
+      this.$emit('on-change', {
+        id: this.active.id,
+        content: newCode,
+        dirty: true,
+      })
+    },
+    onSave() {
+      this.$emit('on-change', {
+        id: this.active.id,
+        dirty: false,
+      })
     },
   },
 }

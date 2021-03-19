@@ -8,12 +8,15 @@
       />
     </template>
     <template v-slot:post="slotProps">
-      <v-icon
-        scale="0.8"
-        class="action-icon"
-        :name="slotProps.item.dirty ? 'circle' : 'times'"
-        @click.stop="closeFile(slotProps.item.id)"
-      />
+      <div :class="['icon-group', { unsave: slotProps.item.dirty }]">
+        <v-icon scale="0.5" class="save-status-icon" name="circle" />
+        <v-icon
+          :scale="0.75"
+          class="close-icon"
+          :name="'times'"
+          @click.stop="closeFile(slotProps.item.id)"
+        />
+      </div>
     </template>
   </tabs>
 </template>
@@ -62,20 +65,21 @@ export default {
   },
   methods: {
     closeFile(id) {
-      let nextId = ''
       if (this.active.id === id) {
         const index = this.ids.indexOf(id)
-        nextId = this.ids[index - 1] || this.ids[index + 1]
+        const nextId = this.ids[index - 1] || this.ids[index + 1]
+        nextId && this.$emit('on-active', nextId)
       }
       this.$OpenedFilesInstance.remove(id)
-      if (nextId) {
-        this.$emit('on-active', nextId)
-      }
     },
     openActiveFile(currentId, prevId) {
+      if (!currentId) return
+
       if (this.ids.includes(currentId)) {
+        // 滚动定位
       } else {
-        this.$OpenedFilesInstance.add(prevId, currentId)
+        const index = prevId ? this.ids.indexOf(prevId) + 1 : this.ids.length
+        this.$OpenedFilesInstance.add(index, currentId)
       }
     },
     activeFile(id) {
@@ -86,25 +90,58 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.icon-group {
+  position: relative;
+  margin-left: 0.5em;
+  .save-status-icon {
+    visibility: hidden;
+    fill: var(--icon-default-color);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .close-icon {
+    visibility: hidden;
+    fill: var(--icon-default-color);
+  }
+
+  &.unsave {
+    .save-status-icon {
+      visibility: visible;
+    }
+    .close-icon {
+      visibility: hidden;
+    }
+  }
+}
+
 .tabbar {
   background-color: var(--foreground-color);
   & ::v-deep li {
+    font-size: 0.875rem;
     border-right: 1px solid var(--line-color);
 
-    .action-icon {
-      margin-left: 0.5em;
-      visibility: hidden;
-      fill: var(--icon-default-color);
-    }
     .file-icon {
-      margin-right: 0.2em;
+      margin-right: 0.5em;
     }
     &.active {
       background-color: var(--background-color);
+      .icon-group:not(.unsave) {
+        .close-icon {
+          visibility: visible;
+        }
+      }
     }
     &:hover {
-      .action-icon {
-        visibility: visible;
+      .icon-group {
+        .close-icon {
+          visibility: visible;
+        }
+        .save-status-icon {
+          visibility: hidden;
+        }
       }
     }
   }

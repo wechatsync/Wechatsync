@@ -26,8 +26,11 @@ export default class BaseSection {
     this.save()
   }
   merge(itemId, data) {
-    const index = this.data.items.findIndex(item => item.id !== itemId)
-    const item = { ...this.data.items[index], ...data }
+    if ('name' in data && this.check(item) instanceof Error) return
+
+    const index = this.data.items.findIndex(item => item.id === itemId)
+    const originItem = this.data.items[index]
+    const item = { ...originItem, ...data }
     this.data.items.splice(index, 1, item)
     this.save()
   }
@@ -44,11 +47,11 @@ export default class BaseSection {
   }
   check({ id, name }) {
     if (!id || !name) {
-      throw new Error('Field Empty')
+      throw new Error('文件名不能为空，请重新设置')
     }
 
     if (this.data.items.find(item => name === item.name)) {
-      throw new Error('Name Duplicate')
+      throw new Error('该文件名已存在，请重新设置')
     }
   }
   save() {

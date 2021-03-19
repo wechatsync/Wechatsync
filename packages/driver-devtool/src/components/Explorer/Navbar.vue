@@ -35,7 +35,7 @@ export default {
 <style lang="scss" scoped>
 .navbar {
   display: flex;
-  padding: 0.8em 2em;
+  padding: 0.8em var(--h-padding-width);
   align-items: center;
   border-bottom: 1px solid var(--line-color);
 }
