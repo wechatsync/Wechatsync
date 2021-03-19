@@ -78,10 +78,11 @@
 </template>
 
 <script>
-import { getDriver } from '../drivers/driver'
+// import { getDriver } from '../drivers/driver'
 
 var winBackgroundPage = chrome.extension.getBackgroundPage()
 var db = winBackgroundPage.db
+
 
 export default {
   data() {
@@ -169,7 +170,7 @@ export default {
     },
     async create() {
       var self = this
-      var driver = getDriver({
+      var driver = winBackgroundPage.currentDriver.getDriver({
         type: this.type,
         params: {
           wpUrl: this.wpUrl,
