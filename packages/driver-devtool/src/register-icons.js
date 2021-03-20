@@ -19,6 +19,7 @@ import 'vue-awesome/icons/bolt'
 import 'vue-awesome/icons/ban'
 import 'vue-awesome/icons/eye'
 import 'vue-awesome/icons/eye-slash'
+import 'vue-awesome/icons/question-circle'
 
 Vue.component('v-icon', Icon)
 

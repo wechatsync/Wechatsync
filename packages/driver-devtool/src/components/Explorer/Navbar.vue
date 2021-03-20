@@ -4,6 +4,10 @@
       <v-icon name="logo" />&nbsp;<span>开发者工具</span>
     </a>
     <div class="right-content">
+      <div class="help" @click="isModalVisible = true">
+        <a><v-icon name="question-circle"></v-icon></a>
+      </div>
+
       <toggle
         :true-value="`dark`"
         :false-value="`light`"
@@ -24,6 +28,18 @@
         </li>
       </ul>
     </div>
+    <modal v-if="isModalVisible">
+      <template v-slot:header>
+        <header class="modal-header">
+          <h1 class="title">功能介绍</h1>
+          <v-icon name="times" @click="closeModal"></v-icon>
+        </header>
+      </template>
+      <template v-slot:body
+        ><feature-component class="modal-content"
+      /></template>
+      <template v-slot:footer>&nbsp;</template>
+    </modal>
   </div>
 </template>
 
@@ -32,8 +48,16 @@ import {
   addThemeChangeListener,
   removeThemeChangeListener,
 } from '@/utils/theme'
+import featureComponent from '@/assets/FEATURES.md'
+import { get, set } from '@/utils/localStore'
+
 export default {
+  components: {
+    featureComponent,
+  },
+
   data() {
+    this.$isRookie = !get('lastTimeStamp')
     return {
       theme: window.__theme,
       links: [
@@ -48,6 +72,7 @@ export default {
           url: 'https://www.wechatsync.com/#install',
         },
       ],
+      isModalVisible: this.$isRookie,
     }
   },
   mounted() {
@@ -62,6 +87,10 @@ export default {
     },
     setTheme(theme) {
       window.__setPreferredTheme(theme)
+    },
+    closeModal() {
+      this.isModalVisible = false
+      if (this.$isRookie) set('lastTimeStamp', +new Date())
     },
   },
 }
@@ -125,6 +154,62 @@ export default {
   > a {
     text-decoration: none;
     color: inherit;
+  }
+}
+.help {
+  margin-right: 1em;
+  cursor: pointer;
+  svg {
+    fill: var(--icon-unselected-color);
+  }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-bottom: 0.75em;
+  .title {
+    margin: 0;
+    margin-right: auto;
+  }
+  svg {
+    height: 1.5em;
+    width: auto;
+    fill: var(--icon-default-color);
+    cursor: pointer;
+  }
+}
+
+.modal-content {
+  max-height: 50vh;
+  overflow: auto;
+  padding-right: 1em;
+  font-size: 1rem;
+  line-height: 1.5;
+  & ::v-deep {
+    .modal-container {
+      background-color: var(--background-color);
+      color: var(--font-primary-color);
+    }
+    h1 {
+      font-size: 1.25em;
+    }
+    h2 {
+      font-size: 1.2em;
+    }
+    h3 {
+      font-size: 1.1em;
+    }
+    ul {
+      margin: 0;
+      list-style-type: disc;
+      list-style-position: inside;
+      padding: 0;
+    }
+    hr {
+      border: 1px solid var(--foreground-color);
+      margin: 1em 0;
+    }
   }
 }
 </style>

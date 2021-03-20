@@ -135,6 +135,7 @@ async function testImageUpload(driverName) {
 
 // 测试文章同步
 async function testArticleUpload(driverName) {
+  let syncingQueue = []
   const testCases = getTestCases()
 
   if (!testCases.length) {
@@ -167,7 +168,13 @@ async function testArticleUpload(driverName) {
         content: marked(content),
         markdown: content,
       })
+    } else {
+      Object.assign(payload, {
+        title: fileName,
+        content,
+      })
     }
+
     window.$syncer.addTask(
       {
         post: payload,
@@ -178,10 +185,36 @@ async function testArticleUpload(driverName) {
         ],
       },
       function(res) {
+        if (res.status === 'done') {
+          console.log(res)
+          log.addSuccessLog({
+            title: `同步文章 ${fileName} 成功`,
+            info: res.accounts
+              .map(({ editResp, status }) => {
+                if (status === 'done') {
+                  return editResp.draftLink
+                }
+              })
+              .join('\n'),
+          })
+          syncingQueue = null
+        } else {
+          if (!syncingQueue.includes(res.guid)) {
+            log.addInfoLog({
+              title: `正在同步文章 ${fileName}`,
+              info: res.post,
+            })
+            syncingQueue.push(res.guid)
+          }
+        }
+
         console.log('article sync start', res)
       },
       function(res) {
-        console.error('article sync start', e)
+        log.addInfoLog({
+          title: `同步文章 ${fileName} 失败`,
+          info: res,
+        })
       }
     )
   })

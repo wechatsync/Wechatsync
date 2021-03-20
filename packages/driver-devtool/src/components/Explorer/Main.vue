@@ -57,17 +57,7 @@ export default {
       saveSection()
     })
     window.$syncer.startInspect(function (args) {
-      if (
-        args?.[0]?.status === 'success' &&
-        typeof args?.[0]?.['post_id'] === 'string'
-      ) {
-        log.addSuccessLog({
-          title: `文章同步成功`,
-          info: args[1],
-        })
-      } else {
-        log.addInspectLog(args)
-      }
+      log.addInspectLog(args)
       console.log('log', args)
     })
   },

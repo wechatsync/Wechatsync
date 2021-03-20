@@ -86,6 +86,21 @@ module.exports = env => {
             loader: 'vue-loader',
           },
           {
+            test: /\.md$/,
+            resourceQuery: { not: [/raw/] },
+            use: [
+              {
+                loader: 'vue-loader',
+              },
+              {
+                loader: 'vue-markdown-loader/lib/markdown-compiler',
+                options: {
+                  raw: true,
+                },
+              },
+            ],
+          },
+          {
             resourceQuery: /raw/,
             type: 'asset/source',
           },
