@@ -10,16 +10,15 @@
   "author": "fun",
   "license": "ISC",
   "dependencies": {
-    "element-ui": "^2.15.1",
-    "mavon-editor": "^2.9.1",
+    "gray-matter": "^4.0.2",
+    "marked": "^2.0.1",
     "v-contextmenu": "^2.9.0",
     "vue": "^2.6.12",
     "vue-awesome": "^4.1.0",
     "vue-codemirror": "^4.0.6",
-    "vue-moment": "^4.1.0",
     "vue-router": "^3.5.1",
     "vue-runtime-helpers": "^1.1.2",
-    "vue-spinner": "^1.0.4",
-    "vuex": "^3.6.2"
+    "vue-splitpane": "^1.0.6",
+    "vue2-perfect-scrollbar": "^1.5.0"
   }
 }
