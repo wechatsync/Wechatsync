@@ -94,7 +94,10 @@ export default {
   },
   methods: {
     runCode(key) {
-      if (!isAdapter(this.active)) window.confirm('请选择适配器进行调试')
+      if (!isAdapter(this.active)) {
+        window.alert('请选择适配器进行调试')
+        return
+      }
       switch (key) {
         case 'deploy':
           deployCode(this.active)

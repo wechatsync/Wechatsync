@@ -67,7 +67,7 @@ export default {
       ['Name Duplicate', '文件名已存在，请重新设置'],
     ])
     if (errorMap.has(err.message)) {
-      window.confirm(errorMap.get(err.message))
+      window.alert(errorMap.get(err.message))
       return false
     }
   },
