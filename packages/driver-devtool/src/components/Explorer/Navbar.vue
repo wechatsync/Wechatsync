@@ -28,7 +28,7 @@
         </li>
       </ul>
     </div>
-    <modal v-if="isModalVisible">
+    <modal v-if="isModalVisible" class="modal">
       <template v-slot:header>
         <header class="modal-header">
           <h1 class="title">功能介绍</h1>
@@ -163,6 +163,12 @@ export default {
     fill: var(--icon-unselected-color);
   }
 }
+.modal {
+  & ::v-deep .modal-container {
+    background-color: var(--background-color);
+    color: var(--font-primary-color);
+  }
+}
 .modal-header {
   display: flex;
   align-items: center;
@@ -187,10 +193,6 @@ export default {
   font-size: 1rem;
   line-height: 1.5;
   & ::v-deep {
-    .modal-container {
-      background-color: var(--background-color);
-      color: var(--font-primary-color);
-    }
     h1 {
       font-size: 1.25em;
     }
