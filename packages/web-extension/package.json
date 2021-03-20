@@ -29,8 +29,5 @@
     "vue-router": "^3.0.1",
     "vue-spinner": "^1.0.4",
     "vuex": "^3.0.1"
-  },
-  "devDependencies": {
-    "webpack-merge": "^5.7.3"
   }
 }

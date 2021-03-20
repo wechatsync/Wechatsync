@@ -3,18 +3,19 @@ function testFunc() {
   console.log('api ready')
   var poster = {
     versionNumber: 1001,
+    dev: process.env.WECHAT_ENV === 'development',
   }
 
   var eventCb = {}
   function callFunc(msg, cb) {
     msg.eventID = Math.floor(Date.now() + Math.random() * 100)
-    eventCb[msg.eventID] = function (err, res) {
+    eventCb[msg.eventID] = function(err, res) {
       cb(err, res)
     }
     window.postMessage(JSON.stringify(msg), '*')
   }
 
-  poster.getAccounts = function (cb) {
+  poster.getAccounts = function(cb) {
     callFunc(
       {
         method: 'getAccounts',
@@ -23,11 +24,11 @@ function testFunc() {
     )
   }
 
-  var _statueandler = null;
-  var _consolehandler = null;
+  var _statueandler = null
+  var _consolehandler = null
 
   poster.addTask = function(task, statueandler, cb) {
-    _statueandler = statueandler;
+    _statueandler = statueandler
     callFunc(
       {
         method: 'addTask',
@@ -79,20 +80,19 @@ function testFunc() {
     )
   }
 
-
-  window.addEventListener('message', function (evt) {
+  window.addEventListener('message', function(evt) {
     try {
       var action = JSON.parse(evt.data)
-        if (action.method && action.method === 'taskUpdate') {
-          if (_statueandler != null) _statueandler(action.task)
-          return
-        }
+      if (action.method && action.method === 'taskUpdate') {
+        if (_statueandler != null) _statueandler(action.task)
+        return
+      }
 
-        if (action.method && action.method === 'consoleLog') {
-          if (_consolehandler != null) _consolehandler(action.args)
-          return
-        }
-        if (!action.callReturn) return
+      if (action.method && action.method === 'consoleLog') {
+        if (_consolehandler != null) _consolehandler(action.args)
+        return
+      }
+      if (!action.callReturn) return
       if (action.eventID && eventCb[action.eventID]) {
         eventCb[action.eventID](action.result)
         delete eventCb[action.eventID]
@@ -100,13 +100,11 @@ function testFunc() {
     } catch (e) {}
   })
 
-
-
   window.$poster = poster
   window.$syncer = poster
 }
 
-setTimeout(function () {
+setTimeout(function() {
   var script = document.createElement('script')
   script.type = 'text/javascript'
   script.innerHTML =
@@ -124,20 +122,19 @@ setTimeout(function () {
 var allAccounts = []
 var accounts = []
 
-
 function getAccounts(cb) {
   chrome.extension.sendMessage(
     {
       action: 'getAccount',
     },
-    function (resp) {
+    function(resp) {
       allAccounts = resp
       cb && cb()
     }
   )
 }
 
-if(window.location.href.indexOf('mp.weixin.qq.com') == -1) {
+if (window.location.href.indexOf('mp.weixin.qq.com') == -1) {
   // getAccounts()
 }
 
@@ -145,7 +142,6 @@ function sendToWindow(msg) {
   msg.callReturn = true
   window.postMessage(JSON.stringify(msg), '*')
 }
-
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponseA) {
   try {
@@ -172,87 +168,84 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponseA) {
   }
 })
 
-var _statushandler = null;
+var _statushandler = null
 var _sensitiveAPIWhiteList = [
-  'https://www.wechatsync.com', 
-  'https://developer.wechatsync.com', 
-  'http://localhost:8080'
+  'https://www.wechatsync.com',
+  'https://developer.wechatsync.com',
+  'http://localhost:8080',
 ]
 
-
-window.addEventListener('message', function (evt) {
+window.addEventListener('message', function(evt) {
   // if (evt.origin == 'https://www.wechatsync.com') {
-    // console.log('from page', evt)
-    try {
-      var action = JSON.parse(evt.data)
-      if (action.method == 'getAccounts') {
-        getAccounts(function() {
+  // console.log('from page', evt)
+  try {
+    var action = JSON.parse(evt.data)
+    if (action.method == 'getAccounts') {
+      getAccounts(function() {
+        sendToWindow({
+          eventID: action.eventID,
+          result: allAccounts,
+        })
+      })
+    }
+    if (action.method == 'addTask') {
+      chrome.extension.sendMessage(
+        {
+          action: 'addTask',
+          task: action.task,
+        },
+        function(resp) {
+          console.log('addTask return', resp)
+        }
+      )
+    }
+
+    if (action.method == 'magicCall') {
+      chrome.extension.sendMessage(
+        {
+          action: 'callDriverMethod',
+          methodName: action.methodName,
+          data: action.data,
+        },
+        function(resp) {
           sendToWindow({
             eventID: action.eventID,
-            result: allAccounts,
+            result: resp,
           })
-        })
-      }
-      if (action.method == 'addTask') {
+        }
+      )
+    }
+
+    if (_sensitiveAPIWhiteList.indexOf(evt.origin) > -1) {
+      if (action.method == 'updateDriver') {
         chrome.extension.sendMessage(
           {
-            action: 'addTask',
-            task: action.task,
+            action: 'updateDriver',
+            data: action.data,
           },
           function(resp) {
-            console.log('addTask return', resp)
+            sendToWindow({
+              eventID: action.eventID,
+              result: resp,
+            })
           }
         )
-       }
-
-       if (action.method == 'magicCall') {
-         chrome.extension.sendMessage(
-           {
-             action: 'callDriverMethod',
-             methodName: action.methodName,
-             data: action.data,
-           },
-           function(resp) {
-             sendToWindow({
-               eventID: action.eventID,
-               result: resp,
-             })
-           }
-         )
       }
 
-      if (_sensitiveAPIWhiteList.indexOf(evt.origin) > -1) {
-        if (action.method == 'updateDriver') {
-          chrome.extension.sendMessage(
-            {
-              action: 'updateDriver',
-              data: action.data,
-            },
-            function(resp) {
-              sendToWindow({
-                eventID: action.eventID,
-                result: resp,
-              })
-            }
-          )
-        }
-
-        if (action.method == 'startInspect') {
-          chrome.extension.sendMessage(
-            {
-              action: 'startInspect'
-            },
-            function(resp) {
-              sendToWindow({
-                eventID: action.eventID,
-                result: resp,
-              })
-            }
-          )
-        }
+      if (action.method == 'startInspect') {
+        chrome.extension.sendMessage(
+          {
+            action: 'startInspect',
+          },
+          function(resp) {
+            sendToWindow({
+              eventID: action.eventID,
+              result: resp,
+            })
+          }
+        )
       }
-
-
-    } catch (e) {}
+    }
+  } catch (e) {}
   // }
 })

@@ -114,6 +114,9 @@ module.exports = env => {
           exclude: file =>
             (/node_modules/.test(file) && !/\.vue\.js/.test(file)) ||
             /\.min\.js$/i.test(file),
+          options: {
+            rootMode: 'upward',
+          },
         },
         {
           test: /\.vue$/,

@@ -1,0 +1,83 @@
+/* fork from https://codemirror.net/theme/eclipse.css */
+
+$selection-bg: #d9d9d9;
+$focus-selection-bg: rgba(#d9d9d9, 0.8);
+
+.CodeMirror-selected {
+  background: $selection-bg;
+}
+.CodeMirror-focused .CodeMirror-selected {
+  background: $focus-selection-bg;
+}
+
+.cm-s-light span.cm-meta {
+  color: #ff1717;
+}
+.cm-s-light span.cm-keyword {
+  line-height: 1em;
+  font-weight: bold;
+  color: #7f0055;
+}
+.cm-s-light span.cm-atom {
+  color: #219;
+}
+.cm-s-light span.cm-number {
+  color: #164;
+}
+.cm-s-light span.cm-def {
+  color: #00f;
+}
+.cm-s-light span.cm-variable {
+  color: black;
+}
+.cm-s-light span.cm-variable-2 {
+  color: #0000c0;
+}
+.cm-s-light span.cm-variable-3,
+.cm-s-light span.cm-type {
+  color: #0000c0;
+}
+.cm-s-light span.cm-property {
+  color: black;
+}
+.cm-s-light span.cm-operator {
+  color: black;
+}
+.cm-s-light span.cm-comment {
+  color: #3f7f5f;
+}
+.cm-s-light span.cm-string {
+  color: #2a00ff;
+}
+.cm-s-light span.cm-string-2 {
+  color: #f50;
+}
+.cm-s-light span.cm-qualifier {
+  color: #555;
+}
+.cm-s-light span.cm-builtin {
+  color: #30a;
+}
+.cm-s-light span.cm-bracket {
+  color: #cc7;
+}
+.cm-s-light span.cm-tag {
+  color: #170;
+}
+.cm-s-light span.cm-attribute {
+  color: #00c;
+}
+.cm-s-light span.cm-link {
+  color: #219;
+}
+.cm-s-light span.cm-error {
+  color: #f00;
+}
+
+.cm-s-light .CodeMirror-activeline-background {
+  background: #e8f2ff;
+}
+.cm-s-light .CodeMirror-matchingbracket {
+  outline: 1px solid grey;
+  color: black !important;
+}

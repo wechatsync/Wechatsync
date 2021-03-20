@@ -1,7 +1,7 @@
 import Sval from 'sval'
-import svalScopes from "@wechatsync/drivers/scopes";
+import svalScopes from '@wechatsync/drivers/scopes'
 
-function getRuntimeScopes () {
+function getRuntimeScopes() {
   return {
     ...svalScopes,
     console: console,
@@ -16,17 +16,17 @@ function getRuntimeScopes () {
     modifyRequestHeaders: modifyRequestHeaders,
     CryptoJS: CryptoJS,
     helpers: {
-      parseTokenAndToHeaders: parseTokenAndToHeaders
-    }
-  };
+      parseTokenAndToHeaders: parseTokenAndToHeaders,
+    },
+  }
 }
 
-export function initDevRuntimeEnvironment () {
-  const scopes = getRuntimeScopes();
+export function initDevRuntimeEnvironment() {
+  const scopes = getRuntimeScopes()
 
   Object.keys(scopes).forEach(key => {
     if (!window.hasOwnProperty(key)) {
-      window[key] = scopes[key];
+      window[key] = scopes[key]
     }
   })
 }
@@ -40,7 +40,7 @@ export function getDriverProvider(code) {
   }
 
   const interpreter = new Sval(options)
-  const scopes = getRuntimeScopes();
+  const scopes = getRuntimeScopes()
 
   for (var k in scopes) {
     interpreter.import(k, scopes[k])
@@ -60,9 +60,9 @@ export function initializeDriver(conf = {}) {
       const driver = getDriverProvider(code)
       resolve(driver)
     }
-    chrome.storage.local.get(['driver'], function (result) {
+    chrome.storage.local.get(['driver'], function(result) {
       try {
-        if(conf.beforeCreate) {
+        if (conf.beforeCreate) {
           conf.beforeCreate(result)
         }
         createDriver(result.driver)
@@ -74,13 +74,11 @@ export function initializeDriver(conf = {}) {
 }
 
 function setCache(name, value) {
-  var d = {};
-  d[name] = value;
-  chrome.storage.local.set(d,
-    function() {
-      console.log('cache set')
-    }
-  )
+  var d = {}
+  d[name] = value
+  chrome.storage.local.set(d, function() {
+    console.log('cache set')
+  })
 }
 
 var abb = {}
@@ -114,13 +112,13 @@ function requestFrameMethod(d, name) {
 
 function initializeFrame(src, type, forceOpen) {
   if (!frameStack[type]) {
-     if (!forceOpen) {
-       frameStack[type] = document.createElement('iframe')
-       frameStack[type].src = src || 'https://segmentfault.com/write?freshman=1'
-       document.body.append(frameStack[type])
-     } else {
-       window.open(src)
-     }
+    if (!forceOpen) {
+      frameStack[type] = document.createElement('iframe')
+      frameStack[type].src = src || 'https://segmentfault.com/write?freshman=1'
+      document.body.append(frameStack[type])
+    } else {
+      window.open(src)
+    }
   }
 }
 
@@ -136,7 +134,7 @@ const _rules = {}
  */
 function modifyRequestHeaders(ulrPrefix, headers, inspectUrls, handler) {
   // once
-  if(!_rules[ulrPrefix]) {
+  if (!_rules[ulrPrefix]) {
     _rules[ulrPrefix] = headers
   }
   console.log('modifyRequestHeaders', ulrPrefix)
@@ -146,16 +144,17 @@ function modifyRequestHeaders(ulrPrefix, headers, inspectUrls, handler) {
         var macthedUrl = details.url.indexOf(ulrPrefix) > -1
         if (macthedUrl) {
           details.requestHeaders = details.requestHeaders.map(_ => {
-            if(headers[_.name]) {
+            if (headers[_.name]) {
               _.value = headers[_.name]
             }
             return _
           })
 
           Object.keys(headers).forEach(name => {
-            var existsHeaders = details.requestHeaders.filter(_ => _.name == name)
-            if(existsHeaders.length) {
-
+            var existsHeaders = details.requestHeaders.filter(
+              _ => _.name == name
+            )
+            if (existsHeaders.length) {
             } else {
               details.requestHeaders.push({
                 name: name,
@@ -176,10 +175,9 @@ function modifyRequestHeaders(ulrPrefix, headers, inspectUrls, handler) {
     {
       urls: inspectUrls,
     },
-    ['blocking', 'requestHeaders', 'extraHeaders',]
+    ['blocking', 'requestHeaders', 'extraHeaders']
   )
 }
-
 
 function getCookie(name, cookieStr) {
   let arr,
