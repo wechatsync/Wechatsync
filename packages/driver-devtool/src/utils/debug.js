@@ -5,45 +5,77 @@ import matter from 'gray-matter'
 import marked from 'marked'
 
 export async function deployCode({ name, content }) {
-  log.addLog('部署代码到插件...')
-  const deployResult = await new Promise(resolve => {
-    window.$syncer.updateDriver(
-      {
-        name: getFileName(name),
-        code: content,
-        dev: true,
-        patch: true,
-      },
-      res => {
-        resolve(res.result)
-      }
-    )
-  })
+  log.addInfoLog('部署代码到插件...')
 
-  log.addDebugLog(deployResult)
+  try {
+    await new Promise((resolve, reject) => {
+      window.$syncer.updateDriver(
+        {
+          name: getFileName(name),
+          code: content,
+          dev: true,
+          patch: true,
+        },
+        res => {
+          const { status, ...info } = res.result
+
+          if (status === 0) {
+            reject(info)
+          } else {
+            resolve(info)
+          }
+        }
+      )
+    })
+    log.addSuccessLog(`${name} 已部署到插件`)
+    return true
+  } catch (info) {
+    log.addErrorLog({
+      title: `${name} 部署失败`,
+      info: info,
+    })
+    return false
+  }
 }
 
 // 测试获取用户信息
 async function testUserInfoGather(driverName) {
+  log.addInfoLog('测试账号识别...')
+
   const callArgs = {
     methodName: 'getMetaData',
     account: {
       type: driverName,
     },
   }
-  const accountResult = await new Promise(resolve => {
-    window.$syncer.magicCall(callArgs, res => {
-      resolve(res)
-    })
-  })
-  log.addDebugLog(accountResult)
 
-  return accountResult.status !== 0
+  try {
+    const accountResult = await new Promise((resolve, reject) => {
+      window.$syncer.magicCall(callArgs, res => {
+        if (res.error) {
+          reject(res)
+        } else {
+          resolve(res.result)
+        }
+      })
+    })
+    log.addSuccessLog({
+      title: `${driverName} 账号识别成功`,
+      info: accountResult,
+    })
+    return true
+  } catch (info) {
+    log.addErrorLog({
+      title: `${driverName} 账号识别失败`,
+      info,
+    })
+    return false
+  }
 }
 
 // 测试图片上传
 async function testImageUpload(driverName) {
-  log.addLog(['图片上传测试...'])
+  log.addInfoLog('测试图片上传...')
 
   const testCases = getTestCases()
 
@@ -73,15 +105,32 @@ async function testImageUpload(driverName) {
       }
       return new Promise(resolve => {
         window.$syncer.uploadImage(actionData, res => {
-          resolve(res)
+          resolve({
+            origin: testImageSrc,
+            result: res,
+          })
         })
       })
     })
   )
 
-  log.addDebugLog(uploadResults)
+  let isPassedAll = true
+  uploadResults.forEach(({ origin, result }, index) => {
+    if (result.error) {
+      log.addErrorLog({
+        title: `第${index + 1}张图片上传失败。图片源：${origin}`,
+        info: result,
+      })
+      isPassedAll = false
+    } else {
+      log.addSuccessLog({
+        title: `第${index + 1}张图片上传成功。图片源：${origin}`,
+        info: result.result,
+      })
+    }
+  })
 
-  return uploadResults.every(result => !result.error)
+  return isPassedAll
 }
 
 // 测试文章同步
@@ -92,6 +141,8 @@ async function testArticleUpload(driverName) {
     window.confirm('没有选择任何测试文章，请在侧边栏添加并选择')
     return
   }
+
+  log.addInfoLog('测试文章同步...')
 
   testCases.forEach(test => {
     const { name, content } = test
@@ -122,18 +173,15 @@ async function testArticleUpload(driverName) {
         post: payload,
         accounts: [
           {
-            account: {
-              type: driverName,
-            },
+            type: driverName,
           },
         ],
       },
-      function(status) {
-        // self.taskStatus = status
-        console.log('status', status)
+      function(res) {
+        console.log('article sync start', res)
       },
-      function() {
-        console.log('send')
+      function(res) {
+        console.error('article sync start', e)
       }
     )
   })
@@ -145,13 +193,34 @@ export async function runAccountTest(fileName) {
 
 export async function runImageSyncTest(fileName) {
   const driverName = getFileName(fileName)
-  if (!(await testUserInfoGather(driverName))) return
+  // if (!(await testUserInfoGather(driverName))) return
   await testImageUpload(driverName)
 }
 
 export async function runArticleSyncTest(fileName) {
   const driverName = getFileName(fileName)
-  if (!(await testUserInfoGather(driverName))) return
-  if (!(await testImageUpload(driverName))) return
+  // if (!(await testUserInfoGather(driverName))) return
+  // if (!(await testImageUpload(driverName))) return
   await testArticleUpload(driverName)
 }
+
+export const debugList = [
+  {
+    key: 'account',
+    label: '账号识别',
+    function: runAccountTest,
+    shortcuts: { mac: ['Cmd + 1'], win: ['Ctrl + 1'] },
+  },
+  {
+    key: 'imageUpload',
+    label: '图片上传',
+    function: runImageSyncTest,
+    shortcuts: { mac: ['Cmd + 2'], win: ['Ctrl + 2'] },
+  },
+  {
+    key: 'articleSync',
+    label: '文章同步',
+    function: runArticleSyncTest,
+    shortcuts: { mac: ['Cmd + 3'], win: ['Ctrl + 3'] },
+  },
+]

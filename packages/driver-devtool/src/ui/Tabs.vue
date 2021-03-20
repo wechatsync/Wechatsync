@@ -49,8 +49,3 @@ ul {
 }
 </style>
 
-<style>
-.ps {
-  width: 100%;
-}
-</style>

@@ -10,16 +10,10 @@
 
 <script>
 import CodeMirror from 'codemirror'
-import { codemirror } from 'vue-codemirror'
-import 'codemirror/lib/codemirror.css'
 // language
 import 'codemirror/mode/javascript/javascript.js'
 import 'codemirror/mode/markdown/markdown.js'
 import 'codemirror/mode/xml/xml.js'
-// theme css
-import './theme/codemirror-base.scss'
-import './theme/codemirror-light.scss'
-import './theme/codemirror-dark.scss'
 // require active-line.js
 import 'codemirror/addon/selection/active-line.js'
 // styleSelectedText
@@ -62,33 +56,17 @@ import {
 } from '@/utils/debug'
 
 import { changeProperty, isAdapter } from '@/store/controller/section'
-import {
-  addThemeChangeListener,
-  removeThemeChangeListener,
-} from '@/utils/theme'
 export default {
-  components: {
-    codemirror,
-  },
-  data() {
-    return {
-      theme: window.__theme,
-    }
-  },
   props: {
     active: Object,
-  },
-  mounted() {
-    addThemeChangeListener(this.onThemeChange)
-  },
-  beforeDestroy() {
-    removeThemeChangeListener(this.onThemeChange)
+    theme: String,
   },
   computed: {
     options() {
       const { name } = this.active
       const isMac = CodeMirror.keyMap.default == CodeMirror.keyMap.macDefault
       const save = this.onSave.bind(this)
+
       const testAccount = function () {
         runAccountTest(name)
       }
@@ -97,6 +75,9 @@ export default {
       }
       const testArticle = function () {
         runArticleSyncTest(name)
+      }
+      const openTerminal = () => {
+        this.$emit('toggle-terminal')
       }
       return {
         tabSize: 2,
@@ -125,12 +106,14 @@ export default {
               'Cmd-1': testAccount,
               'Cmd-2': testImage,
               'Cmd-3': testArticle,
+              'Cmd-O': openTerminal,
             }
           : {
               'Ctrl-S': save,
               'Ctrl-1': testAccount,
               'Ctrl-2': testImage,
               'Ctrl-3': testArticle,
+              'Ctrl-O': openTerminal,
             },
       }
     },
@@ -151,9 +134,6 @@ export default {
       if (isAdapter(this.active)) {
         deployCode(this.active)
       }
-    },
-    onThemeChange(theme) {
-      this.theme = theme
     },
   },
 }

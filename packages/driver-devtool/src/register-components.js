@@ -5,6 +5,11 @@
 
 import Vue from 'vue'
 
+// vue-codemirror
+import VueCodemirror from 'vue-codemirror'
+import 'codemirror/lib/codemirror.css'
+Vue.use(VueCodemirror)
+
 // splitPane
 import splitPane from 'vue-splitpane'
 Vue.component('split-pane', splitPane)

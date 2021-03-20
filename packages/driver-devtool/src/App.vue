@@ -7,7 +7,7 @@
 
 <script>
 import Loading from './components/Explorer/Loading.vue'
-import './style/main.css'
+import './style/main.scss'
 
 // check Extension installed
 export default {

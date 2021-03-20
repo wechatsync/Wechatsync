@@ -43,6 +43,7 @@ import Sidebar from './Sidebar/List.vue'
 import ContentContainer from './Content/Container.vue'
 import { save as saveSection } from '@/store/controller/section'
 import { getData as getActiveItem } from '@/store/controller/activeItem'
+import log from '@/utils/log'
 
 export default {
   components: { Navbar, Sidebar, ContentContainer },
@@ -54,6 +55,20 @@ export default {
   mounted() {
     window.addEventListener('beforeunload', function () {
       saveSection()
+    })
+    window.$syncer.startInspect(function (args) {
+      if (
+        args?.[0]?.status === 'success' &&
+        typeof args?.[0]?.['post_id'] === 'string'
+      ) {
+        log.addSuccessLog({
+          title: `文章同步成功`,
+          info: args[1],
+        })
+      } else {
+        log.addInspectLog(args)
+      }
+      console.log('log', args)
     })
   },
   errorCaptured(err) {

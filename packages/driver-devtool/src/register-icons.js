@@ -12,6 +12,13 @@ import 'vue-awesome/icons/code'
 import 'vue-awesome/icons/check'
 import 'vue-awesome/icons/sun'
 import 'vue-awesome/icons/moon'
+import 'vue-awesome/icons/sync-alt'
+import 'vue-awesome/icons/images'
+import 'vue-awesome/icons/user-circle'
+import 'vue-awesome/icons/bolt'
+import 'vue-awesome/icons/ban'
+import 'vue-awesome/icons/eye'
+import 'vue-awesome/icons/eye-slash'
 
 Vue.component('v-icon', Icon)
 

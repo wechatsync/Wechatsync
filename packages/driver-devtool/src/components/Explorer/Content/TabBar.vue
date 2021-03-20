@@ -1,24 +1,40 @@
 <template>
-  <tabs :items="items" class="tabbar" @click="activeFile">
-    <template v-slot:front="slotProps">
-      <v-icon
-        :name="slotProps.icon.name"
-        :style="slotProps.icon.style"
-        class="file-icon"
-      />
-    </template>
-    <template v-slot:post="slotProps">
-      <div :class="['icon-group', { unsave: slotProps.item.dirty }]">
-        <v-icon scale="0.5" class="save-status-icon" name="circle" />
+  <div class="headerbar">
+    <tabs :items="items" class="tabbar" @click="activeFile">
+      <template v-slot:front="slotProps">
         <v-icon
-          :scale="0.75"
-          class="close-icon"
-          :name="'times'"
-          @click.stop="closeFile(slotProps.item.id)"
+          :name="slotProps.icon.name"
+          :style="slotProps.icon.style"
+          class="file-icon"
         />
-      </div>
-    </template>
-  </tabs>
+      </template>
+      <template v-slot:post="slotProps">
+        <div :class="['icon-group', { unsave: slotProps.item.dirty }]">
+          <v-icon scale="0.5" class="save-status-icon" name="circle" />
+          <v-icon
+            :scale="0.75"
+            class="close-icon"
+            :name="'times'"
+            @click.stop="closeFile(slotProps.item.id)"
+          />
+        </div>
+      </template>
+    </tabs>
+    <ul class="debug-group">
+      <li @click="runCode('delpoy')" title="部署到插件 ⌘ S">
+        <v-icon name="bolt"></v-icon>
+      </li>
+      <li @click="runCode('account')" title="账号识别 ⌘ 1">
+        <v-icon name="user-circle"></v-icon>
+      </li>
+      <li @click="runCode('imageUpload')" title="图片上传 ⌘ 2">
+        <v-icon name="images"></v-icon>
+      </li>
+      <li @click="runCode('articleSync')" title="文章同步 ⌘ 3">
+        <v-icon name="sync-alt"></v-icon>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <script>
@@ -28,9 +44,15 @@ import {
   remove as removeOpenedFile,
   add as addOpenedFile,
 } from '@/store/controller/openedFiles'
-import { getById } from '@/store/controller/section'
+import { getById, isAdapter } from '@/store/controller/section'
 import { setId as setActiveId } from '@/store/controller/activeItem'
 import { getIconInfo } from '@/utils/file'
+import {
+  deployCode,
+  runAccountTest,
+  runArticleSyncTest,
+  runImageSyncTest,
+} from '@/utils/debug'
 export default {
   components: { Tabs },
   data() {
@@ -71,6 +93,23 @@ export default {
     },
   },
   methods: {
+    runCode(key) {
+      if (!isAdapter(this.active)) window.confirm('请选择适配器进行调试')
+      switch (key) {
+        case 'deploy':
+          deployCode(this.active)
+          break
+        case 'account':
+          runAccountTest(this.active.name)
+          break
+        case 'imageUpload':
+          runImageSyncTest(this.active.name)
+          break
+        case 'articleSync':
+          runArticleSyncTest(this.active.name)
+          break
+      }
+    },
     closeFile(id) {
       if (this.active.id === id) {
         const index = this.ids.indexOf(id)
@@ -97,35 +136,25 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.icon-group {
-  position: relative;
-  margin-left: 0.5em;
-  .save-status-icon {
-    visibility: hidden;
-    fill: var(--icon-default-color);
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  .close-icon {
-    visibility: hidden;
-    fill: var(--icon-default-color);
-  }
-
-  &.unsave {
-    .save-status-icon {
-      visibility: visible;
-    }
-    .close-icon {
-      visibility: hidden;
-    }
+.headerbar {
+  display: flex;
+}
+.debug-group {
+  list-style: none;
+  margin: 0 0.5em;
+  padding: 0;
+  flex: none;
+  display: flex;
+  align-items: center;
+  > li {
+    margin: 0 0.5em;
+    display: inline-block;
+    cursor: pointer;
   }
 }
-
 .tabbar {
   background-color: var(--foreground-color);
+  flex: 1;
   & ::v-deep li {
     font-size: 0.875rem;
     border-right: 1px solid var(--line-color);
@@ -150,6 +179,32 @@ export default {
           visibility: hidden;
         }
       }
+    }
+  }
+}
+.icon-group {
+  position: relative;
+  margin-left: 0.5em;
+  .save-status-icon {
+    visibility: hidden;
+    fill: var(--icon-default-color);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .close-icon {
+    visibility: hidden;
+    fill: var(--icon-default-color);
+  }
+
+  &.unsave {
+    .save-status-icon {
+      visibility: visible;
+    }
+    .close-icon {
+      visibility: hidden;
     }
   }
 }
