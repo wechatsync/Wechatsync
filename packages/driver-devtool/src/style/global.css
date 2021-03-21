@@ -47,6 +47,10 @@ body.dark {
   --toggle-icon-color: #f8d731;
 }
 
+body.dark .modal-container {
+  background-color: #282d33;
+}
+
 body {
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, 'Helvetica Neue', Arial, sans-serif;

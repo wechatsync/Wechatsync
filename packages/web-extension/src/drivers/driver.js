@@ -19,8 +19,9 @@ const {
   DiscuzAdapter,
   SoHuAdapter,
   BaiJiaHaoAdapter,
-  OsChinaAdapter
-} = buildInDrivers;
+  OsChinaAdapter,
+  DaYuAdapter,
+} = buildInDrivers
 
 var _cacheState = {}
 const _customDrivers = {};
@@ -51,6 +52,10 @@ export function getDriver(account) {
 
   if (account.type == 'zhihu') {
     return new ZhiHuAdapter()
+  }
+
+  if (account.type == 'dayu') {
+    return new DaYuAdapter(account)
   }
 
   if (account.type == 'jianshu') {
@@ -176,7 +181,8 @@ export async function getPublicAccounts() {
     new FocusAdapter(),
     new BaiJiaHaoAdapter(),
     new SoHuAdapter(),
-    new OsChinaAdapter()
+    new OsChinaAdapter(),
+    new DaYuAdapter(),
   ]
 
   var customDiscuzEndpoints = ['https://www.51hanghai.com'];
@@ -186,15 +192,15 @@ export async function getPublicAccounts() {
    }));
   })
 
-  for (let index = 0; index < _customDrivers.length; index++) {
-    const _customDriver = _customDrivers[index];
+  Object.keys(_customDrivers).forEach(type => {
+    const _customDriver = _customDrivers[type];
     try {
       drivers.push(new _customDriver['handler']());
     } catch (e) {
       console.log('initlaze custom driver error', e)
     }
-  }
-
+  });
+ 
   var users = []
 
   const stepItems = chunk(drivers, 20);
