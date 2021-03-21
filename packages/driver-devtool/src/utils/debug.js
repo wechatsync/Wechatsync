@@ -80,7 +80,7 @@ async function testImageUpload(driverName) {
   const testCases = getTestCases()
 
   if (!testCases.length) {
-    window.confirm('没有选择任何测试文章，请在侧边栏添加并选择')
+    window.alert('没有选择任何测试文章，请在侧边栏添加并选择')
     return
   }
 
@@ -139,7 +139,7 @@ async function testArticleUpload(driverName) {
   const testCases = getTestCases()
 
   if (!testCases.length) {
-    window.confirm('没有选择任何测试文章，请在侧边栏添加并选择')
+    window.alert('没有选择任何测试文章，请在侧边栏添加并选择')
     return
   }
 

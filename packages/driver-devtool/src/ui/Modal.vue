@@ -51,7 +51,6 @@ export default {}
   width: 30em;
   margin: 0px auto;
   padding: 2em;
-  background-color: #fff;
   border-radius: 0.5em;
   box-shadow: 0 2px 10px 2px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease-in;
@@ -59,7 +58,6 @@ export default {}
 
 .modal-header h3 {
   margin-top: 0;
-  color: #333;
 }
 
 /*
