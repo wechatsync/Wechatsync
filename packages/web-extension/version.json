@@ -1,5 +1,5 @@
 {
-    "version": "1.0.8",
+    "version": "1.0.9",
     "driverVersion": "0.0.12",
     "driverUrl": "https://cdn.jsdelivr.net/gh/lljxx1/extension-libs@latest/syncr-6.js",
     "desc": "修复头条发布BUG、新增网页版Markdown支持、修复知乎动态图、豆瓣日记图片丢失的BUG，新增B站、51CTO等渠道"

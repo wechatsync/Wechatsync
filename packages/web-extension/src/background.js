@@ -309,12 +309,42 @@ class Syner {
       if (request.action && request.action == 'getCache') {
         console.log(request)
         ;(async () => {
-          chrome.storage.local.get([request.name], function(result) {
+          chrome.storage.local.get(request.names ? request.names : [request.name], function(
+            result
+          ) {
             sendResponseA({
               result: result,
             })
           })
         })();
+        return true
+      }
+
+      if (request.action && request.action == 'setCache') {
+        console.log(request)
+        ;(async () => {
+          var d = {}
+          d[request.name] = request.value
+          chrome.storage.local.set(d, function() {
+            console.log('cache set')
+          })
+        })();
+        return true
+      }
+
+      if (request.action && request.action == 'sendEvent') {
+        console.log(request)
+        ;(async () => {
+          try {
+            var event = request.event
+            tracker.sendEvent(event.category, event.action, event.label)
+          } catch (e) {}
+          // var d = {}
+          // d[request.name] = request.value
+          // chrome.storage.local.set(d, function() {
+          //   console.log('cache set')
+          // })
+        })()
         return true
       }
 

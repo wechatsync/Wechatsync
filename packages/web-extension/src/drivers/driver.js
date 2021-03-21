@@ -154,9 +154,9 @@ let _lastFetch = null
 
 export async function getPublicAccounts() {
 
-  // 限制100s 保证不会太频繁请求平台
+  // 限制40s 保证不会太频繁请求平台
   if(_lastFetch != null) {
-    const isTooQuickly = (Date.now() - _lastFetch) < 100 * 1000
+    const isTooQuickly = (Date.now() - _lastFetch) < 40 * 1000
     if (isTooQuickly) {
       console.log('too quickly return by cache')
       return _cacheUsers
