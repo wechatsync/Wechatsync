@@ -21,6 +21,7 @@ const {
   BaiJiaHaoAdapter,
   OsChinaAdapter,
   DaYuAdapter,
+  ImoocAdapter,
 } = buildInDrivers
 
 var _cacheState = {}
@@ -142,6 +143,10 @@ export function getDriver(account) {
     return new OsChinaAdapter(account)
   }
 
+  if (account.type == 'imooc') {
+    return new ImoocAdapter(account)
+  }
+  
   throw Error('not supprt account type')
 }
 
@@ -154,9 +159,9 @@ let _lastFetch = null
 
 export async function getPublicAccounts() {
 
-  // 限制40s 保证不会太频繁请求平台
+  // 限制20s 保证不会太频繁请求平台
   if(_lastFetch != null) {
-    const isTooQuickly = (Date.now() - _lastFetch) < 40 * 1000
+    const isTooQuickly = (Date.now() - _lastFetch) < 20 * 1000
     if (isTooQuickly) {
       console.log('too quickly return by cache')
       return _cacheUsers
@@ -183,6 +188,7 @@ export async function getPublicAccounts() {
     new SoHuAdapter(),
     new OsChinaAdapter(),
     new DaYuAdapter(),
+    new ImoocAdapter(),
   ]
 
   var customDiscuzEndpoints = ['https://www.51hanghai.com'];

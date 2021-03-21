@@ -95,8 +95,8 @@ export default class ImoocAdapter {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    if (result.result != 0) {
-      throw new Error(result.msg)
+    if (res.data.result != 0) {
+      throw new Error(res.data.msg)
     }
 
     var url = res.data.data.imgpath
