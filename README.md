@@ -7,31 +7,41 @@
 还在为一次编辑，N 个平台需多次排版上传脑壳疼吧？
 为广大自媒体朋友撸了个提高生产力的小工具、可以做到的在多个内容平台无缝同步。
 
-## 预览
+## 特性
 
-#### 公众号文章同步
+<!-- #### 公众号文章同步 -->
+- [x] 公众号文章同步
+- [x] Markdown 编辑器
+- [x] 网页正文提取（基于 Safari 阅读模式） 可实现多平台互同步
+- [ ] 本地Markdown同步
 
-![](snapshots/wechatsync.png)
 
-<!-- #### 正文提取
+## 支持渠道
+| 媒体           | 媒体行业  | 状态  | 网址                                | 支持类型          | 检查时间      |
+|--------------|-------|-----|-----------------------------------|---------------|-----------|
+| 微信公众号        | 主流自媒体 | 已支持 | https://mp.weixin.qq.com/         | HTML          | 2021/3/17 |
+| 知乎           | 主流自媒体 | 已支持 | https://www.zhihu.com/            | HTML          | 2021/3/17 |
+| 微博           | 主流自媒体 | 已支持 | https://weibo.com/                | HTML          | 2021/3/17 |
+| Bilibili     | 通用行业  | 已支持 | https://www.bilibili.com/         | HTML          | 2021/3/17 |
+| 豆瓣           | 通用行业  | 已支持 | https://www.douban.com/           | HTML          | 2021/3/17 |
+| 百家号          | 通用行业  | 已支持 | https://baijiahao.baidu.com/      |               | 2021/3/17 |
+| 简书           | 通用行业  | 已支持 | https://www.jianshu.com/          | HTML          | 2021/3/17 |
+| 头条号          | 通用行业  | 已支持 | https://mp.toutiao.com/           | HTML          | 2021/3/17 |
+| 搜狐号          | 通用行业  | 已支持 | https://mp.sohu.com/mpfe/v3/login |               | 2021/3/17 |
+| 大鱼号          | 通用行业  | 已支持 | https://mp.dayu.com/              |               | 2021/3/21 |
+| 一点资讯         | 通用行业  | 已支持 | https://www.yidianzixun.com/      | HTML          | 2021/3/18 |
+| Cnblog       | 技术社区  | 已支持 | https://www.cnblogs.com/          | Markdown,HTML | 2021/3/17 |
+| CSDN         | 技术社区  | 已支持 | https://www.csdn.net/             | Markdown,HTML | 2021/3/17 |
+| 51CTO        | 技术社区  | 已支持 | https://www.51cto.com/            | Markdown,HTML | 2021/3/17 |
+| Segmentfault | 技术社区  | 已支持 | https://segmentfault.com/         | Markdown,HTML | 2021/3/17 |
+| 掘金           | 技术社区  | 已支持 | https://juejin.cn/                | HTML,Markdown | 2021/3/17 |
+| 慕课网-手记       | 技术社区  | 已支持 | https://www.imooc.com/article     |               | 2021/3/21 |
+| 开源中国         | 技术社区  | 已支持 | https://my.oschina.net/           |               | 2021/3/18 |
+| Typecho      | 开源CMS | 已支持 | http://typecho.org/               | HTML          | 2021/3/17 |
+| WordPress    | 开源CMS | 已支持 | https://cn.wordpress.org/         | HTML          | 2021/3/17 |
+| 搜狐焦点         | 房地产   | 已支持 | https://house.focus.cn/           | HTML          | 2021/3/17 |
 
-![](snapshots/raw.png)
 
-![](snapshots/reader.png)
-
-![](snapshots/sample.png) -->
-
-<!-- #### 同步详情
-
-![](snapshots/detail.png) -->
-
-#### Markdown 编辑器
-
-![](snapshots/markdown.png)
-
-#### 多渠道选择
-
-![](snapshots/pub.png)
 
 ## 安装方式
 
@@ -46,33 +56,28 @@
 3. 右上角“开启开发者模式”
 4. 拖入解压后的文件夹到浏览器插件页
 
-## 发布渠道
+## 预览
+![](snapshots/wechatsync.png)
 
-#### HTML
+<!-- #### 正文提取
 
-- [x] WordPress
-- [x] Typecho
-- [x] 知乎
-- [x] 简书
-- [x] 微博
-- [x] 头条
+![](snapshots/raw.png)
 
-#### Markdown
+![](snapshots/reader.png)
 
-- [x] CSDN
-- [x] 掘金
-- [x] Segmentfault
-- [x] Cnblog
+![](snapshots/sample.png) -->
 
-## 特性
+#### 同步详情
 
-- [x] 公众号文章
-- [x] Markdown 编辑器
-- [x] 网页正文提取（基于 Safari 阅读模式） 可实现多平台互同步
+![](snapshots/detail.png)
 
-### Markdown 编辑器
+#### Markdown 编辑器
 
-- [x] 图片上传图床
+![](snapshots/markdown.png)
+
+#### 多渠道选择
+
+![](snapshots/pub.png)
 
 ## 背景
 
