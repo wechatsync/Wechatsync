@@ -16,6 +16,7 @@
 - [x] Markdown 编辑器
 - [x] 网页正文提取（基于 Safari 阅读模式） 可实现多平台互同步
 - [ ] 本地Markdown同步
+- [ ] Markdown支持公众号样式定义
 
 
 ## 支持渠道
