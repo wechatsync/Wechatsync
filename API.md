@@ -6,11 +6,11 @@
 ## 插件适配器
 
 插件适配器的工作流程为：
-- 1. 调用 getMetaData 请求平台接口获取用户信息
-- 2. 调用 preEditPost 对文本内容进行预处理
-- 3. 调用 addPost 向平台添加文章
-- 4. 调用 uploadFile 向平台上传文章图片，插件进行内容替换
-- 5. 调用 editPost 向平台更新替换图片后的文章内容
+- 调用 getMetaData 请求平台接口获取用户信息
+- 调用 preEditPost 对文本内容进行预处理
+- 调用 addPost 向平台添加文章
+- 调用 uploadFile 向平台上传文章图片，插件进行内容替换
+- 调用 editPost 向平台更新替换图片后的文章内容
 
 有用户信息、新建文章、图片上传、更新文章几个接口，在类文件里填入上面几个方法的逻辑，调试工具会把代码提交给插件执行
 
@@ -40,4 +40,4 @@ export default class BaseAdapter {
 }
 ```
 
-现有适配器 [参考](https://github.com/wechatsync/Wechatsync/tree/master/packages/%40wechatsync/drivers)
+已有适配器 [参考](https://github.com/wechatsync/Wechatsync/tree/master/packages/%40wechatsync/drivers)
