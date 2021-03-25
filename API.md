@@ -43,4 +43,4 @@ export default class BaseAdapter {
 }
 ```
 
-已有适配器 [参考](https://github.com/wechatsync/Wechatsync/tree/master/packages/%40wechatsync/drivers)
+已有适配器 [参考](https://github.com/wechatsync/Wechatsync/tree/master/packages/%40wechatsync/drivers)，便于调试的[开发者工具](https://developer.wechatsync.com/?utm_source=doc)
