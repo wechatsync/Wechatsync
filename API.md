@@ -4,6 +4,8 @@
 ## 同步内容到我的网站
 目前内置的WordPress和Typecho都是XML-RPC协议，如果你的网站不是这两个开源程序搭建的。你也可以通过兼容xmlrpc的协议来得到支持
 
+[详见php范例](intergrations/php/)
+
 
 
 ## 插件适配器
