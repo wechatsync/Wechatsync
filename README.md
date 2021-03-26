@@ -47,7 +47,7 @@
 
 ### 兼容发布API 
 你也可以通过兼容wordpress xmlrpc协议来使你的网站支持使用文章同步助手来同步
-- (dedecms thinkphp等php后端可以伪装wordpress xmlrpc协议支持文章同步助手同步)[intergrations/php/]
+- [dedecms thinkphp等php后端可以伪装wordpress xmlrpc协议支持文章同步助手同步](intergrations/php/)
 
 
 ## 安装方式
