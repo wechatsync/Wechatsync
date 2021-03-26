@@ -8,7 +8,7 @@ $password = '123456';
 $blogId = 0;
 
 
-
+// 测试获取用户博客信息
 $queryBlog = $client->query('wp.getUsersBlogs', array($username, $password));
 if (!$queryBlog) {
     die('An error occurred - '.$client->getErrorCode().":".$client->getErrorMessage());
@@ -18,7 +18,7 @@ print_r($client->getResponse());
 
 
 
-// test upload
+// 测试文件上传
 $localFile = file_get_contents('./test.png');
 $callResult = $client->query('wp.uploadFile', array($blogId, $username, $password, array(
     'name' => 'save.png',
