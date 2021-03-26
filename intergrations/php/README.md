@@ -16,8 +16,18 @@ php -S localhost:8082
 php test.php
 ```
 
-### 主要RPC方法
+### 主要RPC和参数
 ```
+$username = 'test';
+$password = '123456';
+$post_id = 0;
+$content_struct = array('post_title' => '', 'post_cotent' => '')
+$file = array(
+    'name' => 'save.png',
+    'type' => 'image/png',
+    'bits' => $localFile
+);
+
 $api = array(
     'wp.getUsersBlogs' => 'getUsersBlogs',
     'wp.newPost' => 'newPost',
@@ -25,7 +35,9 @@ $api = array(
     'wp.uploadFile' => 'uploadFile'
 );
 ```
-- `wp.getUsersBlogs` 获取用户博客信息
-- `wp.newPost` 创建新文章
-- `wp.editPost` 编辑文章
-- `wp.uploadFile` 上传文件
+- `wp.getUsersBlogs([$username, $password])` 获取用户博客信息
+- `wp.newPost([$blogid, $username, $password, $content_struct])` 创建新文章
+- `wp.editPost([$blogid, $username, $password], $post_id, $content_struct)` 编辑文章
+- `wp.uploadFile([$blogid, $username, $password, $file])` 上传文件
+
+
