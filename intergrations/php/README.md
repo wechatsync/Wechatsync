@@ -37,7 +37,7 @@ $api = array(
 ```
 - `wp.getUsersBlogs([$username, $password])` 获取用户博客信息
 - `wp.newPost([$blogid, $username, $password, $content_struct])` 创建新文章
-- `wp.editPost([$blogid, $username, $password], $post_id, $content_struct)` 编辑文章
+- `wp.editPost([$blogid, $username, $password, $post_id, $content_struct])` 编辑文章
 - `wp.uploadFile([$blogid, $username, $password, $file])` 上传文件
 
 
