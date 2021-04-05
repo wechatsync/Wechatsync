@@ -226,7 +226,13 @@
           @imgAdd="imgAdd"
           :boxShadow="false"
           v-model="currentArtitle.content"
-        />
+        >
+          <template slot="right-toolbar-before">
+            <!-- <button>
+              view wechat   
+            </button>  -->
+          </template>
+        </mavon-editor>
       </div>
     </div>
   </div>
@@ -567,13 +573,13 @@ export default {
       //   var dri = new Juejin()
       //   var finalUrl = await dri.uploadFileByForm($file)
       var sortOrderTypes = [
-        'weixin',
-        'zhihu',
-        'jianshu',
         'toutiao',
+        'jianshu',
+        'zhihu',
         'weibo',
         'douban',
         'segmentfault',
+        'weixin',
       ]
         .map((_) => this.allAccounts.filter((a) => a.type === _)[0])
         .filter((_) => _)
