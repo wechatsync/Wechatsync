@@ -642,6 +642,17 @@ class Syner {
       console.log('preEditPost', e)
     }
 
+    try {
+      if (driver.addPromotion) {
+        console.log('driver.addPromotion')
+        await driver.addPromotion(postContent)
+      } else {
+        console.log('driver.addPromotion skip')
+      }
+    } catch (e) {
+      console.log('addPromotion', e)
+    }
+
     console.log('driver instance', driver)
     var addResp = await driver.addPost(
       Object.assign(

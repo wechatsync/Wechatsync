@@ -313,5 +313,11 @@ export default class ZhiHuAdapter {
         ? tempDoc.children('div').html()
         : tempDoc.html()
     // div.remove();
+    // this.addNotify(post)
+  }
+
+  addPromotion(post) {
+    var sharcode = `<blockquote><p>本文使用 <a href="https://zhuanlan.zhihu.com/p/358098152" class="internal">文章同步助手</a> 同步</p></blockquote>`
+    post.content = post.content.trim() + `${sharcode}`
   }
 }
