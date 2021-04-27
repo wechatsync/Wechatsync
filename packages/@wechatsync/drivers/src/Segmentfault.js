@@ -50,13 +50,7 @@ export default class SegmentfaultAdapter {
   async editPost(post_id, post) {
     if(!post.markdown) {
       var turndownService = new turndown()
-      turndownService.addRule('codefor', {
-        filter: ['pre'],
-        replacement: function (content) {
-          return ['```', content, '```'].join('\n')
-        },
-      })
-
+      turndownService.use(tools.turndownExt)
       var markdown = turndownService.turndown(post.post_content)
       post.markdown = markdown
       console.log(markdown)

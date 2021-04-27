@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once('./IXR_Library.php');
 
 
@@ -16,7 +16,7 @@ function getUsersBlogs($args) {
     $username = $args[0];
     $password = $args[1];
 
-    $user = login( $username, $password );
+    // $user = login( $username, $password );
 
     $struct = array(
         'isAdmin'  => true,
@@ -36,7 +36,7 @@ function uploadFile($args) {
     $password = $args[2];
     $data     = $args[3];
 
-    $user = login( $username, $password );
+    // $user = login( $username, $password );
 
     $name = $data['name'];
     $type = $data['type'];
@@ -68,7 +68,7 @@ function newPost($args) {
     $password       = $args[2];
     $content_struct = $args[3];
 
-    $user = login( $username, $password );
+    // $user = login( $username, $password );
 
     return $post_id;
 }
@@ -83,7 +83,7 @@ function editPost($args) {
 
     $user = login( $username, $password );
 
-    return true;
+    return $post_id;
 }
 
 // rpc映射

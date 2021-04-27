@@ -36,6 +36,13 @@ export function addCustomDriver(name, driverClass) {
 }
 
 export function getDriver(account) {
+  var driverInstance = _getDriver(account)
+  var _preEditPost = driverInstance.preEditPost
+  // driverInstance.preEditPost =
+  return driverInstance
+}
+
+function _getDriver(account) {
 
   // 保证在内置的前面
   if(_customDrivers[account.type]) {
@@ -146,7 +153,7 @@ export function getDriver(account) {
   if (account.type == 'imooc') {
     return new ImoocAdapter(account)
   }
-  
+
   throw Error('not supprt account type')
 }
 
@@ -206,7 +213,7 @@ export async function getPublicAccounts() {
       console.log('initlaze custom driver error', e)
     }
   });
- 
+
   var users = []
 
   const stepItems = chunk(drivers, 20);

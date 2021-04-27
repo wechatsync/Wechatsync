@@ -521,6 +521,7 @@ class Syner {
         // });
       })
 
+      console.log('wait next')
       var currentTask = notDone.shift()
       if (!currentTask) {
         setTimeout(loop, 3 * 1000)

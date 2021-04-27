@@ -1,50 +1,50 @@
-function escapeHtml(text) {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
+// function escapeHtml(text) {
+//   return text
+//     .replace(/&/g, '&amp;')
+//     .replace(/</g, '&lt;')
+//     .replace(/>/g, '&gt;')
+//     .replace(/"/g, '&quot;')
+//     .replace(/'/g, '&#039;')
+// }
 
-function getChildren(obj, count) {
-  count++
-  if (count > 4) return null
-  if (obj.children().length > 1) return obj
-  return getChildren(obj.children().eq(0), count)
-}
+// function getChildren(obj, count) {
+//   count++
+//   if (count > 4) return null
+//   if (obj.children().length > 1) return obj
+//   return getChildren(obj.children().eq(0), count)
+// }
 
-function CodeBlockToPlainTextOther(pre) {
-  var text = []
-  var minSub = getChildren(pre, 0)
-  var lines = minSub.children()
-  for (let index = 0; index < lines.length; index++) {
-    const element = lines.eq(index)
-    const codeStr = element.text()
-    text.push('<code>' + escapeHtml(codeStr) + '</code>')
-  }
-  return text.join('\n')
-}
+// function CodeBlockToPlainTextOther(pre) {
+//   var text = []
+//   var minSub = getChildren(pre, 0)
+//   var lines = minSub.children()
+//   for (let index = 0; index < lines.length; index++) {
+//     const element = lines.eq(index)
+//     const codeStr = element.text()
+//     text.push('<code>' + escapeHtml(codeStr) + '</code>')
+//   }
+//   return text.join('\n')
+// }
 
-function CodeBlockToPlainText(pre) {
-  var text = []
-  var minSub = getChildren(pre, 0)
-  var lines = pre.find('code')
-  if (lines.length > 1) {
-    return CodeBlockToPlainTextOther(pre)
-  }
+// function CodeBlockToPlainText(pre) {
+//   var text = []
+//   var minSub = getChildren(pre, 0)
+//   var lines = pre.find('code')
+//   if (lines.length > 1) {
+//     return CodeBlockToPlainTextOther(pre)
+//   }
 
-  for (let index = 0; index < lines.length; index++) {
-    const element = lines.eq(index)
-    const codeStr = element[0].innerText
-    console.log('codeStr', codeStr)
-    var codeLines = codeStr.split('\n')
-    codeLines.forEach((codeLine) => {
-      text.push('<code>' + escapeHtml(codeLine) + '</code>')
-    })
-  }
-  return text.join('\n')
-}
+//   for (let index = 0; index < lines.length; index++) {
+//     const element = lines.eq(index)
+//     const codeStr = element[0].innerText
+//     console.log('codeStr', codeStr)
+//     var codeLines = codeStr.split('\n')
+//     codeLines.forEach((codeLine) => {
+//       text.push('<code>' + escapeHtml(codeLine) + '</code>')
+//     })
+//   }
+//   return text.join('\n')
+// }
 
 export default class ZhiHuAdapter {
   constructor() {
@@ -223,17 +223,36 @@ export default class ZhiHuAdapter {
     // var org = $(post.content);
     // var doc = $('<div>').append(org.clone());
     var doc = div
-    var pres = doc.find('pre')
-    console.log('find code blocks', pres.length, post)
-    for (let mindex = 0; mindex < pres.length; mindex++) {
-      const pre = pres.eq(mindex)
-      try {
-        var newHtml = CodeBlockToPlainText(pre, 0)
-        if (newHtml) {
-          console.log(newHtml)
-          pre.html(newHtml)
-        }
-      } catch (e) {}
+    // var pres = doc.find('pre')
+    // console.log('find code blocks', pres.length, post)
+    // for (let mindex = 0; mindex < pres.length; mindex++) {
+    //   const pre = pres.eq(mindex)
+    //   try {
+    //     var newHtml = CodeBlockToPlainText(pre, 0)
+    //     if (newHtml) {
+    //       console.log(newHtml)
+    //       pre.html(newHtml)
+    //     }
+    //   } catch (e) {}
+    // }
+    tools.doPreFilter(div)
+    tools.processDocCode(div)
+
+    var removeIfEmpty = function() {
+      var $obj = $(this)
+      var originalText = $obj.text()
+      if (originalText == '') {
+        $obj.remove()
+      }
+    }
+
+    var removeIfNoImageEmpty = function() {
+      var $obj = $(this)
+      var originalText = $obj.text()
+      var img = $obj.find('img')
+      if (originalText == '' && !img.length) {
+        $obj.remove()
+      }
     }
 
     var processEmptyLine = function (idx, el) {
@@ -243,15 +262,29 @@ export default class ZhiHuAdapter {
       var brs = $obj.find('br')
       if (originalText == '') {
         ;(function () {
-          if (img.length) return
-          if (!brs.length) return
+          if (img.length){
+            console.log('has img skip')
+            return
+          }
+          if (!brs.length) {
+            console.log('no br skip')
+            return
+          }
           $obj.remove()
         })()
+      } else {
+        if(originalText.trim() == '') {
+          console.log('processEmptyLine', $obj)
+          $obj.remove()
+        }
       }
-
       // try to replace as h2;
+    }
+
+    var highlightTitle = function() {
       var strongTag = $obj.find('strong').eq(0)
       var childStrongText = strongTag.text()
+      var isHead = false
       if (originalText == childStrongText) {
         var strongSize = null
         var tagStart = strongTag
@@ -274,17 +307,44 @@ export default class ZhiHuAdapter {
         }
         if (strongSize) {
           var theFontSize = parseInt(strongSize)
-          if (theFontSize > 17 && align == 'center') {
-            var newTag = $('<h2></h2>').append($obj.html())
-            $obj.after(newTag).remove()
+          if (theFontSize > 15 && align == 'center') {
+            // var newTag = $('<h2></h2>').append($obj.html())
+            // $obj.after(newTag).remove()
+            isHead = true;
           }
         }
       }
+      if (isHead) {
+        var NewElement = $("<h2 />");
+        // $.each(this.attributes, function(i, attrib){
+        //   $(NewElement).attr(attrib.name, attrib.value);
+        // });
+        $(this).replaceWith(function () {
+          return $(NewElement).append($obj.text());
+        });
+      }
     }
+    // doc.find('[data-role="outer"]').children()
+    // doc.find('section').each(removeIfNoImageEmpty)
 
     // remove empty break line
+    doc.find('section').each(function() {
+      var NewElement = $("<div />");
+      $.each(this.attributes, function(i, attrib){
+        $(NewElement).attr(attrib.name, attrib.value);
+      });
+      // Replace the current element with the new one and carry over the contents
+      $(this).replaceWith(function () {
+        return $(NewElement).append($(this).contents());
+      });
+    });
+
     doc.find('p').each(processEmptyLine)
-    doc.find('section').each(processEmptyLine)
+    // doc.find('section').each(processEmptyLine)
+    doc.find('div').each(processEmptyLine)
+    doc.find('div').each(removeIfNoImageEmpty)
+    // doc.find('[powered-by]').each(removeIfEmpty)
+    // doc.find('[data-role="paragraph"]').each(highlightTitle)
 
     var processBr = function (idx, el) {
       var $obj = $(this)

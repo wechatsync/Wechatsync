@@ -267,4 +267,9 @@ export default class JianShuAdapter {
         : tempDoc.html()
     // div.remove();
   }
+
+  addPromotion(post) {
+    var sharcode = `<blockquote><p>本文使用 <a href="https://www.jianshu.com/p/5709df6fb58d" class="internal">文章同步助手</a> 同步</p></blockquote>`
+    post.content = post.content.trim() + `${sharcode}`
+  }
 }

@@ -73,12 +73,13 @@ class Mp163 {
   async preEditPost(post) {
     var div = $('<div>')
     $('body').append(div)
+
     try {
-      console.log('zihu.Juejin')
       div.html(post.content)
       var doc = div
-      processDocCode(div)
-      makeImgVisible(div)
+      // var pres = doc.find("pre");
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
 
       var tempDoc = $('<div>').append(doc.clone())
       post.content =

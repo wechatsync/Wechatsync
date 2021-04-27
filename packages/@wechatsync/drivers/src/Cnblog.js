@@ -78,12 +78,7 @@ export default class CnblogAdapter {
   async addPost(post) {
     if(!post.markdown) {
       var turndownService = new turndown()
-    	turndownService.addRule('codefor', {
-        filter: ['pre'],
-        replacement: function (content) {
-          return ['```', content, '```'].join('\n')
-        },
-      })
+      turndownService.use(tools.turndownExt)
     	var markdown = turndownService.turndown(post.post_content)
     	console.log(markdown);
     	post.markdown = markdown
@@ -148,11 +143,14 @@ export default class CnblogAdapter {
   async preEditPost(post) {
     var div = $('<div>')
     $('body').append(div)
+
     try {
       div.html(post.content)
       var doc = div
+      // var pres = doc.find("pre");
       tools.processDocCode(div)
       tools.makeImgVisible(div)
+
       var tempDoc = $('<div>').append(doc.clone())
       post.content =
         tempDoc.children('div').length == 1

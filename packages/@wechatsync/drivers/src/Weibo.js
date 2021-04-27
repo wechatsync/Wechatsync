@@ -109,10 +109,31 @@ export default class WeiboAdapter {
   }
 
   async preEditPost(post) {
+    var div = $('<div>')
+    $('body').append(div)
+    try {
+      div.html(post.content)
+      var doc = div
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
+
+      var tempDoc = $('<div>').append(doc.clone())
+      post.content =
+        tempDoc.children('div').length == 1
+          ? tempDoc.children('div').html()
+          : tempDoc.html()
+
+      console.log('after.predEdit', post.content)
+    } catch (e) {
+      console.log('preEdit.error', e)
+    }
+
     var rexp = new RegExp('>[\ts ]*<', 'g')
     var result = post.content.replace(rexp, '><')
+
     post.content = result
   }
+
 
   async editPost(post_id, post) {
     var res = await $.ajax({
@@ -171,6 +192,10 @@ export default class WeiboAdapter {
       //   save: 1
       // }
     })
+
+    if(res.code == '111006') {
+      throw new Error(res.msg)
+    }
     console.log(res)
     return {
       status: 'success',
@@ -256,5 +281,11 @@ export default class WeiboAdapter {
           '.jpg',
       },
     ]
+  }
+
+
+  addPromotion(post) {
+    var sharcode = `<blockquote>本文使用 <a href="https://zhuanlan.zhihu.com/p/358098152" class="internal">文章同步助手</a> 同步</blockquote>`
+    post.content = post.content.trim() + `${sharcode}`
   }
 }

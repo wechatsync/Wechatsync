@@ -98,12 +98,7 @@ export default class CSDNAdapter {
 		// 支持HTML
     if(!post.markdown) {
       var turndownService = new turndown()
-    	turndownService.addRule('codefor', {
-        filter: ['pre'],
-        replacement: function (content) {
-          return ['```', content, '```'].join('\n')
-        },
-      })
+    	turndownService.use(tools.turndownExt)
     	var markdown = turndownService.turndown(post.post_content)
     	console.log(markdown);
     	post.markdown = markdown

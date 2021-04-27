@@ -162,45 +162,23 @@ export default class _51CtoAdapter {
     var div = $('<div>')
     $('body').append(div)
 
-    div.html(post.content)
-    // var org = $(post.content);
-    // var doc = $('<div>').append(org.clone());
-    var doc = div
-    var pres = doc.find('a')
-    for (let mindex = 0; mindex < pres.length; mindex++) {
-      const pre = pres.eq(mindex)
-      try {
-        pre.after(pre.html()).remove()
-      } catch (e) {}
-    }
-
-    var pres = doc.find('iframe')
-    for (let mindex = 0; mindex < pres.length; mindex++) {
-      const pre = pres.eq(mindex)
-      try {
-        pre.remove()
-      } catch (e) {}
-    }
-
     try {
-      const images = doc.find('img')
-      for (let index = 0; index < images.length; index++) {
-        const image = images.eq(index)
-        const imgSrc = image.attr('src')
-        if (imgSrc && imgSrc.indexOf('.svg') > -1) {
-          console.log('remove svg Image')
-          image.remove()
-        }
-      }
-      const qqm = doc.find('qqmusic')
-      qqm.next().remove()
-      qqm.remove()
-    } catch (e) {}
+      div.html(post.content)
+      var doc = div
+      // var pres = doc.find("pre");
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
 
-    post.content = $('<div>')
-      .append(doc.clone())
-      .html()
-    console.log('post', post)
+      var tempDoc = $('<div>').append(doc.clone())
+      post.content =
+        tempDoc.children('div').length == 1
+          ? tempDoc.children('div').html()
+          : tempDoc.html()
+
+      console.log('after.predEdit', post.content)
+    } catch (e) {
+      console.log('preEdit.error', e)
+    }
   }
 
   // editImg(img, source) {

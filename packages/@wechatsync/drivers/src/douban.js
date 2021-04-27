@@ -110,8 +110,8 @@ export default class DoubanAdapter {
   }
 
   async editPost(post_id, post) {
-    // console.log('editPost', post.post_thumbnail)
     var turndownService = new turndown()
+    turndownService.use(tools.turndownExt)
     var markdown = turndownService.turndown(post.post_content)
     console
       .log(markdown)
@@ -187,7 +187,6 @@ export default class DoubanAdapter {
     console.log(draftjsState)
 
     var state = this.config.state;
-
     var requestUrl = 'https://www.douban.com/j/note/autosave';
     var draftLink = 'https://www.douban.com/note/create';
     var requestBody = {
@@ -249,7 +248,7 @@ export default class DoubanAdapter {
     })
 
     if(res.url) {
-      draftLink = res.url
+      draftLink = `https://www.douban.com/note/${requestBody.note_id}/`
     }
 
     return {
@@ -261,6 +260,34 @@ export default class DoubanAdapter {
 
   editImg(img, source) {
     img.attr('raw-data', JSON.stringify(source.raw))
+  }
+
+  async preEditPost(post) {
+    var div = $('<div>')
+    $('body').append(div)
+
+    try {
+      div.html(post.content)
+      var doc = div
+      // var pres = doc.find("pre");
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
+
+      var tempDoc = $('<div>').append(doc.clone())
+      post.content =
+        tempDoc.children('div').length == 1
+          ? tempDoc.children('div').html()
+          : tempDoc.html()
+
+      console.log('after.predEdit', post.content)
+    } catch (e) {
+      console.log('preEdit.error', e)
+    }
+  }
+
+  addPromotion(post) {
+    var sharcode = `<blockquote><p>本文使用 <a href="https://zhuanlan.zhihu.com/p/358098152" class="internal">文章同步助手</a> 同步</p></blockquote>`
+    post.content = post.content.trim() + `${sharcode}`
   }
 
   async uploadFile(file) {

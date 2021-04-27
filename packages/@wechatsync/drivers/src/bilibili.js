@@ -126,6 +126,9 @@ export default class BilibiliAdapter {
       } catch (e) {}
     }
 
+    tools.processDocCode(div)
+    tools.makeImgVisible(div)
+
     var pres = doc.find('iframe')
     for (let mindex = 0; mindex < pres.length; mindex++) {
       const pre = pres.eq(mindex)
@@ -157,6 +160,11 @@ export default class BilibiliAdapter {
 
   editImg(img, source) {
     img.attr('size', source.size)
+  }
+
+  addPromotion(post) {
+    var sharcode = `<blockquote><p>本文使用 <a href="https://www.bilibili.com/read/cv10352009" class="internal">文章同步助手</a> 同步</p></blockquote>`
+    post.content = post.content.trim() + `${sharcode}`
   }
   //   <img class="" src="http://p2.pstatp.com/large/pgc-image/bc0a9fc8e595453083d85deb947c3d6e" data-ic="false" data-ic-uri="" data-height="1333" data-width="1000" image_type="1" web_uri="pgc-image/bc0a9fc8e595453083d85deb947c3d6e" img_width="1000" img_height="1333"></img>
 }

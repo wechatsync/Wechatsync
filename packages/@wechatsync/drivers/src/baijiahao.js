@@ -46,9 +46,9 @@ export default class BaiJiaHaoAdapter {
     }
 
     const authToken = pageHtml.substring(authIndex + markStr.length, pageHtml.indexOf('",window.user_id', authIndex))
-    if(authToken.length < 30) {
-      throw new Error('登录失效')
-    }
+
+
+
 
     const postStruct = {
       title: post.post_title,
@@ -122,11 +122,14 @@ export default class BaiJiaHaoAdapter {
   async preEditPost(post) {
     var div = $('<div>')
     $('body').append(div)
+
     try {
       div.html(post.content)
       var doc = div
-      processDocCode(div)
-      makeImgVisible(div)
+      // var pres = doc.find("pre");
+      tools.processDocCode(div)
+      tools.makeImgVisible(div)
+
       var tempDoc = $('<div>').append(doc.clone())
       post.content =
         tempDoc.children('div').length == 1

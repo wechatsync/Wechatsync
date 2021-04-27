@@ -38,15 +38,8 @@ export default class JuejinAdapter {
   async editPost(post_id, post) {
     console.log('TurndownService', turndown)
     var turndownService = new turndown()
-    turndownService.addRule('codefor', {
-      filter: ['pre'],
-      replacement: function (content) {
-        return ['```', content, '```'].join('\n')
-      },
-    })
-
+    turndownService.use(tools.turndownExt)
     var markdown = turndownService.turndown(post.post_content)
-    console.log(markdown);
     const { data } = await axios.post('https://api.juejin.cn/content_api/v1/article_draft/create', {
         brief_content: '',
       	category_id: '0',
@@ -102,5 +95,10 @@ export default class JuejinAdapter {
     } catch (e) {
       console.log('preEdit.error', e)
     }
+  }
+
+  addPromotion(post) {
+    var sharcode = `<blockquote><p>本文使用 <a href="https://juejin.cn/post/6940875049587097631" class="internal">文章同步助手</a> 同步</p></blockquote>`
+    post.content = post.content.trim() + `${sharcode}`
   }
 }

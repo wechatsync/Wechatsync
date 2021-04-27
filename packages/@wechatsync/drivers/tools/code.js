@@ -36,12 +36,14 @@ export function CodeBlockToPlainText(pre) {
 
   for (let index = 0; index < lines.length; index++) {
     const element = lines.eq(index)
-    const codeStr = element[0].innerText
+    const codeStr = element[0].innerText;
+    // $(element.html()).text()
     console.log('codeStr', codeStr)
-    var codeLines = codeStr.split('\n')
-    codeLines.forEach((codeLine) => {
-      text.push('<code>' + escapeHtml(codeLine) + '</code>')
-    })
+    // var codeLines = codeStr.split('\n')
+    // codeLines.forEach((codeLine) => {
+    //   text.push('<code>' + escapeHtml(codeLine) + '</code>')
+    // })
+    text.push('<code>' + escapeHtml(codeStr) + '</code>')
   }
   return text.join('\n')
 }
@@ -53,9 +55,10 @@ export function processDocCode(div) {
   for (let mindex = 0; mindex < pres.length; mindex++) {
     const pre = pres.eq(mindex)
     try {
+      var oldHtml = pre.html()
       var newHtml = CodeBlockToPlainText(pre, 0)
       if (newHtml) {
-        console.log('processDocCode', newHtml)
+        console.log('processDocCode', newHtml, oldHtml)
         pre.html(newHtml)
       } else {
         console.log('processDocCode.failed')

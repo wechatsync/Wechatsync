@@ -1,4 +1,4 @@
-const maxTaskLength = 100
+const maxTaskLength = 25
 
 export default class Store {
   constructor(engine) {}
@@ -32,6 +32,7 @@ export default class Store {
         a.index = index
       })
     }
+    console.log('getList', key)
     return accounts
   }
 
@@ -87,6 +88,7 @@ export default class Store {
   }
 
   addTask(t) {
+    console.log('store.addTask', t)
     var tasks = this.getTasks()
     tasks.push(t)
     if (tasks.length > maxTaskLength) {
