@@ -1,6 +1,27 @@
 import Sval from 'sval'
 import svalScopes from '@wechatsync/drivers/scopes'
 
+export function getSettings() {
+  return new Promise((resolve, reject) => {
+    try {
+      getCache('settings', value => {
+        if (value.settings) {
+          try {
+            var settings = JSON.parse(value.settings)
+            resolve(settings)
+          } catch(e) {
+            reject(e)
+          }
+        } else {
+          resolve({})
+        }
+      })
+    } catch (e) {
+      reject(e)
+    }
+  })
+}
+
 function getRuntimeScopes() {
   return {
     ...svalScopes,
@@ -10,7 +31,9 @@ function getRuntimeScopes() {
     document: document,
     Blob: Blob,
     Promise: Promise,
+    getSettings: getSettings,
     setCache: setCache,
+    getCache: getCache,
     initializeFrame: initializeFrame,
     requestFrameMethod: requestFrameMethod,
     modifyRequestHeaders: modifyRequestHeaders,
@@ -51,6 +74,7 @@ export function getDriverProvider(code) {
 }
 
 window.initializeDriver = initializeDriver
+// window.getCache = getCache
 
 export function initializeDriver(conf = {}) {
   return new Promise((resolve, reject) => {
@@ -78,6 +102,12 @@ function setCache(name, value) {
   d[name] = value
   chrome.storage.local.set(d, function() {
     console.log('cache set')
+  })
+}
+
+function getCache(name, cb) {
+  chrome.storage.local.get(name, function(result) {
+    cb(result)
   })
 }
 

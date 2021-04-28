@@ -35,14 +35,8 @@ export function addCustomDriver(name, driverClass) {
   console.log('addCustomDriver', _customDrivers)
 }
 
-export function getDriver(account) {
-  var driverInstance = _getDriver(account)
-  var _preEditPost = driverInstance.preEditPost
-  // driverInstance.preEditPost =
-  return driverInstance
-}
 
-function _getDriver(account) {
+export function getDriver(account) {
 
   // 保证在内置的前面
   if(_customDrivers[account.type]) {

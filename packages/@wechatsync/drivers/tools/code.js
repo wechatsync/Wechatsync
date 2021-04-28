@@ -38,7 +38,7 @@ export function CodeBlockToPlainText(pre) {
     const element = lines.eq(index)
     const codeStr = element[0].innerText;
     // $(element.html()).text()
-    console.log('codeStr', codeStr)
+    // console.log('codeStr', codeStr)
     // var codeLines = codeStr.split('\n')
     // codeLines.forEach((codeLine) => {
     //   text.push('<code>' + escapeHtml(codeLine) + '</code>')

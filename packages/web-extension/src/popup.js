@@ -3,6 +3,7 @@ import VueRouter from 'vue-router'
 import VueMoment from 'vue-moment'
 import { store } from './store/store'
 import EntryView from './views/EntryView.vue'
+import Option from './views/Option.vue'
 import AddAccount from './views/AddAccount.vue'
 import TaskDetail from './views/TaskDetail.vue'
 import Mint from 'mint-ui'
@@ -16,6 +17,10 @@ Vue.use(VueRouter)
 Vue.use(VueMoment)
 
 var routes = [
+  {
+    path: '/options',
+    component: Option,
+  },
   {
     path: '/',
     component: EntryView,
@@ -40,6 +45,15 @@ var routes = [
     },
   },
 ]
+
+import {
+  initializeDriver,
+  getDriverProvider,
+  initDevRuntimeEnvironment,
+} from '@/runtime'
+
+// var serviceFactory = require('./providers/factory')
+initDevRuntimeEnvironment()
 
 var winBackgroundPage = chrome.extension.getBackgroundPage()
 var db = winBackgroundPage.db

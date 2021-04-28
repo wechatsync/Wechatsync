@@ -3,7 +3,12 @@ import Store from './db/store'
 import { upImage } from './util/image'
 
 import { getGuid } from './util/util'
-import { initializeDriver, getDriverProvider, initDevRuntimeEnvironment } from '@/runtime'
+import {
+  initializeDriver,
+  getDriverProvider,
+  getSettings,
+  initDevRuntimeEnvironment,
+} from '@/runtime'
 
 var localDriver = require('./drivers/driver')
 
@@ -14,14 +19,25 @@ var logWatchers = {}
 
 
 var rawLogFun = console.log
-console.log = function () {
-  rawLogFun.apply(null, arguments)
-  try {
-    var args = [].slice.apply(arguments)
-    brodcastToWatcher(args)
-  } catch (e){
-    console.log('brodcastToWatcher.error', e);
+var _isInjected = false
+
+function startInspectInject() {
+  if (_isInjected) return
+  console.log = function() {
+    rawLogFun.apply(null, arguments)
+    try {
+      var args = [].slice.apply(arguments)
+      brodcastToWatcher(args)
+    } catch (e) {
+      console.log('brodcastToWatcher.error', e)
+    }
   }
+  _isInjected = true
+}
+
+async function isDisableAddPromotion() {
+  const settings = await getSettings()
+  return settings.disablePromotion
 }
 
 function brodcastToWatcher(args) {
@@ -352,6 +368,7 @@ class Syner {
         // self.senders[request.task.guid] = sender
         // logWatchers.push(sender)
         logWatchers[sender.tab.id] = sender
+        startInspectInject()
       }
 
       if (request.action && request.action == 'updateDriver') {
@@ -568,8 +585,7 @@ class Syner {
               console.log(account.editResp, link)
               tracker.sendEvent('sync', 'sucess', link)
             } catch (e) {
-              console.log(e)
-
+              console.error(e)
               var msgErro = e ? e.toString() : '未知错误'
               chrome.notifications.create(
                 'sync_error_' + currentTask.tid,
@@ -644,9 +660,12 @@ class Syner {
     }
 
     try {
-      if (driver.addPromotion) {
-        console.log('driver.addPromotion')
-        await driver.addPromotion(postContent)
+      const isAddPromitionDisabled = await isDisableAddPromotion()
+      if (!isAddPromitionDisabled) {
+        if (driver.addPromotion) {
+          console.log('driver.addPromotion')
+          await driver.addPromotion(postContent)
+        }
       } else {
         console.log('driver.addPromotion skip')
       }
