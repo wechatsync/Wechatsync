@@ -46,6 +46,20 @@ export default class WeixinAdapter {
       post_id: 0,
     }
   }
+  
+  async searchAccount({ keyword, begin=0, count=5 }) {
+    var token = weixinMetaCache.token || '442135330'
+    const apiURL = `https://mp.weixin.qq.com/cgi-bin/searchbiz?action=search_biz&begin=${begin}&count=${count}&query=${encodeURIComponent(keyword)}&token=${token}&lang=zh_CN&f=json&ajax=1`
+    const response = await $.get(apiURL)
+    return response
+  }
+  
+  async listArticle({ fakeid = '', begin=0, count=5}) {
+  	var token = weixinMetaCache.token || '442135330'
+    const apiURL = `https://mp.weixin.qq.com/cgi-bin/appmsg?action=list_ex&begin=${begin}&count=${count}&fakeid=${fakeid}&type=9&query=&token=${token}&lang=zh_CN&f=json&ajax=1`
+    const response = await $.get(apiURL)
+    return response
+  }
 
   async getArticle(data) {
     var token = weixinMetaCache.token || '442135330'
@@ -885,3 +899,5 @@ function formatError(e) {
   }
   return a
 }
+
+// exports.driver = WeixinAdapter

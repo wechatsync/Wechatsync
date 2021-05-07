@@ -26,3 +26,25 @@ var post = {
 }
 var markdown = turndownService.turndown(post.post_content)
 console.log(markdown);
+
+
+window.$syncer.magicCall({
+    methodName: 'searchAccount',
+    account: {
+      type: 'weixin',
+    },
+	keyword: '云南'
+}, res => {
+	console.log(res)
+})
+
+
+window.$syncer.magicCall({
+	methodName: 'listArticle',
+	account: {
+		type: 'weixin',
+	},
+	fakeid: 'MzUzMDk4NDQ2Mg=='
+}, res => {
+	console.log(res)
+	})

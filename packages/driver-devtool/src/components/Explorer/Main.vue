@@ -58,7 +58,7 @@ export default {
     })
     window.$syncer.startInspect(function (args) {
       log.addInspectLog(args)
-      console.log('log', args)
+      // console.log('log', args)
     })
   },
   errorCaptured(err) {
