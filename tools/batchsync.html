@@ -1,0 +1,583 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>批量文章同步工具 - 新浪微博、今日头条、豆瓣、知乎、简书、</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ant-design-vue@1.7.2/dist/antd.min.css">
+    <meta data-n-head="true" data-hid="description" name="description" content="Markdown,图床,免费图床,支持新浪微博、今日头条、豆瓣、知乎、简书、">
+    <meta data-n-head="true" name="keywords" content="Markdown,图床,新浪微博,51CTO,bilibili,CSDN,博客园,掘金,今日头条、豆瓣、知乎、简书">
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?65a0c0cecb8791d124062ed0777af7de";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+    <style>
+    body {
+        background: #f0f2f5;
+    }
+    .upload-box {
+
+        margin-top: 50px;
+    }
+    .file-list-item {
+        width: 100px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+    .ant-upload.ant-upload-drag{
+        height: 200px;
+    }
+
+
+    #app-main {
+        opacity: 0;
+    }
+
+    #app-main.appStarted {
+        opacity: 1;
+    }
+
+    #app.appStarted #loading-mask{
+       display: none;
+    }
+
+    #loading-mask {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 100%;
+        user-select: none;
+        z-index: 9999;
+        overflow: hidden
+      }
+
+      .loading-wrapper {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -100%)
+      }
+
+      .loading-dot {
+        animation: antRotate 1.2s infinite linear;
+        transform: rotate(45deg);
+        position: relative;
+        display: inline-block;
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        box-sizing: border-box
+      }
+
+      .loading-dot i {
+        width: 22px;
+        height: 22px;
+        position: absolute;
+        display: block;
+        background-color: black;
+        border-radius: 100%;
+        transform: scale(.75);
+        transform-origin: 50% 50%;
+        opacity: .3;
+        animation: antSpinMove 1s infinite linear alternate
+      }
+
+      .loading-dot i:nth-child(1) {
+        top: 0;
+        left: 0
+      }
+
+      .loading-dot i:nth-child(2) {
+        top: 0;
+        right: 0;
+        -webkit-animation-delay: .4s;
+        animation-delay: .4s
+      }
+
+      .loading-dot i:nth-child(3) {
+        right: 0;
+        bottom: 0;
+        -webkit-animation-delay: .8s;
+        animation-delay: .8s
+      }
+
+      .loading-dot i:nth-child(4) {
+        bottom: 0;
+        left: 0;
+        -webkit-animation-delay: 1.2s;
+        animation-delay: 1.2s
+      }
+
+      @keyframes antRotate {
+        to {
+          -webkit-transform: rotate(405deg);
+          transform: rotate(405deg)
+        }
+      }
+
+      @-webkit-keyframes antRotate {
+        to {
+          -webkit-transform: rotate(405deg);
+          transform: rotate(405deg)
+        }
+      }
+
+      @keyframes antSpinMove {
+        to {
+          opacity: 1
+        }
+      }
+
+      @-webkit-keyframes antSpinMove {
+        to {
+          opacity: 1
+        }
+      }
+</style>
+</head>
+
+<body>
+<div id="app" :class="{'appStarted': inited }">
+    <div id="loading-mask"><div class="loading-wrapper"><span class="loading-dot loading-dot-spin"><i></i><i></i><i></i><i></i></span></div></div>
+    <div id="app-main" :class="{'appStarted': inited }">
+
+    <a-layout id="components-layout-demo-fixed">
+        <a-layout-header :style="{ position: 'fixed', zIndex: 1, width: '100%' }">
+          <h1 class="logo" style="font-size: 20px">文章批量同步工具</h1>
+          <a-menu
+            theme="dark"
+            mode="horizontal"
+            :style="{ lineHeight: '64px' }"
+          >
+          <a-menu-item>
+           <a href="https://www.wechatsync.com/?utm_source=image_ext" target="_blank">插件下载</a>
+          </a-menu-item>
+          <a-menu-item>
+            <a href="https://www.wechatsync.com/md/?utm_source=image_ext" target="_blank">Markdown同步助手</a>
+           </a-menu-item>
+           <a-menu-item>
+            <a href=" https://github.com/wechatsync/Wechatsync" target="_blank">Github</a>
+           </a-menu-item>
+          </a-menu>
+        </a-layout-header>
+        <a-layout-content :style="{ padding: '0 50px', marginTop: '64px' }">
+          <div :style="{ background: '#fff', padding: '24px', minHeight: '83vh' }">
+                <div class="" v-if="!extensionInstalled" style="padding-top: 80px; padding-left: 10px">
+                    <scale-loader class="loading" style="margin-top: 80px; margin-bottom: 10px" :loading="true" color="black" ></scale-loader>
+                    <div v-if="checkCount > 3">
+                        未检测到插件<br>
+                        请安装同步助手Chrome插件
+                        <a href="https://www.wechatsync.com/#install" target="_blank">https://www.wechatsync.com/#install</a>
+                    </div>
+                </div>
+                <div v-if="extensionInstalled">
+
+                <div style="margin-bottom: 15px">
+                  <a-button icon="plus" @click="visible=true">添加数据源</a-button>
+                </div>
+
+                  <a-tabs>
+                    <a-tab-pane v-for="dataSource in dataSources" :key="dataSource.key">
+                      <div slot="tab">
+                        {{ dataSource.name }}
+                      </div>
+                        <a-table :columns="columns"  :row-selection="rowSelection" :pagination="dataSource.data.pagination" :bordered="true"  :data-source="dataSource.data.articles">
+                          <template slot="title" slot-scope="currentPageData">
+                            <a-button>批量同步</a-button>
+                          </template>
+                          <span slot="cover" slot-scope="text, record">
+                            <img :src="record.cover"  width="80" referrerpolicy="no-referrer" />
+                          </span>
+                        <span slot="customTitle" slot-scope="text, record">
+                          {{ text }}
+                          </span>
+                          <span slot="action" slot-scope="text, record">
+                            <a :href="record.link" target="_blank">查看文章</a>
+                          </span>
+                        </a-table>
+                    </a-tab-pane>
+                  </a-tabs>
+            </div>
+
+            <a-modal v-model="visible" title="添加数据源">
+
+              <a-radio-group v-model="sourceType" default-value="wechat">
+                <a-radio-button value="wechat">
+                  公众号
+                </a-radio-button>
+                <a-radio-button value="api">
+                  API
+                </a-radio-button>
+              </a-radio-group>
+
+              <div style="margin-top: 15px">
+                <a-input-search placeholder="搜索" enter-button @search="onSearch">
+                  </a-input-search>
+                  <a-list-item  v-for="item in wechatList" @click="addSource('wechat', item)">
+                    <a-list-item-meta
+                      :description="item.signature"
+                    >
+                      <a slot="title">{{ item.nickname }}</a>
+                      <img
+                      referrerpolicy="no-referrer"
+                        slot="avatar"
+                        height="60"
+                        :src="item.round_head_img"
+                      />
+                    </a-list-item-meta>
+                  </a-list-item>
+              </div>
+
+            </a-modal>
+          </div>
+        </a-layout-content>
+        <a-layout-footer :style="{ textAlign: 'center' }">
+         <a href="https://blog.dev4eos.com/?utm_source=batch_sync" target="_blank">fun</a> ©2021
+        </a-layout-footer>
+      </a-layout>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.24.0/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ant-design-vue@1.7.2/dist/antd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/pouchdb@7.2.1/dist/pouchdb.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/pouchdb@7.2.1/dist/pouchdb.find.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-spinner@1.0.4/dist/vue-spinner.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/regenerator-runtime@0.13.7/runtime.js"></script>
+
+<style>
+.logo {
+  width: 300px;
+  height: 31px;
+  margin-left: 10px;
+  float: left;
+  color: white
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  color: white;
+  font-size: 20px;
+  text-align: center;
+  line-height: 16px;
+  vertical-align: -3px;
+}
+
+body {
+  font-size: 12px;
+}
+</style>
+<script>
+var imagesDB = new PouchDB('images');
+var ScaleLoader = VueSpinner.ScaleLoader
+</script>
+
+<script>
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+
+var app = new Vue({
+    components: {
+        ScaleLoader: ScaleLoader,
+    },
+    data: function () {
+        return {
+          visible: false,
+          wechatList: [],
+            inited: false,
+            sourceType: 'wechat',
+            msg: 'aa',
+            uploadType: 'random',
+            fileList: [],
+
+            currentItem: null,
+            showDetail: false,
+            extensionInstalled: false,
+            checkCount: 0,
+            previewUrl: null,
+            allAccounts: [],
+
+            // id: _.appmsgid,
+            //       title: _.title,
+            //       desc: _.digest,
+            //       cover: _.cover,
+            //       create_time: _.create_time,
+            //       link: _.link
+            columns: [
+              {
+                dataIndex: 'ID',
+                key: 'id',
+                dataIndex: 'id',
+              },
+              {
+                title: '封面',
+                dataIndex: 'cover',
+                key: 'cover',
+                scopedSlots: { customRender: 'cover' },
+              },
+              {
+                title: '标题',
+                dataIndex: 'title',
+                key: 'title',
+                width: '400px',
+                scopedSlots: { customRender: 'customTitle' },
+              },
+              // {
+              //   title: '描述',
+              //   dataIndex: 'desc',
+              //   key: 'desc',
+              // },
+              {
+                title: '发布时间',
+                key: 'create_time',
+                dataIndex: 'create_time',
+              },
+              // {
+              //   title: 'link',
+              //   key: 'link',
+              // },
+              {
+                title: '动作',
+                key: 'action',
+                scopedSlots: { customRender: 'action' },
+              },
+            ],
+            dataSources: [],
+            rowSelection: {
+              onChange: (selectedRowKeys, selectedRows) => {
+                console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+              },
+              onSelect: (record, selected, selectedRows) => {
+                console.log(record, selected, selectedRows);
+              },
+              onSelectAll: (selected, selectedRows, changeRows) => {
+                console.log(selected, selectedRows, changeRows);
+              },
+            }
+        }
+    },
+
+    mounted: function () {
+        var self = this;
+        this.inited = true;
+        ;(function check() {
+            self.extensionInstalled = typeof window.$syncer != 'undefined';
+            self.checkCount++;
+            if(self.extensionInstalled) {
+                self.init()
+                return
+            }
+            setTimeout(check, 800);
+        })();
+
+        this.loadData();
+    },
+    methods: {
+      addSource(type, item) {
+        var sources = window.localStorage.getItem('sources') ?  JSON.parse(window.localStorage.getItem('sources')) : []
+        sources.push({
+          type: type,
+          data: item
+        })
+        console.log(type, item)
+        localStorage.setItem('sources', JSON.stringify(sources))
+      },
+
+      getSources() {
+       return window.localStorage.getItem('sources') ?  JSON.parse(window.localStorage.getItem('sources')) : []
+      },
+
+       async onSearch(val) {
+        const result = await new Promise((resolve, reject) => {
+            window.$syncer.magicCall({
+                methodName: 'searchAccount',
+                account: {
+                  type: 'weixin',
+                },
+                keyword: val,
+                count: 20
+              }, res => {
+                resolve(res)
+              })
+            });
+
+          this.wechatList = result.result.list
+          console.log('result', result, this.wechatList)
+       },
+
+        async delImage(image) {
+            console.log(image)
+            await imagesDB.get(image._id).then(function (doc) {
+                doc._deleted = true
+                return imagesDB.put(doc)
+            })
+            this.loadData();
+        },
+        async loadData() {
+            await imagesDB.createIndex({
+                index: {
+                fields: ['time'],
+                },
+            })
+            var res = await imagesDB.find({
+                selector: {},
+                fields: ['_id', 'url', 'time', 'raw'],
+                sort: [
+                    {
+                        time: 'desc',
+                    },
+                ],
+            })
+
+            this.fileList = res.docs.map(_ => {
+                _.md = '![]('+_.url+')';
+                return _;
+            });
+        },
+        open(item) {
+            this.currentItem = item;
+            this.showDetail = true;
+        },
+        async customRequest (options) {
+            console.log('options', options)
+            const self = this
+            const dataUrl = await toBase64(options.file);
+            // await new Promise((resolve, reject) => {
+            //     if (this.canused !== 0) {
+            //     resolve()
+            //     } else {
+            //     (function loop () {
+            //         if (self.canused !== 0) {
+            //         resolve()
+            //         return
+            //         }
+            //         setTimeout(loop, 300)
+            //     })()
+            //     }
+            // })
+            // this.canused--
+            var uploadAccount = null;
+            if(this.uploadType === 'random') {
+                var sortOrderTypes = [
+                    "zhihu",
+                    "jianshu",
+                    "toutiao",
+                    "douban",
+                    "weibo",
+                    "segmentfault"
+                ].map(_ => this.allAccounts.filter(a => a.type === _)[0]).filter(_ => _);
+                uploadAccount = sortOrderTypes[0]
+            } else {
+                uploadAccount = this.allAccounts.filter(a => a.type === this.uploadType)[0]
+            }
+
+            var actionData = {
+                src: dataUrl,
+                account: uploadAccount
+            }
+            const data = await new Promise((resolve, reject) => {
+                window.$syncer.uploadImage(actionData, (res) => {
+                    console.log('handleImageUpload.res', res)
+                    resolve(res.result);
+                })
+            });
+            options.onSuccess(data, options.file)
+            // options.onError('failed')
+        },
+        init() {
+            var self = this
+            window.$syncer.getAccounts(function(resp) {
+                console.log('allAccounts', resp)
+                self.allAccounts = resp
+                self.loadWechatArticles()
+                self.addOther();
+            })
+        },
+
+        addOther() {
+          var allSources = this.getSources()
+          console.log(allSources)
+          allSources.forEach(_ => {
+              if(_.type == 'wechat') {
+                this.loadWechatArticles(_)
+              }
+          })
+        },
+        async loadWechatArticles(targetAccount = null) {
+
+          const result = await new Promise((resolve, reject) => {
+            window.$syncer.magicCall({
+                methodName: 'listArticle',
+                account: {
+                  type: 'weixin',
+                },
+                fakeid: targetAccount ? targetAccount.data.fakeid : '',
+                count: 20
+              }, res => {
+                resolve(res)
+              })
+            });
+
+            this.dataSources.push({
+              key: targetAccount ? targetAccount.data.fakeid : 'current-wechat',
+              icon: 'wechat',
+              name: targetAccount ? targetAccount.data.nickname : '当前登录公众号',
+              data: {
+                total: result.result.app_msg_cnt,
+                pagination: {
+                  total: result.result.app_msg_cnt,
+                  pageSize: 20
+                },
+                articles: result.result.app_msg_list.map(_ => ({
+                  id: _.appmsgid,
+                  title: _.title,
+                  desc: _.digest,
+                  cover: _.cover,
+                  create_time: moment(_.create_time * 1000).format('YYYY-MM-DD HH:ss'),
+                  link: _.link
+                }))
+              }
+            })
+
+            console.log('loadWechatArticles', result, this.dataSources)
+        },
+        beforeUpload(){
+            console.log('beforeUpload')
+            return false;
+        },
+        handleChange(info){
+            const status = info.file.status
+            if (status === 'done') {
+                var newDoc = {
+                    _id: (Date.now() + Math.floor(Math.random() * 1000)) + '',
+                    time: Date.now(),
+                    url: info.file.response.url,
+                    raw: info.file.response
+                }
+                this.fileList.unshift(Object.assign({}, newDoc, {
+                    md: '![]('+newDoc.url+')'
+                }))
+                console.log(info, this.fileList)
+                imagesDB.put(newDoc);
+            }
+        }
+
+    }
+}).$mount('#app')
+</script>
+</body>
+</html>
