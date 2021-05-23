@@ -187,9 +187,9 @@
                       <div slot="tab">
                         {{ dataSource.name }}
                       </div>
-                        <a-table :columns="columns"  :row-selection="rowSelection" :pagination="dataSource.data.pagination" :bordered="true"  :data-source="dataSource.data.articles">
+                        <a-table :columns="columns"  :row-selection="rowSelection" @change="dataSource.data.handleTableChange" :pagination="dataSource.data.pagination" :bordered="true"  :data-source="dataSource.data.articles">
                           <template slot="title" slot-scope="currentPageData">
-                            <a-button>批量同步</a-button>
+                            <a-button @click="addBatchTask">批量同步</a-button>
                           </template>
                           <span slot="cover" slot-scope="text, record">
                             <img :src="record.cover"  width="80" referrerpolicy="no-referrer" />
@@ -205,21 +205,23 @@
                   </a-tabs>
             </div>
 
-            <a-modal v-model="visible" title="添加数据源">
+            <a-modal v-model="visible" title="添加数据源" :footer="null">
 
               <a-radio-group v-model="sourceType" default-value="wechat">
                 <a-radio-button value="wechat">
                   公众号
                 </a-radio-button>
-                <a-radio-button value="api">
+                <!-- <a-radio-button value="api">
                   API
-                </a-radio-button>
+                </a-radio-button> -->
               </a-radio-group>
 
               <div style="margin-top: 15px">
                 <a-input-search placeholder="搜索" enter-button @search="onSearch">
                   </a-input-search>
-                  <a-list-item  v-for="item in wechatList" @click="addSource('wechat', item)">
+                  <a-spin :spinning="searching"></a-spin>
+                  <a-list-item  v-for="item in wechatList" >
+                    <a slot="actions" @click="addSource('wechat', item)">添加</a>
                     <a-list-item-meta
                       :description="item.signature"
                     >
@@ -230,7 +232,9 @@
                         height="60"
                         :src="item.round_head_img"
                       />
+                     
                     </a-list-item-meta>
+
                   </a-list-item>
               </div>
 
@@ -296,6 +300,8 @@ var app = new Vue({
     },
     data: function () {
         return {
+          loaded: {},
+          searching: false,
           visible: false,
           wechatList: [],
             inited: false,
@@ -383,25 +389,64 @@ var app = new Vue({
             }
             setTimeout(check, 800);
         })();
-
-        this.loadData();
+        // this.loadData();
     },
     methods: {
+      async addBatchTask() {
+
+        let callArgs = {
+          methodName: 'getArticle',
+          account: {
+            type: 'weixin',
+          },
+          msgId: '2679077431',
+        }
+        console.log('callArgs', callArgs)
+        const result = await new Promise((resolve, reject) => {
+          window.$syncer.magicCall(callArgs, res => {
+            resolve(res)
+          })
+        });
+
+        // window.$syncer.addTask(
+        //   {
+        //     post: getPost(),
+        //     accounts: selectedAc,
+        //   },
+        //   function (status) {
+        //     // self.taskStatus = status
+        //     // console.log('status', status)
+        //   },
+        //   function () {
+        //     // console.log('send')
+        //   }
+        // )
+
+
+        console.log('result', result)
+      },
       addSource(type, item) {
         var sources = window.localStorage.getItem('sources') ?  JSON.parse(window.localStorage.getItem('sources')) : []
-        sources.push({
-          type: type,
-          data: item
-        })
-        console.log(type, item)
-        localStorage.setItem('sources', JSON.stringify(sources))
+        var isInThere = sources.filter(_ => _.data.fakeid == item.fakeid)
+        if (isInThere.length == 0) {
+          sources.push({
+            type: type,
+            data: item
+          })
+          console.log(type, item)
+           this.$message.success('添加成功')
+          localStorage.setItem('sources', JSON.stringify(sources))
+          this.visible = false;
+          this.addOther()
+        }
       },
-
       getSources() {
        return window.localStorage.getItem('sources') ?  JSON.parse(window.localStorage.getItem('sources')) : []
       },
 
        async onSearch(val) {
+
+        this.searching = true
         const result = await new Promise((resolve, reject) => {
             window.$syncer.magicCall({
                 methodName: 'searchAccount',
@@ -415,6 +460,7 @@ var app = new Vue({
               })
             });
 
+          this.searching = false
           this.wechatList = result.result.list
           console.log('result', result, this.wechatList)
        },
@@ -518,6 +564,11 @@ var app = new Vue({
           })
         },
         async loadWechatArticles(targetAccount = null) {
+          const accountId = targetAccount ? targetAccount.data.fakeid : 'current-wechat'
+          if (this.loaded[accountId]) {
+            console.log('aleardy loaed', targetAccount)
+            return
+          }
 
           const result = await new Promise((resolve, reject) => {
             window.$syncer.magicCall({
@@ -526,12 +577,36 @@ var app = new Vue({
                   type: 'weixin',
                 },
                 fakeid: targetAccount ? targetAccount.data.fakeid : '',
-                count: 20
+                count: 5
               }, res => {
                 resolve(res)
               })
             });
 
+          // if (result.result.base_resp.err_msg) {
+          //   this.$message.error(result.result.base_resp.err_msg)
+          // }
+
+          if (result.result.base_resp.err_msg == 'freq control') {
+            this.$message.error('读取频控； 公众号：'+ targetAccount.data.nickname)
+            return
+          }
+
+            var self = this;
+            var curretIndex = this.dataSources.length;
+
+            function formatArticle(articles) {
+              return articles.map(_ => ({
+                id: _.appmsgid,
+                title: _.title,
+                desc: _.digest,
+                cover: _.cover,
+                create_time: moment(_.create_time * 1000).format('YYYY-MM-DD HH:ss'),
+                link: _.link
+              }))
+            }
+
+           
             this.dataSources.push({
               key: targetAccount ? targetAccount.data.fakeid : 'current-wechat',
               icon: 'wechat',
@@ -540,18 +615,75 @@ var app = new Vue({
                 total: result.result.app_msg_cnt,
                 pagination: {
                   total: result.result.app_msg_cnt,
-                  pageSize: 20
+                  pageSize: result.result.app_msg_list.length
                 },
-                articles: result.result.app_msg_list.map(_ => ({
-                  id: _.appmsgid,
-                  title: _.title,
-                  desc: _.digest,
-                  cover: _.cover,
-                  create_time: moment(_.create_time * 1000).format('YYYY-MM-DD HH:ss'),
-                  link: _.link
-                }))
+                async handleTableChange (pagination, filters, sorter) {
+                  console.log(pagination);
+                  const pager = { ...self.dataSources[curretIndex].data.pagination };
+                  pager.current = pagination.current;
+                  // this.pagination = pager;
+                  let callArgs = {
+                    methodName: 'listArticle',
+                    account: {
+                      type: 'weixin',
+                    },
+                    fakeid: targetAccount ? targetAccount.data.fakeid : '',
+                    begin: (pager.current - 1) * 5,
+                    count: 5
+                  }
+                  console.log('callArgs', callArgs)
+
+                  const result = await new Promise((resolve, reject) => {
+                    window.$syncer.magicCall(callArgs, res => {
+                      resolve(res)
+                    })
+                  });
+
+                  if (result.result.base_resp.err_msg == 'freq control') {
+                    self.$message.error('读取频控')
+                    return
+                  }
+
+                  const paginationNew = { ...self.dataSources[curretIndex].data.pagination };
+                  paginationNew.total = result.result.app_msg_cnt;
+                  // pager.pageSize = result.result.app_msg_list.length
+
+                  self.dataSources[curretIndex].data.pagination = paginationNew
+                  self.dataSources[curretIndex].data.articles = formatArticle(result.result.app_msg_list)
+                  self.$forceUpdate(() => {
+
+                  })
+                  // self.$set(self.dataSources, curretIndex, Object.assign(self.dataSources[curretIndex], {
+                  //   data: {
+                  //     pagination: paginationNew,
+                  //     articles: formatArticle(result.result.app_msg_list)
+                  //   }
+                  // }))
+
+                  console.log('self.dataSources', self.dataSources)
+                  // this.articles = result.result.app_msg_list.map(_ => ({
+                  //   id: _.appmsgid,
+                  //   title: _.title,
+                  //   desc: _.digest,
+                  //   cover: _.cover,
+                  //   create_time: moment(_.create_time * 1000).format('YYYY-MM-DD HH:ss'),
+                  //   link: _.link
+                  // }))
+                  console.log('page result', result)
+                  // this.fetch({
+                  //   results: pagination.pageSize,
+                  //   page: pagination.current,
+                  //   sortField: sorter.field,
+                  //   sortOrder: sorter.order,
+                  //   ...filters,
+                  // });
+
+                },
+                articles: formatArticle(result.result.app_msg_list)
               }
             })
+
+            this.loaded[accountId] = true
 
             console.log('loadWechatArticles', result, this.dataSources)
         },
