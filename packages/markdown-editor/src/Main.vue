@@ -341,7 +341,9 @@ export default {
       extensionInstalled: false,
       checkCount: 0,
       allAccounts: [],
-      currentArtitle: {},
+      currentArtitle: {
+        content: ''
+      },
       taskStatus: {},
       markdownOption: {
         // boxShadow: false
@@ -373,20 +375,7 @@ export default {
       }
       setTimeout(check, 800)
     })()
-    // tracker.sendAppView('MainView')
-    // const self = this
-    // chrome.runtime.onMessage.addListener(function (request, sender, sendResponseA) {
-    //   console.log('content.js revice', request)
-    //   try {
-    //     console.log('revice', request)
-    //     if (request.method == 'taskUpdate') {
-    //       // buildStatusHtml(request.task)
-    //       self.taskStatus = request.task
-    //     }
-    //   } catch (e) {
-    //     console.log(e)
-    //   }
-    // })
+    
   },
   methods: {
     loadAccounts() {
@@ -409,8 +398,21 @@ export default {
         //   }
         // )
       }
-
       getAccounts()
+
+      this.$nextTick(() => {
+        console.log('this.$refs.editor.markdownIt', this.$refs.editor.markdownIt)
+        const md = this.$refs.editor.markdownIt
+        const defaultRender =
+          md.renderer.rules.image ||
+          function (tokens, idx, options, _, self) {
+            return self.renderToken(tokens, idx, options);
+          };
+        md.renderer.rules.image = (...[tokens, idx, options, env, self]) => {
+          tokens[idx].attrPush(['referrerpolicy','no-referrer']);
+          return defaultRender(tokens, idx, options, env, self);
+        };
+      })
     },
 
     async doSubmit() {
@@ -527,6 +529,8 @@ export default {
       } else {
         this.createExampleDoc()
       }
+
+      
       console.log(this.list)
     },
 
@@ -569,6 +573,8 @@ export default {
       this.currentArtitle = item
     },
     async imgAdd(pos, $file) {
+
+      // console.log('this.$refs.editor.markdownIt.renderer', this.$refs.editor.markdownIt)
       // var dri = new Segmentfault();
       //   var dri = new Juejin()
       //   var finalUrl = await dri.uploadFileByForm($file)
