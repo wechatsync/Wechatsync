@@ -14,6 +14,7 @@
         "axios": "^0.21.1",
         "compare-ver": "^2.0.2",
         "element-ui": "^2.12.0",
+        "jsdom": "^16.6.0",
         "juice": "^6.0.0",
         "mavon-editor": "^2.7.6",
         "mint-ui": "^2.2.13",
