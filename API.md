@@ -2,7 +2,7 @@
 文章同步助手是运行在浏览器内的扩展程序
 
 ## 网页发起同步任务
-用户如果安装插件后会在网页注入window.$syncer
+如果你是文章编辑器开发者，用户只要安装了插件后就会在网页注入window.$syncer API, 你可以通过API发起同步任务
 - $syncer.getAccounts 获取登录账号
 - $syncer.addTask 提交同步任务 [详见Markdown编辑器](https://github.com/wechatsync/Wechatsync/blob/master/packages/markdown-editor/src/Main.vue#L439)
 
