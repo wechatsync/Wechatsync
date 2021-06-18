@@ -1,14 +1,18 @@
 # API 文档
 文章同步助手是运行在浏览器内的扩展程序
 
+## 网页发起同步任务
+用户如果安装插件后会在网页注入window.$syncer
+- $syncer.getAccounts 获取登录账号
+- $syncer.addTask 提交同步任务 [详见Markdown编辑器](https://github.com/wechatsync/Wechatsync/blob/master/packages/markdown-editor/src/Main.vue#L439)
+
 ## 同步内容到我的网站
 目前内置的WordPress和Typecho都是XML-RPC协议，如果你的网站不是这两个开源程序搭建的。你也可以通过兼容xmlrpc的协议来得到支持
 
 [详见php范例](intergrations/php/)
 
 
-
-## 插件适配器
+## 适配新平台 - 插件适配器
 
 插件适配器的工作流程为：
 - 调用 getMetaData 请求平台接口获取用户信息
