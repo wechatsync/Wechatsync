@@ -6,13 +6,15 @@
 - $syncer.getAccounts 获取登录账号
 - $syncer.addTask 提交同步任务 [详见Markdown编辑器](https://github.com/wechatsync/Wechatsync/blob/master/packages/markdown-editor/src/Main.vue#L439)
 
-## 同步内容到我的网站
-目前内置的WordPress和Typecho都是XML-RPC协议，如果你的网站不是这两个开源程序搭建的。你也可以通过兼容xmlrpc的协议来得到支持
+## 同步内容到网站
+
+### 伪装协议
+目前内置的WordPress和Typecho适配器都是XML-RPC协议，如果你的网站不是这两个开源程序搭建的。你也可以通过兼容xmlrpc的协议来得到支持
 
 [详见php范例](intergrations/php/)
 
 
-## 适配新平台 - 插件适配器
+### 开发插件适配器
 
 插件适配器的工作流程为：
 - 调用 getMetaData 请求平台接口获取用户信息
