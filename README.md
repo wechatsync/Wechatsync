@@ -9,6 +9,8 @@
 
 ![](snapshots/wechatsync.png)
 
+[API文档](https://github.com/wechatsync/Wechatsync/blob/master/API.md)
+
 
 ## 特性
 
