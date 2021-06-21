@@ -2,7 +2,7 @@
 文章同步助手是运行在浏览器内的扩展程序
 
 ## 网页发起同步任务
-如果你是文章编辑器开发者，或自己有内容库需要同步多个渠道，引入这个JS SDK：
+如果你是文章编辑器开发者，或自己有内容库需要同步多个渠道，引入这个JS SDK:  
 https://github.com/wechatsync/article-syncjs
 - window.syncPost 拉起同步任务框
 
