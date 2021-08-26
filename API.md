@@ -15,6 +15,7 @@ https://github.com/wechatsync/article-syncjs
 
 
 ### 开发插件适配器
+欢迎贡献代码，待支持的[平台列表](https://airtable.com/shrLSJMnTC2BlmP29/tblApDW0GjKuWiLKU)
 
 插件适配器的工作流程为：
 - 调用 getMetaData 请求平台接口获取用户信息
