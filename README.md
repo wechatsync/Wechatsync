@@ -58,7 +58,8 @@ https://github.com/wechatsync/article-syncjs
 #### PHP
 - [dedecms thinkphp等php后端可以伪装wordpress xmlrpc协议支持文章同步助手同步](intergrations/php/)
 
-### 适配器开发
+## 代码贡献
+- [待支持的平台列表](https://airtable.com/shrLSJMnTC2BlmP29/tblApDW0GjKuWiLKU)
 - [API文档](API.md)
 
 ## 安装方式
