@@ -22,11 +22,6 @@
 - [ ] Markdown支持公众号样式定义
 
 
-## 网页发起同步任务
-如果你是文章编辑器开发者，或自己有内容库需要同步多个渠道，引入这个JS SDK:  
-https://github.com/wechatsync/article-syncjs
-- window.syncPost(article) 拉起同步任务框
-
 ## 支持渠道
 | 媒体           | 媒体行业  | 状态  | 网址                                | 支持类型          | 检查时间      |
 |--------------|-------|-----|-----------------------------------|---------------|-----------|
@@ -57,6 +52,11 @@ https://github.com/wechatsync/article-syncjs
 
 #### PHP
 - [dedecms thinkphp等php后端可以伪装wordpress xmlrpc协议支持文章同步助手同步](intergrations/php/)
+
+## 网页发起同步任务
+如果你是文章编辑器开发者，或自己有内容库需要同步多个渠道，引入这个JS SDK:  
+https://github.com/wechatsync/article-syncjs
+- window.syncPost(article) 拉起同步任务框
 
 ## 代码贡献
 - [待支持的平台列表](https://airtable.com/shrLSJMnTC2BlmP29/tblApDW0GjKuWiLKU)
