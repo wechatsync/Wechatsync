@@ -47,6 +47,8 @@
 | WordPress    | 开源CMS | 已支持 | https://cn.wordpress.org/         | HTML          | 2021/3/17 |
 | 搜狐焦点         | 房地产   | 已支持 | https://house.focus.cn/           | HTML          | 2021/3/17 |
 
+- [待支持的平台列表](https://airtable.com/shrLSJMnTC2BlmP29)
+
 ### 兼容发布API 
 你也可以通过兼容wordpress xmlrpc协议来使你的网站支持使用文章同步助手来同步
 
@@ -59,7 +61,7 @@ https://github.com/wechatsync/article-syncjs
 - window.syncPost(article) 拉起同步任务框
 
 ## 代码贡献
-- [待支持的平台列表](https://airtable.com/shrLSJMnTC2BlmP29/tblApDW0GjKuWiLKU)
+- [待支持的平台列表](https://airtable.com/shrLSJMnTC2BlmP29)
 - [API文档](API.md)
 
 ## 安装方式
