@@ -56,13 +56,13 @@ export default class BaseAdapter {
 
 ### 适配器API
 适配器隔离运行在JS VM里，提供了一些库和一些函数，[详见](https://github.com/wechatsync/Wechatsync/blob/master/packages/web-extension/src/runtime.js)
-- $ - jQuery库
-- axios - axios请求库
-- turndown - HTML转Markdown库
-- setCache - 缓存写入
-- getCache - 缓存读取
-- modifyRequestHeaders - 有些网站可能做了cors，需要修改origin等
-- CryptoJS 加密库
+- `$` - jQuery库
+- `axios` - axios请求库
+- `turndown` - HTML转Markdown库
+- `setCache` - 缓存写入
+- `getCache` - 缓存读取
+- `modifyRequestHeaders` - 有些网站可能做了cors，需要修改origin等
+- `CryptoJS` 加密库
 
 
 ### 适配器开发流程
