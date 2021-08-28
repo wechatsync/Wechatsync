@@ -54,6 +54,17 @@ export default class BaseAdapter {
 
 已有适配器 [参考](https://github.com/wechatsync/Wechatsync/tree/master/packages/%40wechatsync/drivers/src)，便于调试的[开发者工具](https://developer.wechatsync.com/?utm_source=doc)
 
+### 适配器API
+适配器隔离运行在JS VM里，提供了一些库和一些函数，[详见](https://github.com/wechatsync/Wechatsync/blob/master/packages/web-extension/src/runtime.js)
+- $ - jQuery库
+- axios - axios请求库
+- turndown - HTML转Markdown库
+- setCache - 缓存写入
+- getCache - 缓存读取
+- modifyRequestHeaders - 有些网站可能做了cors，需要修改origin等
+- CryptoJS 加密库
+
+
 ### 适配器开发流程
 - 打开目标平台的发布内容页
 - F12开发者工具 分析内容保存和图片上传的API交互
