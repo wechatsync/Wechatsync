@@ -53,3 +53,10 @@ export default class BaseAdapter {
 ```
 
 已有适配器 [参考](https://github.com/wechatsync/Wechatsync/tree/master/packages/%40wechatsync/drivers/src)，便于调试的[开发者工具](https://developer.wechatsync.com/?utm_source=doc)
+
+### 适配器开发流程
+- 打开目标平台的发布内容页
+- F12开发者工具 分析内容保存和图片上传的API交互
+- 在适配器内部模拟API调用
+- 测试是否成功调用
+- 完成开发
