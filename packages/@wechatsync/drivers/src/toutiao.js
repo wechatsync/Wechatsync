@@ -32,9 +32,9 @@ export default class ToutiaoAdapter {
 
   async getMetaData() {
     var res = await $.ajax({
-      url: 'https://mp.toutiao.com/get_media_info/',
+      url: 'https://mp.toutiao.com/mp/agw/media/get_media_info',
     })
-    // console.log(res);
+    res = JSON.parse(res)
     return {
       uid: res.data.user.id,
       title: res.data.user.screen_name,
