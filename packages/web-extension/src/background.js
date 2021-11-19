@@ -757,13 +757,13 @@ class Syner {
         })
         await wait(1000)
       }
-      account.uploadedCount++
       account.msg =
         '正在上传第' +
         account.uploadedCount +
         '张图片， 总共' +
         imags.length +
         '张图片'
+      account.uploadedCount++
       db.editTask(currentTask.tid, {
         accounts: currentTask.accounts,
       })
