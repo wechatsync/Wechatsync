@@ -60,7 +60,7 @@
 https://github.com/wechatsync/article-syncjs
 - window.syncPost(article) 拉起同步任务框
 
-## 代码贡献
+## 贡献代码
 - [待支持的平台列表](https://airtable.com/shrLSJMnTC2BlmP29)
 - [API文档](API.md)
 - [如何开发一个适配器](docs/toturial.md)
