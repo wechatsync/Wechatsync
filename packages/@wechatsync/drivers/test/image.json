@@ -1,0 +1,112 @@
+{
+  "data": {
+    "filekey": "yuque/0/2021/png/735745/1637808353770-4d3c5d3e-a47e-4193-a29f-849aafb78047.png",
+    "extname": "png",
+    "mode": "public",
+    "res": {
+      "status": 200,
+      "statusCode": 200,
+      "statusMessage": "OK",
+      "headers": {
+        "server": "AliyunOSS",
+        "date": "Thu, 25 Nov 2021 02:45:54 GMT",
+        "content-length": "0",
+        "connection": "keep-alive",
+        "x-oss-request-id": "619EF8E1292C063030339CE3",
+        "vary": "Origin",
+        "etag": "\"B8C680EFED2DD5601717EEFDA955856B\"",
+        "x-oss-hash-crc64ecma": "0",
+        "x-oss-server-time": "12"
+      },
+      "size": 25167,
+      "aborted": false,
+      "rt": 22,
+      "keepAliveSocket": true,
+      "data": {
+        "type": "Buffer",
+        "data": []
+      },
+      "requestUrls": [
+        "https://lark-assets-prod-aliyun.oss-cn-hangzhou.aliyuncs.com/yuque/0/2021/png/735745/1637808353770-4d3c5d3e-a47e-4193-a29f-849aafb78047.png?symlink="
+      ],
+      "timing": {
+        "queuing": 1,
+        "dnslookup": 0,
+        "connected": 0,
+        "requestSent": 1,
+        "waiting": 22,
+        "contentDownload": 22
+      },
+      "remoteAddress": "118.31.232.196",
+      "remotePort": 443,
+      "socketHandledRequests": 3,
+      "socketHandledResponses": 3,
+      "isSymlink": true
+    },
+    "url": "https://cdn.nlark.com/yuque/0/2021/png/735745/1637808353770-4d3c5d3e-a47e-4193-a29f-849aafb78047.png",
+    "filename": "[8,13].png",
+    "size": 25167,
+    "etag": "\"B8C680EFED2DD5601717EEFDA955856B\"",
+    "symlink": 1,
+    "isCopy": true,
+    "filemd5": "b8c680efed2dd5601717eefda955856b",
+    "element_id": null,
+    "attachment_id": 144806533,
+    "attachable_type": "Doc",
+    "attachable_id": 61130022,
+    "attachment": {
+      "filesize": 25167,
+      "space_id": 0,
+      "attachable_type": "Doc",
+      "attachable_id": 61130022,
+      "user_id": 735745,
+      "filekey": "yuque/0/2021/png/735745/1637808353770-4d3c5d3e-a47e-4193-a29f-849aafb78047.png",
+      "filemd5": "b8c680efed2dd5601717eefda955856b",
+      "filename": "[8,13].png",
+      "ext": "png",
+      "mode": "public",
+      "symlink": 1,
+      "filesize_big": 25167,
+      "created_at": "2021-11-25T02:45:54.020Z",
+      "updated_at": "2021-11-25T02:45:54.020Z",
+      "id": 144806533
+    },
+    "ocrLocations": [
+      {
+        "x": 405.72974,
+        "y": 131.60315,
+        "width": 194.57345999999995,
+        "height": 127.25474999999997,
+        "text": "KE上WErE"
+      },
+      {
+        "x": 326.24814,
+        "y": 134.34892,
+        "width": 57.70962000000003,
+        "height": 42.02704,
+        "text": "it"
+      },
+      {
+        "x": 195.48431,
+        "y": 145.26628,
+        "width": 117.84879000000001,
+        "height": 116.85944999999998,
+        "text": "play"
+      },
+      {
+        "x": 319.929,
+        "y": 463.8506,
+        "width": 161.41362000000004,
+        "height": 56.99630000000002,
+        "text": "[8131"
+      },
+      {
+        "x": 178.17773,
+        "y": 479.18433,
+        "width": 453.7912,
+        "height": 182.09051000000005,
+        "text": "riaueagtesx"
+      }
+    ]
+  }
+}

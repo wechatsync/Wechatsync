@@ -1,0 +1,67 @@
+{
+  "src": "https://cdn.nlark.com/yuque/0/2021/png/735745/1637808353770-4d3c5d3e-a47e-4193-a29f-849aafb78047.png",
+  "taskId": "uf784c16b-e834-45c3-8c51-92f840802d6",
+  "clientId": "uc11383be-b999-4",
+  "originalType": "binary",
+  "linkTarget": "_blank",
+  "name": "[8,13].png",
+  "size": 25167,
+  "from": "ui",
+  "originWidth": 800,
+  "originHeight": 800,
+  "ratio": 1,
+  "status": "done",
+  "style": "none",
+  "search": "KE上WErE it play [8131 riaueagtesx",
+  "ocrLocations": [
+      {
+          "x": 405.72974,
+          "y": 131.60315,
+          "width": 194.57345999999995,
+          "height": 127.25474999999997,
+          "text": "KE上WErE"
+      },
+      {
+          "x": 326.24814,
+          "y": 134.34892,
+          "width": 57.70962000000003,
+          "height": 42.02704,
+          "text": "it"
+      },
+      {
+          "x": 195.48431,
+          "y": 145.26628,
+          "width": 117.84879000000001,
+          "height": 116.85944999999998,
+          "text": "play"
+      },
+      {
+          "x": 319.929,
+          "y": 463.8506,
+          "width": 161.41362000000004,
+          "height": 56.99630000000002,
+          "text": "[8131"
+      },
+      {
+          "x": 178.17773,
+          "y": 479.18433,
+          "width": 453.7912,
+          "height": 182.09051000000005,
+          "text": "riaueagtesx"
+      }
+  ],
+  "showTitle": false,
+  "title": "",
+  "rotation": 0,
+  "crop": [
+      0,
+      0,
+      1,
+      1
+  ],
+  "id": "uec680fd5",
+  "margin": {
+      "top": true,
+      "bottom": true
+  }
+}
