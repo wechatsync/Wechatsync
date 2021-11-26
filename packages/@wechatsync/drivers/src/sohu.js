@@ -57,11 +57,12 @@ export default class SoHuAdapter {
         attrIds: '',
         topicIds: '',
         isAd: 0,
+        reprint: false,
         accountId: _souhuCacheMeta.id
     }
 
     var res = await $.ajax({
-      url: 'https://mp.sohu.com/mpbp/bp/news/v4/news/draft',
+      url: 'https://mp.sohu.com/mpbp/bp/news/v4/news/draft?accountId='+ _souhuCacheMeta.id,
       type: 'POST',
       dataType: 'JSON',
       data: postStruct,
