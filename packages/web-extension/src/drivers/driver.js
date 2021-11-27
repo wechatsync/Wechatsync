@@ -22,6 +22,7 @@ const {
   OsChinaAdapter,
   DaYuAdapter,
   ImoocAdapter,
+  YuQueAdapter,
 } = buildInDrivers
 
 var _cacheState = {}
@@ -148,6 +149,10 @@ export function getDriver(account) {
     return new ImoocAdapter(account)
   }
 
+  if (account.type == 'yuque') {
+    return new YuQueAdapter(account)
+  }
+
   throw Error('not supprt account type')
 }
 
@@ -190,6 +195,7 @@ export async function getPublicAccounts() {
     new OsChinaAdapter(),
     new DaYuAdapter(),
     new ImoocAdapter(),
+    new YuQueAdapter()
   ]
 
   var customDiscuzEndpoints = ['https://www.51hanghai.com'];
@@ -299,8 +305,8 @@ function urlHandler(details) {
 
 export function getMeta() {
   return {
-    version: '0.0.13',
-    versionNumber: 13,
+    version: '0.0.14',
+    versionNumber: 14,
     log: '',
     urlHandler: urlHandler,
     inspectUrls: ['*://api.bilibili.com/*', '*://music.douban.com/*'],

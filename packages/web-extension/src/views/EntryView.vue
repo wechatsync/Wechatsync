@@ -253,7 +253,7 @@ import VersionChecker from './versionCheckver'
 import { getDriverProvider } from '@/runtime'
 
 var loginForm
-var currentVersion = '1.0.10'
+var currentVersion = '1.0.11'
 var checker = new VersionChecker()
 
 if (userInfo == null) {

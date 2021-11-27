@@ -294,8 +294,8 @@ function urlHandler(details) {
 
 export function getMeta() {
   return {
-    version: '0.0.13',
-    versionNumber: 13,
+    version: '0.0.14',
+    versionNumber: 14,
     log: '',
     urlHandler: urlHandler,
     inspectUrls: ['*://api.bilibili.com/*', '*://music.douban.com/*'],
