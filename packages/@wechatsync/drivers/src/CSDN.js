@@ -32,6 +32,18 @@ ${apiPath}`
   }
 }
 
+function validateFileExt(ext) {
+  switch (ext.toLowerCase()) {
+    case 'jpg':
+    case 'png':
+    case 'jpeg':
+    case 'gif':
+      return true
+    default:
+      return false
+  }
+}
+
 export default class CSDNAdapter {
   constructor() {
     this.name = 'csdn'
@@ -57,35 +69,59 @@ export default class CSDNAdapter {
     }
   }
 
+  async requestUpload(filename) {
+    const api = 'https://imgservice.csdn.net/direct/v1.0/image/upload?watermark=&type=blog&rtype=markdown'
+    const fileExt = file.name.split('.').pop()
+    if (!validateFileExt(fileExt)) {
+      return null
+    }
+
+    var res = await axios({
+      url: api,
+      method: 'get',
+      headers: {
+        'x-image-app': 'direct_blog',
+        'x-image-suffix': fileExt,
+        'x-image-dir': 'direct'
+      },
+    })
+    if (res.status !== 200 || res.data.code !== 200) {
+      console.log(res)
+      return null
+    }
+    return res.data.data
+  }
+
   async uploadFile(file) {
-    //
-    return [
-      {
-        url: file.src,
-      }
-    ]
-    var headers = signCSDN('/blog-console-api/v3/upload/img?shuiyin=2', 'multipart/form-data')
-    var uploadUrl = 'https://bizapi.csdn.net/blog-console-api/v3/upload/img?shuiyin=2'
-    var file = new File([file.bits], 'temp', {
+    const uploadData = await requestUpload(file.name)
+    if (!uploadData) {
+      return [{url: file.src}]
+    }
+
+    const uploadUrl = uploadData.host
+    const form = new FormData()
+    form.append('key', uploadData.filePath)
+    form.append('policy', uploadData.policy)
+    form.append('OSSAccessKeyId', uploadData.accessId)
+    form.append('success_action_status', '200')
+    form.append('signature', uploadData.signature)
+    form.append('callback', uploadData.callbackUrl)
+
+    const f = new File([file.bits], 'temp', {
       type: file.type
     });
-    var formdata = new FormData()
-    formdata.append('file', file)
+    form.append('file', f)
+
     var res = await axios({
       url: uploadUrl,
       method: 'post',
-      data: formdata,
-      headers: Object.assign(headers, {
-        'Content-Type': 'multipart/form-data'
-      }),
+      data: form
     })
-
-
-  	return [
-      {
-        url: file.src,
-      }
-    ]
+    if (res.status !== 200 || res.data.code !== 200) {
+      console.log(res)
+      return [{url: file.src}]
+    }
+    return [{url: res.data.data.imageUrl}]
   }
 
   async addPost(post) {
