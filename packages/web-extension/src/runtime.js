@@ -22,6 +22,12 @@ export function getSettings() {
   })
 }
 
+function wait(ms) {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, ms)
+  })
+}
+
 function getRuntimeScopes() {
   return {
     ...svalScopes,
@@ -31,6 +37,7 @@ function getRuntimeScopes() {
     document: document,
     Blob: Blob,
     Promise: Promise,
+    wait: wait,
     getSettings: getSettings,
     setCache: setCache,
     getCache: getCache,
