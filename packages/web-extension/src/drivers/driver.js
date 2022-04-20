@@ -23,6 +23,8 @@ const {
   DaYuAdapter,
   ImoocAdapter,
   YuQueAdapter,
+  XueQiuAdapter,
+  IPFSAdapter,
 } = buildInDrivers
 
 var _cacheState = {}
@@ -149,6 +151,14 @@ export function getDriver(account) {
     return new ImoocAdapter(account)
   }
 
+  if (account.type == 'ipfs') {
+    return new IPFSAdapter(account)
+  }
+
+  if (account.type == 'xueqiu') {
+    return new XueQiuAdapter(account)
+  }
+
   if (account.type == 'yuque') {
     return new YuQueAdapter(account)
   }
@@ -195,7 +205,9 @@ export async function getPublicAccounts() {
     new OsChinaAdapter(),
     new DaYuAdapter(),
     new ImoocAdapter(),
-    new YuQueAdapter()
+    new YuQueAdapter(),
+    new XueQiuAdapter(),
+    new IPFSAdapter(),
   ]
 
   var customDiscuzEndpoints = ['https://www.51hanghai.com'];
@@ -305,8 +317,8 @@ function urlHandler(details) {
 
 export function getMeta() {
   return {
-    version: '0.0.14',
-    versionNumber: 14,
+    version: '0.0.15',
+    versionNumber: 15,
     log: '',
     urlHandler: urlHandler,
     inspectUrls: ['*://api.bilibili.com/*', '*://music.douban.com/*'],

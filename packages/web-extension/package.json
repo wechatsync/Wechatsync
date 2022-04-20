@@ -17,6 +17,7 @@
     "juice": "^6.0.0",
     "mavon-editor": "^2.7.6",
     "mint-ui": "^2.2.13",
+    "moment": "^2.29.3",
     "pouchdb": "^7.1.1",
     "pouchdb-find": "^7.1.1",
     "react": "^17.0.1",

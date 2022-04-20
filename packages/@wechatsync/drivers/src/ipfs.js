@@ -14,15 +14,8 @@ const template = `<!DOCTYPE html>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="format-detection" content="telephone=no">
-    <meta property="og:title" content="" />
-    <meta property="og:url"
-        content="http://mp.weixin.qq.com/s?__biz=MjM5OTUyMzAwOQ==&amp;mid=2654196759&amp;idx=1&amp;sn=4cffc47bf77c91baca1623fe83f12a80&amp;chksm=bcfd53b98b8adaaf642af2bf3b13b73ff8588a475bfaa405ee486ce28cccef6c670a0886cadc#rd" />
-    <meta property="og:image"
-        content="http://mmbiz.qpic.cn/mmbiz_jpg/EwGiczNdLt0K7TwYItPlnuia8bYGSxpGxuia1qNJ8Im9jAiakictFK7xTNGw34CfmHhyQF9OGEYDWvhnoJMicKcS9iaibg/0?wx_fmt=jpeg" />
-    <meta property="og:description" content="" />
-    <meta property="og:site_name" content="" />
+    <meta property="og:title" content="TITLE" />
     <meta property="og:type" content="article" />
-    <meta property="og:article:author" content="" />
     <title>TITLE</title>
     <link rel="stylesheet"
         href="https://res.wx.qq.com/mmbizwap/zh_CN/htmledition/js/../mmbizappmsg/assets/appmsg.c9d06de2.css"
@@ -39,9 +32,7 @@ const template = `<!DOCTYPE html>
     <link rel="stylesheet"
         href="https://res.wx.qq.com/mmbizwap/zh_CN/htmledition/js/../mmbizappmsg/assets/controller.5417a6ee.css"
         reportloaderror>
-        <style type="text/css">@media (prefers-color-scheme: dark) {.js_darkmode__0{color: #191919 !important;background-color: rgb(185, 193, 189) !important;}.js_darkmode__1{color: #191919 !important;background-color: rgb(190, 190, 192) !important;}.js_darkmode__2{color: #191919 !important;color: #191919 !important;color: #191919 !important;}.js_darkmode__3{color: rgb(163, 163, 163) !important;background-color: rgba(25, 25, 25, 0) !important;}.js_darkmode__4{color: rgb(163, 163, 163) !important;}.js_darkmode__5{color: rgb(63, 142, 231) !important;}.js_darkmode__6{color: rgb(0, 104, 255) !important;}}</style>
 </head>
-
 <body id="activity-detail" class="zh_CN wx_wap_page
 	mm_appmsg
 	comment_feature
@@ -75,8 +66,8 @@ const template = `<!DOCTYPE html>
             </div>
         </div>
     </div>
+    // saved from:ORIGINAL_LINK
 </body>
-
 </html>`
 
 class IPFSAdapter {
@@ -110,9 +101,13 @@ class IPFSAdapter {
   }
 
   async editPost(post_id, post) {
+    const pubTime = moment.unix(post.publish_time).format('YYYY-MM-DD HH:mm')
     const content = template
       .replace('TITLE', post.post_title)
       .replace('TITLE', post.post_title)
+      .replace('AUTHOR', post.nickname)
+      .replace('PUBLISH_TIME', pubTime)
+      .replace('ORIGINAL_LINK', post.link)
       .replace('CONTENT', post.post_content)
     console.log(content)
     const res = await this.uploadFile({

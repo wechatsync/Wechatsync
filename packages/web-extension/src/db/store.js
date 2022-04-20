@@ -32,7 +32,6 @@ export default class Store {
         a.index = index
       })
     }
-    console.log('getList', key)
     return accounts
   }
 

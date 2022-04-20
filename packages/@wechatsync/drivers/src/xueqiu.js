@@ -21,10 +21,13 @@ export default class XueQiuAdapter {
     }
     const state = new Function("return " + link.innerHTML.replace('window.UOM_CURRENTUSER = ', ''))()
     const { currentUser } = state
+    if (currentUser.id == "")  throw Error('not found')
     return {
       uid: currentUser.id,
       title: currentUser.screen_name,
-      avatar: `https:${currentUser.photo_domain}` + currentUser.profile_image_url.split(',')[0],
+      avatar:
+        `https:${currentUser.photo_domain}` +
+        currentUser.profile_image_url.split(',')[0],
       supportTypes: ['html'],
       type: 'xueqiu',
       displayName: '雪球',

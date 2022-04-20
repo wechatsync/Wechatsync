@@ -538,7 +538,6 @@ class Syner {
         // });
       })
 
-      console.log('wait next')
       var currentTask = notDone.shift()
       if (!currentTask) {
         setTimeout(loop, 3 * 1000)
@@ -807,7 +806,10 @@ class Syner {
     console.log('update last', editInput)
 
     var finalPostId = account.params ? parseInt(postId) : postId
-    var editResp = await driver.editPost(finalPostId, editInput)
+    var editResp = await driver.editPost(
+      finalPostId,
+      Object.assign(postContent, editInput)
+    )
 
     account.editResp = editResp
     account.status = 'done'
