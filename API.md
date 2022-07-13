@@ -50,6 +50,8 @@ export default class BaseAdapter {
     // 更新文章：调用平台 api 更新文章（同步助手内部通过该接口替换文章内图片地址）
   }
 }
+
+// 注：在`developer.wechatsync.com`里不支持export default的语法，需要用export.driver = BaseAdapter的方式来导出
 ```
 
 已有适配器 [参考](https://github.com/wechatsync/Wechatsync/tree/master/packages/%40wechatsync/drivers/src)，便于调试的[开发者工具](https://developer.wechatsync.com/?utm_source=doc)
