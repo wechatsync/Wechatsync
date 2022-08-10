@@ -3,13 +3,28 @@ export default class JuejinAdapter {
     this.version = '0.0.2'
     this.name = 'juejin'
 
-		// modify origin headers
+    // modify origin headers
     modifyRequestHeaders('api.juejin.cn', {
-    	Origin: 'https://juejin.cn',
+      Origin: 'https://juejin.cn',
       Referer: 'https://juejin.cn/'
     }, [
-    	'*://api.juejin.cn/*',
-    ])
+      '*://api.juejin.cn/*',
+    ], function (details) {
+      if (details.initiator && details.initiator.indexOf('juejin.cn') > -1) {
+        details.requestHeaders = details.requestHeaders.map(_ => {
+          if (_.name === 'Origin') {
+            _.value = details.initiator
+          }
+
+          if (_.name === 'Referer') {
+            _.value = details.initiator + '/'
+          }
+
+          return _
+        })
+      }
+    })
+
   }
 
   async getMetaData() {
@@ -24,7 +39,7 @@ export default class JuejinAdapter {
       raw: data.data,
       supportTypes: ['markdown', 'html'],
       home: 'https://juejin.cn/editor/drafts',
-      icon: 'https://gold-cdn.xitu.io/favicons/favicon.ico',
+      icon: 'https://juejin.cn/favicon.ico',
     }
   }
 
@@ -41,15 +56,15 @@ export default class JuejinAdapter {
     turndownService.use(tools.turndownExt)
     var markdown = turndownService.turndown(post.post_content)
     const { data } = await axios.post('https://api.juejin.cn/content_api/v1/article_draft/create', {
-        brief_content: '',
-      	category_id: '0',
-        cover_image: '',
-      	edit_type: 10,
-      	html_content: "deprecated",
-      	link_url: "",
-      	mark_content: markdown,
-      	tag_ids: [],
-      	title: post.post_title
+      brief_content: '',
+      category_id: '0',
+      cover_image: '',
+      edit_type: 10,
+      html_content: "deprecated",
+      link_url: "",
+      mark_content: markdown,
+      tag_ids: [],
+      title: post.post_title
     })
     var post_id = data.data.id
     console.log(data)
@@ -64,7 +79,7 @@ export default class JuejinAdapter {
     var src = file.src
     var imageId = Date.now() + Math.floor(Math.random() * 1000)
     const { data } = await axios.post('https://juejin.cn/image/urlSave', {
-    	url: src
+      url: src
     })
     return [
       {
