@@ -102,7 +102,7 @@ export default class WeixinAdapter {
     console.log('editPost', post.post_thumbnail)
     var res = await $.ajax({
       url:
-        'https://mp.weixin.qq.com/cgi-bin/operate_appmsg?t=ajax-response&sub=create&type=10&token=' +
+        'https://mp.weixin.qq.com/cgi-bin/operate_appmsg?t=ajax-response&sub=create&type=77&token=' +
         weixinMetaCache.token +
         '&lang=zh_CN',
       type: 'POST',
@@ -190,7 +190,7 @@ export default class WeixinAdapter {
       status: 'success',
       post_id: res.appMsgId,
       draftLink:
-        'https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&type=10&appmsgid=' +
+        'https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&type=77&appmsgid=' +
         res.appMsgId +
         '&token=' +
         weixinMetaCache.token +
