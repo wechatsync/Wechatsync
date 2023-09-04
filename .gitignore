@@ -10,3 +10,5 @@ yarn-error.log
 dist
 zip
 package-json.lock
+package-lock.json
+
