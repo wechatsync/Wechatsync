@@ -806,10 +806,15 @@ class Syner {
     console.log('update last', editInput)
 
     var finalPostId = account.params ? parseInt(postId) : postId
-    var editResp = await driver.editPost(
-      finalPostId,
-      Object.assign(postContent, editInput)
-    )
+    let editResp = null
+    try {
+      editResp = await driver.editPost(
+        finalPostId,
+        Object.assign(postContent, editInput),
+      )
+    } catch (e) {
+      console.log('editPost failed：', e)
+    }
 
     account.editResp = editResp
     account.status = 'done'
