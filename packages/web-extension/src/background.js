@@ -242,6 +242,15 @@ class Syner {
             console.log('modify headers error', e)
           }
 
+          // Bilibili origin set
+          if (details.url.indexOf('https://api.bilibili.com/x/article/creative/draft/addupdate') > -1){
+            details.requestHeaders.push({
+              name: 'origin',
+              value: 'https://member.bilibili.com',
+            })
+            console.log('bilibili header origin add success: ', details)
+          }
+
           try {
             window.driverMeta.urlHandler(details)
           } catch (e) {
