@@ -242,6 +242,15 @@ class Syner {
             console.log('modify headers error', e)
           }
 
+          // Bilibili origin set
+          if (details.url.indexOf('https://api.bilibili.com/x/article/creative/draft/addupdate') > -1){
+            details.requestHeaders.push({
+              name: 'origin',
+              value: 'https://member.bilibili.com',
+            })
+            console.log('bilibili header origin add success: ', details)
+          }
+
           try {
             window.driverMeta.urlHandler(details)
           } catch (e) {
@@ -806,10 +815,15 @@ class Syner {
     console.log('update last', editInput)
 
     var finalPostId = account.params ? parseInt(postId) : postId
-    var editResp = await driver.editPost(
-      finalPostId,
-      Object.assign(postContent, editInput)
-    )
+    let editResp = null
+    try {
+      editResp = await driver.editPost(
+        finalPostId,
+        Object.assign(postContent, editInput),
+      )
+    } catch (e) {
+      console.log('editPost failed：', e)
+    }
 
     account.editResp = editResp
     account.status = 'done'

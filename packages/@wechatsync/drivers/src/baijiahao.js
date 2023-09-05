@@ -45,7 +45,7 @@ export default class BaiJiaHaoAdapter {
     	throw new Error('登录失效')
     }
 
-    const authToken = pageHtml.substring(authIndex + markStr.length, pageHtml.indexOf('",window.user_id', authIndex))
+    const authToken = pageHtml.substring(authIndex + markStr.length, pageHtml.indexOf('",window.__BJH__EDIT_', authIndex))
 
 
 
@@ -71,7 +71,7 @@ export default class BaiJiaHaoAdapter {
       type: 'news',
     }
     const res = await $.ajax({
-    	url: 'https://baijiahao.baidu.com/pcui/article/save?callback=_SAVE_DRAFT_',
+    	url: 'https://baijiahao.baidu.com/pcui/article/save?callback=bjhdraft',
       type: 'POST',
       dataType: 'JSON',
       headers: {
@@ -79,6 +79,9 @@ export default class BaiJiaHaoAdapter {
       },
       data: postStruct,
     })
+
+    console.log("request baijiahao article save interface res: ", JSON.stringify(res))
+
     if(res.errmsg != 'success') {
     	throw new Error(res.errmsg)
     }
@@ -91,7 +94,7 @@ export default class BaiJiaHaoAdapter {
   }
 
   async uploadFile(file) {
-    var uploadUrl = 'https://baijiahao.baidu.com/builderinner/api/content/file/upload'
+    var uploadUrl = 'https://baijiahao.baidu.com/pcui/picture/uploadproxy'
     var file = new File([file.bits], 'temp', {
       type: file.type
     });
