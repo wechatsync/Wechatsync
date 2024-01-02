@@ -405,7 +405,11 @@ export default {
           }
         }
         post.desc = self.pageData.description
-        console.log(post)
+        // 优化微信公众号、知乎 html 中换行被处理为文章中换行问题
+        post.content = post.content.replace(/\n+|\t+/g,"")
+        post.inline_content = post.inline_content.replace(/\n+|\t+/g,"")
+
+        console.log("文章页抓取内容：" + post.content)
         return post
       }
       var selectedAc = this.allAccounts.filter((a) => {
