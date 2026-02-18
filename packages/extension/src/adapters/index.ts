@@ -45,6 +45,7 @@ import {
   ImoocAdapter,
   OschinaAdapter,
   SegmentfaultAdapter,
+  EastmoneyAdapter,
 } from '@wechatsync/core'
 
 // 私有适配器 - 通过 glob 动态加载（文件不存在时为空对象，不会报错）
@@ -92,6 +93,7 @@ const ADAPTER_CLASSES: AdapterConstructor[] = [
   ImoocAdapter,
   OschinaAdapter,
   SegmentfaultAdapter,
+  EastmoneyAdapter,
   ...getPrivateAdapters(),
 ]
 
