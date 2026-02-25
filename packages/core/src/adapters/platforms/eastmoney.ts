@@ -65,6 +65,24 @@ export class EastmoneyAdapter extends CodeAdapter {
 
   private ctoken: string = "";
   private utoken: string = "";
+  private deviceId: string = "";
+
+  /** 获取或生成持久化 deviceId（32位大写 hex） */
+  private async getDeviceId(): Promise<string> {
+    if (this.deviceId) return this.deviceId;
+    const stored = await this.runtime.storage.get<string>("eastmoney_deviceId");
+    if (stored) {
+      this.deviceId = stored;
+      return this.deviceId;
+    }
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    this.deviceId = Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
+      .join("");
+    await this.runtime.storage.set("eastmoney_deviceId", this.deviceId);
+    return this.deviceId;
+  }
 
   /** API Header 规则 */
   private readonly HEADER_RULES = [
@@ -174,14 +192,15 @@ export class EastmoneyAdapter extends CodeAdapter {
   }
 
   /** 构造 API 参数 */
-  private buildParm(params: {
+  private async buildParm(params: {
     draftid?: string;
     title: string;
     text: string;
-  }): object[] {
+  }): Promise<object[]> {
+    const deviceid = await this.getDeviceId();
     return [
       { ip: "$IP$" },
-      { deviceid: "8C67557BE560F5454573A4F9CDF472F6" },
+      { deviceid },
       { version: "100" },
       { plat: "web" },
       { product: "CFH" },
@@ -265,7 +284,7 @@ export class EastmoneyAdapter extends CodeAdapter {
   }
 
   private async createDraft(title: string): Promise<string> {
-    const parm = this.buildParm({
+    const parm = await this.buildParm({
       title,
       text: '<div class="xeditor_content cfh_web"></div>',
     });
@@ -281,7 +300,7 @@ export class EastmoneyAdapter extends CodeAdapter {
     title: string,
     content: string,
   ): Promise<void> {
-    const parm = this.buildParm({
+    const parm = await this.buildParm({
       draftid: draftId,
       title,
       text: `<div class="xeditor_content cfh_web">${content}</div>`,

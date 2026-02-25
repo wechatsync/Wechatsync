@@ -25,6 +25,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
   const [mcpStatus, setMcpStatus] = useState<McpStatus>({ enabled: false, connected: false })
   const [cmsAccounts, setCmsAccounts] = useState<CMSAccount[]>([])
   const [loading, setLoading] = useState(false)
+  const [floatingButtonEnabled, setFloatingButtonEnabled] = useState(false)
 
   // 获取状态
   useEffect(() => {
@@ -44,6 +45,11 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
     // CMS 账户
     chrome.storage.local.get('cmsAccounts', (result) => {
       setCmsAccounts(result.cmsAccounts || [])
+    })
+
+    // 悬浮按钮设置
+    chrome.storage.local.get('floatingButtonEnabled', (result) => {
+      setFloatingButtonEnabled(result.floatingButtonEnabled ?? false)
     })
   }, [open])
 
@@ -83,6 +89,13 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
         }))
       }
     })
+  }
+
+  // 切换悬浮按钮
+  const toggleFloatingButton = () => {
+    const next = !floatingButtonEnabled
+    setFloatingButtonEnabled(next)
+    chrome.storage.local.set({ floatingButtonEnabled: next })
   }
 
   // 删除 CMS 账户
@@ -181,6 +194,32 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                 )}
               </div>
             )}
+          </div>
+
+          {/* 悬浮同步按钮 */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">网页功能</h3>
+
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium">悬浮同步按钮</p>
+                <p className="text-xs text-muted-foreground">在网页右下角显示快捷同步按钮</p>
+              </div>
+              <button
+                onClick={toggleFloatingButton}
+                className={cn(
+                  'relative w-11 h-6 rounded-full transition-colors',
+                  floatingButtonEnabled ? 'bg-primary' : 'bg-muted-foreground/30',
+                )}
+              >
+                <span
+                  className={cn(
+                    'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
+                    floatingButtonEnabled ? 'translate-x-6' : 'translate-x-1'
+                  )}
+                />
+              </button>
+            </div>
           </div>
 
           {/* CMS 账户 */}

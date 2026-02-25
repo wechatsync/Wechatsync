@@ -143,6 +143,7 @@ type MessageAction =
   | { type: 'MAGIC_CALL'; payload: { methodName: string; data: any } }
   | { type: 'CLEAR_UPDATE_BADGE' }
   | { type: 'GET_PREPROCESS_CONFIGS'; platforms: string[] }
+  | { type: 'TRIGGER_OPEN_EDITOR' }
 
 /**
  * 消息处理
@@ -962,6 +963,40 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       await initAdapters()
       const configs = getPlatformPreprocessConfigs(message.platforms)
       return { configs }
+    }
+
+    case 'TRIGGER_OPEN_EDITOR': {
+      // 悬浮按钮触发，与右键菜单逻辑相同
+      const tabId = sender?.tab?.id
+      if (!tabId) return { success: false }
+
+      const dslPlatforms = await checkAllPlatformsAuth(false)
+      const dslWithType = dslPlatforms.map((p: any) => ({
+        ...p,
+        sourceType: 'dsl' as const,
+      }))
+
+      const cmsStorage = await chrome.storage.local.get('cmsAccounts')
+      const cmsAccounts = cmsStorage.cmsAccounts || []
+      const cmsPlatforms = cmsAccounts
+        .filter((a: any) => a.isConnected)
+        .map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          icon: getCmsIcon(a.type),
+          homepage: a.url,
+          isAuthenticated: true,
+          username: a.username,
+          sourceType: 'cms' as const,
+          cmsType: a.type,
+        }))
+
+      chrome.tabs.sendMessage(tabId, {
+        type: 'OPEN_EDITOR',
+        platforms: [...dslWithType, ...cmsPlatforms],
+        selectedPlatforms: [],
+      })
+      return { success: true }
     }
 
     default:
