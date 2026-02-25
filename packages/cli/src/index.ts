@@ -712,15 +712,18 @@ program
         })
 
         spinner.stop()
-        console.log()
+        const platforms = await bridge.request<PlatformInfo[]>('listPlatforms', {
+          forceRefresh: options.refresh,
+        })
+        const platformInfo = platforms.filter((p) => p.id == platform)
 
         if (result.isAuthenticated) {
-          console.log(chalk.green(`✓ ${result.name} 已登录`))
+          console.log(chalk.green(`✓ ${platformInfo[0].name} 已登录`))
           if (result.username) {
             console.log(`  用户: ${chalk.cyan(result.username)}`)
           }
         } else {
-          console.log(chalk.red(`✗ ${result.name} 未登录`))
+          console.log(chalk.red(`✗ ${platformInfo[0].name} 未登录`))
           if (result.error) {
             console.log(`  错误: ${chalk.gray(result.error)}`)
           }
