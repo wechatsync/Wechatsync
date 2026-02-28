@@ -21,6 +21,10 @@ export class ToutiaoAdapter extends CodeAdapter {
   readonly preprocessConfig = {
     outputFormat: 'html' as const,
     removeLinks: true,
+    removeEmptyImages: true,
+    removeDataAttributes: true,
+    flattenNestedBold: true,
+    unwrapSingleChildSpans: true,
   }
 
   /** 头条 API 需要的 Header 规则 */

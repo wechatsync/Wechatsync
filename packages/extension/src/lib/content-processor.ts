@@ -89,6 +89,10 @@ export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig)
     removeEmptyElements(container)
   }
 
+  if (config.removeEmptyImages) {
+    removeEmptyImages(container)
+  }
+
   if (config.removeDataAttributes) {
     removeDataAttributes(container)
   }
@@ -110,6 +114,14 @@ export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig)
 
   if (config.unwrapNestedFigures) {
     unwrapNestedFigures(container)
+  }
+
+  if (config.flattenNestedBold) {
+    flattenNestedBold(container)
+  }
+
+  if (config.unwrapSingleChildSpans) {
+    unwrapSingleChildSpans(container)
   }
 
   if (config.unwrapSingleChildContainers) {
@@ -485,6 +497,17 @@ export function preprocessCodeBlocks(container: HTMLElement): void {
 }
 
 /**
+ * 移除没有有效 src 的 img 标签（src 缺失或为空字符串）
+ */
+function removeEmptyImages(container: HTMLElement): void {
+  container.querySelectorAll('img').forEach((img) => {
+    if (!img.src || img.src === window.location.href) {
+      img.remove()
+    }
+  })
+}
+
+/**
  * 移除空元素
  */
 function removeEmptyElements(container: HTMLElement): void {
@@ -569,6 +592,67 @@ function removeTrailingBr(container: HTMLElement): void {
  * 解包嵌套的 figure 标签
  * <figure><figure><img></figure></figure> → <figure><img></figure>
  */
+/**
+ * 展平嵌套的 b/strong 标签
+ * 移除作为容器使用的内层 b/strong，保留内容（微信编辑器常见问题）
+ */
+function flattenNestedBold(container: HTMLElement): void {
+  // b b / b strong / strong b / strong strong —— 任意后代关系都算嵌套
+  const selectors = ['b b', 'b strong', 'strong b', 'strong strong']
+  for (let i = 0; i < 5; i++) {
+    let removed = 0
+    for (const sel of selectors) {
+      container.querySelectorAll(sel).forEach((inner) => {
+        const parent = inner.parentNode
+        if (!parent) return
+        while (inner.firstChild) {
+          parent.insertBefore(inner.firstChild, inner)
+        }
+        parent.removeChild(inner)
+        removed++
+      })
+    }
+    if (removed === 0) break
+  }
+}
+
+/**
+ * 解包纯容器 span（减少过深嵌套）
+ * 微信编辑器常见：span→span→span→span→text，Toutiao 可能有嵌套深度限制
+ * 策略：只要 span 本身没有直接文本内容（内容全在子元素里），就解包，
+ * 不限子元素数量和类型。保留含直接文本的 span（混合内容）。
+ */
+function unwrapSingleChildSpans(container: HTMLElement): void {
+  for (let i = 0; i < 10; i++) {
+    let unwrapped = 0
+
+    const allSpans = Array.from(container.querySelectorAll('span'))
+
+    for (const span of allSpans) {
+      if (!span.parentNode) continue // already detached
+
+      // Skip empty spans (no children at all)
+      if (span.childNodes.length === 0) continue
+
+      // If span has any direct non-whitespace text, keep it (mixed content)
+      const hasDirectText = Array.from(span.childNodes).some(
+        (node) => node.nodeType === Node.TEXT_NODE && !!node.textContent?.trim()
+      )
+      if (hasDirectText) continue
+
+      // Pure container span: lift all children up and remove the wrapper
+      const parent = span.parentNode
+      while (span.firstChild) {
+        parent.insertBefore(span.firstChild, span)
+      }
+      parent.removeChild(span)
+      unwrapped++
+    }
+
+    if (unwrapped === 0) break
+  }
+}
+
 function unwrapNestedFigures(container: HTMLElement): void {
   // 多次迭代处理多层嵌套
   for (let i = 0; i < 5; i++) {

@@ -38,6 +38,8 @@ export interface PreprocessConfig {
 
   /** 移除空元素 (空 p, div, section 等) */
   removeEmptyElements?: boolean
+  /** 移除没有有效 src 的 img 标签（src 为空或缺失） */
+  removeEmptyImages?: boolean
   /** 移除 data-* 属性 */
   removeDataAttributes?: boolean
   /** 移除 srcset 属性 */
@@ -55,8 +57,12 @@ export interface PreprocessConfig {
   removeTrailingBr?: boolean
   /** 解包单一子元素容器 */
   unwrapSingleChildContainers?: boolean
+  /** 解包只含单个子 span 的 span（减少过深嵌套） */
+  unwrapSingleChildSpans?: boolean
   /** 解包嵌套的 figure 标签 */
   unwrapNestedFigures?: boolean
+  /** 展平嵌套的 b/strong 标签（移除内层，保留内容） */
+  flattenNestedBold?: boolean
   /** 压缩 HTML（移除标签间空白） */
   compactHtml?: boolean
 
