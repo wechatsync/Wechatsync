@@ -3,6 +3,7 @@ import { ArticleCard } from './ArticleCard'
 import { PlatformList } from './PlatformList'
 import { PromoBanner } from './PromoBanner'
 import { SharePrompt } from './SharePrompt'
+import { TipBar } from './TipBar'
 import type { SyncDialogProps } from './types'
 
 /**
@@ -96,7 +97,8 @@ export function SyncDialog({
       </div>
 
       {/* Footer */}
-      <div className="flex-shrink-0 border-t p-4">
+      <div className="flex-shrink-0 border-t p-4 space-y-3">
+        {(isSyncing || isCompleted) && <TipBar />}
         {isCompleted ? (
           <div className="flex gap-2">
             {failedCount > 0 && (

@@ -235,11 +235,11 @@ export abstract class CodeAdapter implements PlatformAdapter {
     // 提取所有图片（HTML + Markdown）
     const matches: { full: string; src: string; alt?: string; type: 'html' | 'markdown' }[] = []
 
-    // 1. HTML 格式: <img ... src="url" ...>
-    const htmlImgRegex = /<img[^>]+src="([^"]+)"[^>]*>/gi
+    // 1. HTML 格式: <img ... src="url" ...> (兼容双引号、单引号、无引号)
+    const htmlImgRegex = /<img[^>]+src=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi
     let match
     while ((match = htmlImgRegex.exec(content)) !== null) {
-      matches.push({ full: match[0], src: match[1], type: 'html' })
+      matches.push({ full: match[0], src: match[1] || match[2] || match[3], type: 'html' })
     }
 
     // 2. Markdown 格式: ![alt](url)

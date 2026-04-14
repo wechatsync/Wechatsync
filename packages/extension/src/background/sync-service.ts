@@ -2,7 +2,7 @@
  * Sync Service - 同步服务模块
  *
  * 提供完整的文章同步功能，支持 DSL 平台和 CMS 账户。
- * 主要供 MCP 使用，避免 service worker 自己给自己发消息的问题。
+ * background/index.ts 的消息处理器和 MCP 客户端共用此模块。
  */
 import {
   syncToMultiplePlatforms,
@@ -10,13 +10,13 @@ import {
   getPlatformPreprocessConfigs,
   type SyncDetailProgress,
 } from '../adapters'
+import { DEFAULT_PREPROCESS_CONFIG } from '@wechatsync/core'
 import * as wordpressAdapter from '../adapters/cms/wordpress'
 import * as metaweblogAdapter from '../adapters/cms/metaweblog'
 import { createLogger } from '../lib/logger'
 
 const logger = createLogger('SyncService')
 
-// 同步结果类型
 export interface SyncResult {
   platform: string
   platformName?: string
@@ -27,11 +27,9 @@ export interface SyncResult {
   error?: string
 }
 
-// 同步状态类型
-type SyncHistoryStatus = 'syncing' | 'completed' | 'failed' | 'cancelled'
+export type SyncHistoryStatus = 'syncing' | 'completed' | 'failed' | 'cancelled'
 
-// 同步状态
-interface ActiveSyncState {
+export interface ActiveSyncState {
   syncId: string
   status: 'syncing' | 'completed' | 'failed' | 'cancelled'
   article: {
@@ -46,7 +44,6 @@ interface ActiveSyncState {
   startTime: number
 }
 
-// 历史记录项
 interface SyncHistoryItem {
   id: string
   status: SyncHistoryStatus
@@ -58,40 +55,39 @@ interface SyncHistoryItem {
   endTime?: number
 }
 
-// 同步配置
 interface SyncOptions {
   skipHistory?: boolean
   source?: string
+  syncId?: string
+  allSelectedPlatforms?: string[]
+  preprocessArticle?: (
+    article: any,
+    dslPlatformIds: string[],
+    sourcePlatform: string | undefined,
+  ) => Promise<any>
 }
 
-// 进度回调
 export interface SyncProgressCallbacks {
   onResult?: (result: SyncResult) => void
   onImageProgress?: (platform: string, current: number, total: number) => void
   onDetailProgress?: (progress: SyncDetailProgress) => void
 }
 
-const SYNC_STATE_KEY = 'activeSyncState'
+export const SYNC_STATE_KEY = 'activeSyncState'
 const MAX_HISTORY_ITEMS = 25
 
-// Badge 颜色
-const BADGE_COLORS = {
-  syncing: '#3B82F6',   // 蓝色
-  success: '#22C55E',   // 绿色
-  error: '#EF4444',     // 红色
-  partial: '#F59E0B',   // 橙色
+export const BADGE_COLORS = {
+  syncing: '#3B82F6',
+  success: '#22C55E',
+  error: '#EF4444',
+  partial: '#F59E0B',
+  update: '#8B5CF6',
 }
 
-/**
- * 生成唯一同步ID
- */
 export function generateSyncId(): string {
   return `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-/**
- * 更新扩展 Badge
- */
 async function updateBadge(state: ActiveSyncState | null) {
   if (!state) {
     await chrome.action.setBadgeText({ text: '' })
@@ -99,7 +95,6 @@ async function updateBadge(state: ActiveSyncState | null) {
   }
 
   if (state.status === 'syncing') {
-    // 同步中不显示 badge，避免卡住后残留
     await chrome.action.setBadgeText({ text: '' })
   } else if (state.status === 'completed') {
     const successCount = state.results.filter(r => r.success).length
@@ -117,7 +112,6 @@ async function updateBadge(state: ActiveSyncState | null) {
       await chrome.action.setBadgeBackgroundColor({ color: BADGE_COLORS.partial })
     }
 
-    // 5秒后清除 badge
     setTimeout(async () => {
       const storage = await chrome.storage.local.get(SYNC_STATE_KEY)
       if (storage[SYNC_STATE_KEY]?.status === 'completed') {
@@ -137,17 +131,16 @@ async function updateBadge(state: ActiveSyncState | null) {
   }
 }
 
-/**
- * 保存同步状态
- */
-async function saveSyncState(state: ActiveSyncState) {
+export async function saveSyncState(state: ActiveSyncState) {
   await chrome.storage.local.set({ [SYNC_STATE_KEY]: state })
   await updateBadge(state)
 }
 
-/**
- * 创建同步历史记录
- */
+export async function clearSyncState() {
+  await chrome.storage.local.remove(SYNC_STATE_KEY)
+  await chrome.action.setBadgeText({ text: '' })
+}
+
 async function createHistoryItem(
   syncId: string,
   article: { title: string; cover?: string },
@@ -175,9 +168,6 @@ async function createHistoryItem(
   }
 }
 
-/**
- * 更新同步历史记录
- */
 async function updateHistoryItem(
   syncId: string,
   status: SyncHistoryStatus,
@@ -212,15 +202,6 @@ async function updateHistoryItem(
   }
 }
 
-/**
- * 执行文章同步
- *
- * @param article 文章数据
- * @param platforms 目标平台ID列表
- * @param options 同步选项
- * @param callbacks 进度回调
- * @returns 同步结果
- */
 export async function performSync(
   article: {
     title: string
@@ -228,37 +209,36 @@ export async function performSync(
     html?: string
     markdown?: string
     cover?: string
+    source?: { platform?: string }
+    platformContents?: Record<string, { html: string; markdown: string }>
   },
   platforms: string[],
   options: SyncOptions = {},
   callbacks: SyncProgressCallbacks = {}
 ): Promise<{ results: SyncResult[]; syncId: string }> {
-  const { skipHistory = false, source = 'mcp' } = options
+  const { skipHistory = false, source = 'mcp', syncId: passedSyncId, allSelectedPlatforms, preprocessArticle } = options
   const { onResult, onImageProgress, onDetailProgress } = callbacks
 
   const allPlatformMetas = getAllPlatformMetas()
   const platformNameById = new Map(allPlatformMetas.map(meta => [meta.id, meta.name]))
-  const syncId = generateSyncId()
+  const syncId = passedSyncId || generateSyncId()
 
-  // 规范化文章对象，确保必需字段有默认值
   const normalizedArticle = {
     title: article.title,
     content: article.content || article.html || '',
     html: article.html || article.content || '',
     markdown: article.markdown || '',
     cover: article.cover,
+    platformContents: article.platformContents,
   }
 
-  // 获取 CMS 账户信息以区分 DSL 和 CMS
   const cmsStorage = await chrome.storage.local.get('cmsAccounts')
   const cmsAccounts = cmsStorage.cmsAccounts || []
   const cmsAccountIds = new Set(cmsAccounts.map((a: any) => a.id))
 
-  // 分离 DSL 平台和 CMS 账户
   const dslPlatformIds = platforms.filter((id: string) => !cmsAccountIds.has(id))
   const cmsPlatformIds = platforms.filter((id: string) => cmsAccountIds.has(id))
 
-  // 初始化同步状态
   const syncState: ActiveSyncState = {
     syncId,
     status: 'syncing',
@@ -269,46 +249,53 @@ export async function performSync(
       html: normalizedArticle.html,
       markdown: normalizedArticle.markdown,
     },
-    selectedPlatforms: platforms,
+    selectedPlatforms: allSelectedPlatforms || platforms,
     results: [],
     startTime: Date.now(),
   }
   await saveSyncState(syncState)
 
-  // 创建历史记录
   if (!skipHistory) {
     await createHistoryItem(syncId, normalizedArticle, platforms)
   }
 
-  // 预处理内容（与 SYNC_ARTICLE 路径一致）
-  // MCP/CLI 路径没有 senderTabId，需要找一个可用 tab 做 DOM 预处理
-  // 同源平台跳过预处理（如微信到微信）
-  const sourcePlatform = (article as any).source?.platform
-  const platformsToPreprocess = dslPlatformIds.filter((id: string) => id !== sourcePlatform)
-  let processedArticle: typeof normalizedArticle & { platformContents?: Record<string, { html: string; markdown: string }> } = normalizedArticle
-  if (platformsToPreprocess.length > 0) {
-    const configs = getPlatformPreprocessConfigs(platformsToPreprocess)
-    // CLI/MCP 来源的 HTML 保留 <style> 标签（用户自定义排版）
-    if (source === 'mcp') {
+  const sourcePlatform = article.source?.platform
+  const { deepCleanEnabled = false } = await chrome.storage.local.get('deepCleanEnabled')
+  let processedArticle: any = normalizedArticle
+
+  if (preprocessArticle) {
+    processedArticle = await preprocessArticle(normalizedArticle, dslPlatformIds, sourcePlatform)
+  } else if (!article.platformContents) {
+    const platformsToPreprocess = dslPlatformIds.filter((id: string) => id !== sourcePlatform)
+    if (platformsToPreprocess.length > 0) {
+      const configs = getPlatformPreprocessConfigs(platformsToPreprocess)
+      // 用户设置覆盖 normalizeViaMarkdown，微信来源始终跳过
       for (const key of Object.keys(configs)) {
-        configs[key] = { ...configs[key], keepStyles: true }
+        configs[key] = {
+          ...configs[key],
+          normalizeViaMarkdown: sourcePlatform === 'weixin' ? false : deepCleanEnabled,
+        }
       }
-    }
-    const rawHtml = normalizedArticle.html || normalizedArticle.content || ''
-    if (rawHtml) {
-      const preprocessResult = await sendPreprocessMessage(rawHtml, platformsToPreprocess, configs)
-      if (preprocessResult) {
-        processedArticle = { ...normalizedArticle, platformContents: preprocessResult }
-        logger.debug('Preprocessed for platforms:', Object.keys(preprocessResult))
-      } else {
-        logger.warn('DOM preprocessing unavailable — please ensure at least one web page is open in Chrome')
+      if (source === 'mcp') {
+        for (const key of Object.keys(configs)) {
+          configs[key] = { ...configs[key], keepStyles: true }
+        }
+      }
+      const rawHtml = normalizedArticle.html || normalizedArticle.content || ''
+      if (rawHtml) {
+        const preprocessResult = await sendPreprocessMessage(rawHtml, platformsToPreprocess, configs)
+        if (preprocessResult) {
+          processedArticle = { ...normalizedArticle, platformContents: preprocessResult }
+          logger.debug('Preprocessed for platforms:', Object.keys(preprocessResult))
+        } else {
+          logger.warn('DOM preprocessing unavailable — please ensure at least one web page is open in Chrome')
+        }
       }
     }
   }
 
   const allResults: SyncResult[] = []
 
-  // 同步到 DSL 平台
   if (dslPlatformIds.length > 0) {
     await syncToMultiplePlatforms(dslPlatformIds, processedArticle, {
       onResult: (result) => {
@@ -331,7 +318,19 @@ export async function performSync(
     }, source)
   }
 
-  // 同步到 CMS 账户
+  // CMS 内容也需要源平台链接清理，走 content script 预处理
+  let cmsArticle = normalizedArticle
+  if (cmsPlatformIds.length > 0) {
+    const rawHtml = normalizedArticle.html || normalizedArticle.content || ''
+    if (rawHtml) {
+      const cmsConfigs: Record<string, unknown> = { _cms: DEFAULT_PREPROCESS_CONFIG }
+      const cmsPreprocessed = await sendPreprocessMessage(rawHtml, ['_cms'], cmsConfigs)
+      if (cmsPreprocessed?._cms) {
+        cmsArticle = { ...normalizedArticle, content: cmsPreprocessed._cms.html, html: cmsPreprocessed._cms.html }
+      }
+    }
+  }
+
   for (const accountId of cmsPlatformIds) {
     const account = cmsAccounts.find((a: any) => a.id === accountId)
     if (!account) {
@@ -377,13 +376,13 @@ export async function performSync(
 
       switch (account.type) {
         case 'wordpress':
-          result = await wordpressAdapter.publish(credentials, normalizedArticle, { draftOnly: true })
+          result = await wordpressAdapter.publish(credentials, cmsArticle, { draftOnly: true })
           break
         case 'typecho':
-          result = await metaweblogAdapter.publishToTypecho(credentials, normalizedArticle, { draftOnly: true })
+          result = await metaweblogAdapter.publishToTypecho(credentials, cmsArticle, { draftOnly: true })
           break
         case 'metaweblog':
-          result = await metaweblogAdapter.publish(credentials, normalizedArticle, { draftOnly: true })
+          result = await metaweblogAdapter.publish(credentials, cmsArticle, { draftOnly: true })
           break
         default:
           result = { success: false, error: '不支持的 CMS 类型' }
@@ -423,7 +422,6 @@ export async function performSync(
     }
   }
 
-  // 确定最终状态
   const successCount = allResults.filter(r => r.success).length
   const failedCount = allResults.length - successCount
   const finalStatus: SyncHistoryStatus =
@@ -433,11 +431,9 @@ export async function performSync(
         ? 'failed'
         : 'completed'
 
-  // 更新为完成状态
   syncState.status = finalStatus
   await saveSyncState(syncState)
 
-  // 更新历史记录
   if (!skipHistory) {
     await updateHistoryItem(syncId, finalStatus, allResults, allPlatformMetas)
   }
@@ -445,10 +441,6 @@ export async function performSync(
   return { results: allResults, syncId }
 }
 
-/**
- * 查找可用 tab 并发送 PREPROCESS_FOR_PLATFORMS 消息
- * 优先 active tab，否则遍历所有 http/https tab
- */
 async function sendPreprocessMessage(
   rawHtml: string,
   platforms: string[],
@@ -459,7 +451,6 @@ async function sendPreprocessMessage(
     payload: { rawHtml, platforms, configs },
   }
 
-  // 1. 优先尝试已有的 tab（content script 响应最快）
   try {
     const candidateTabIds: number[] = []
 
@@ -487,16 +478,11 @@ async function sendPreprocessMessage(
     logger.debug('Tab preprocess failed:', error)
   }
 
-  // 2. 没有可用 tab，创建临时扩展页面 tab 用于预处理
   return await preprocessViaTemporaryTab(message)
 }
 
 const PREPROCESSOR_URL = chrome.runtime.getURL('src/preprocessor/index.html')
 
-/**
- * 创建临时最小化窗口加载预处理页面，处理完后关闭
- * 使用独立窗口避免在用户 tab 栏闪烁
- */
 async function preprocessViaTemporaryTab(
   message: { type: string; payload: unknown }
 ): Promise<Record<string, { html: string; markdown: string }> | null> {
@@ -516,7 +502,6 @@ async function preprocessViaTemporaryTab(
     tabId = win.tabs?.[0]?.id
     if (!tabId) return null
 
-    // 等待 tab 加载完成
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         chrome.tabs.onUpdated.removeListener(listener)

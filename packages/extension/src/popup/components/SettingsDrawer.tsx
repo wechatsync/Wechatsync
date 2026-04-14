@@ -27,6 +27,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
   const [cmsAccounts, setCmsAccounts] = useState<CMSAccount[]>([])
   const [loading, setLoading] = useState(false)
   const [floatingButtonEnabled, setFloatingButtonEnabled] = useState(false)
+  const [deepCleanEnabled, setDeepCleanEnabled] = useState(false)
   const [serverUrlInput, setServerUrlInput] = useState('')
   const serverUrlTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -55,6 +56,11 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
     // 悬浮按钮设置
     chrome.storage.local.get('floatingButtonEnabled', (result) => {
       setFloatingButtonEnabled(result.floatingButtonEnabled ?? false)
+    })
+
+    // 深度格式清理
+    chrome.storage.local.get('deepCleanEnabled', (result) => {
+      setDeepCleanEnabled(result.deepCleanEnabled ?? false)
     })
   }, [open])
 
@@ -123,6 +129,13 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
     const next = !floatingButtonEnabled
     setFloatingButtonEnabled(next)
     chrome.storage.local.set({ floatingButtonEnabled: next })
+  }
+
+  // 切换深度格式清理
+  const toggleDeepClean = () => {
+    const next = !deepCleanEnabled
+    setDeepCleanEnabled(next)
+    chrome.storage.local.set({ deepCleanEnabled: next })
   }
 
   // 删除 CMS 账户
@@ -253,6 +266,32 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                   className={cn(
                     'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
                     floatingButtonEnabled ? 'translate-x-6' : 'translate-x-1'
+                  )}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* 高级选项 */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">高级选项</h3>
+
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium">深度格式清理</p>
+                <p className="text-xs text-muted-foreground">同步前通过 Markdown 转换清理格式，可能损失部分排版</p>
+              </div>
+              <button
+                onClick={toggleDeepClean}
+                className={cn(
+                  'relative w-11 h-6 rounded-full transition-colors flex-shrink-0',
+                  deepCleanEnabled ? 'bg-primary' : 'bg-muted-foreground/30',
+                )}
+              >
+                <span
+                  className={cn(
+                    'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
+                    deepCleanEnabled ? 'translate-x-6' : 'translate-x-1'
                   )}
                 />
               </button>

@@ -112,6 +112,12 @@ export class BilibiliAdapter extends CodeAdapter {
         }
       )
 
+      // B站要求所有图片必须在自家 CDN，移除上传失败仍保留原始 URL 的图片
+      content = content.replace(/<img[^>]+src=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi, (tag, s1, s2, s3) => {
+        const src = s1 || s2 || s3 || ''
+        return (src.includes('hdslb.com') || src.includes('bilibili.com') || src.includes('biliimg.com')) ? tag : ''
+      })
+
       const res = await this.postForm<{
         code: number
         message?: string
