@@ -33,9 +33,9 @@ export function PlatformList({
   const successCount = results.filter(r => r.success).length
   const failedCount = results.filter(r => !r.success).length
 
-  // Idle: show all (authenticated first), syncing/completed: only selected
+  // Idle: only authenticated platforms; syncing/completed: only selected
   const visiblePlatforms = isIdle
-    ? [...authenticatedPlatforms, ...unauthenticatedPlatforms]
+    ? authenticatedPlatforms
     : selectedPlatforms
         .map(id => platforms.find(p => p.id === id))
         .filter(Boolean) as Platform[]
@@ -129,7 +129,7 @@ export function PlatformList({
       {isIdle && platforms.length > 0 && authenticatedPlatforms.length === 0 && (
         <div className="text-center py-4">
           <p className="text-sm text-muted-foreground">还没有登录任何平台</p>
-          <p className="text-xs text-muted-foreground mt-1">点击平台名称前往登录</p>
+          <p className="text-xs text-muted-foreground mt-1">请先在浏览器中登录平台账号</p>
         </div>
       )}
     </div>

@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react'
+import { X } from 'lucide-react'
 import tips from '@/data/tips.json'
 
 const AUTHOR_URL = 'https://fun0.netlify.app/about/?utm_source=wechatsync_tip'
 
 /**
  * 同步等待时显示的随机功能提示
- * 每次挂载随机选一条，之后每 8 秒轮换
+ * 每次挂载随机选一条，之后每 5 秒轮换，可关闭
  */
 export function TipBar() {
   const [index, setIndex] = useState(() => Math.floor(Math.random() * tips.length))
+  const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
+    if (dismissed) return
     const timer = setInterval(() => {
       setIndex(prev => {
         let next: number
@@ -21,7 +24,9 @@ export function TipBar() {
       })
     }, 5000)
     return () => clearInterval(timer)
-  }, [])
+  }, [dismissed])
+
+  if (dismissed) return null
 
   const tip = tips[index]
   const isNew = tip.category === 'new'
@@ -41,6 +46,12 @@ export function TipBar() {
         >
           来自作者 fun
         </a>
+        <button
+          onClick={() => setDismissed(true)}
+          className="text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
+        >
+          <X className="w-3 h-3" />
+        </button>
       </div>
       <div className="text-gray-600 dark:text-gray-300 pl-[22px]">
         {tip.text}

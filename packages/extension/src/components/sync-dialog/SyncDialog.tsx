@@ -89,9 +89,9 @@ export function SyncDialog({
         )}
 
         {/* No article hint */}
-        {!article && platforms.length > 0 && (
+        {!article && authenticatedPlatforms.length > 0 && (
           <div className="text-xs text-muted-foreground text-center py-1">
-            已登录 {authenticatedPlatforms.length} 个平台，共 {platforms.length} 个可用
+            已登录 {authenticatedPlatforms.length} 个平台
           </div>
         )}
       </div>
