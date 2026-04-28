@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/wechatsync-wechatsync-badge.png)](https://mseep.ai/app/wechatsync-wechatsync)
+
 # 文章同步助手 (Wechatsync)
 
 ![](https://img.shields.io/github/v/release/wechatsync/Wechatsync.svg)
