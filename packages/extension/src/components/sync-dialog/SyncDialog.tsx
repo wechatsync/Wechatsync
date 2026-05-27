@@ -38,6 +38,7 @@ export function SyncDialog({
   const isIdle = status === 'idle' || status === 'loading'
   const isSyncing = status === 'syncing'
   const isCompleted = status === 'completed'
+  const isFinished = isCompleted || status === 'failed' || status === 'cancelled'
 
   const handleSelectAll = () => {
     if (selectedPlatforms.length === authenticatedPlatforms.length) {
@@ -57,7 +58,7 @@ export function SyncDialog({
         {/* Article card — compact during sync/complete */}
         <ArticleCard
           article={article}
-          compact={isSyncing || isCompleted}
+          compact={isSyncing || isFinished}
           onEdit={isIdle ? onEditArticle : undefined}
         />
 
@@ -98,8 +99,8 @@ export function SyncDialog({
 
       {/* Footer */}
       <div className="flex-shrink-0 border-t p-4 space-y-3">
-        {(isSyncing || isCompleted) && <TipBar />}
-        {isCompleted ? (
+        {(isSyncing || isFinished) && <TipBar />}
+        {isFinished ? (
           <div className="flex gap-2">
             {failedCount > 0 && (
               <button

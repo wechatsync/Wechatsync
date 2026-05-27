@@ -109,7 +109,7 @@ interface SyncHistoryItem {
 
 interface SyncState {
   // 状态
-  status: 'loading' | 'idle' | 'syncing' | 'completed'
+  status: 'loading' | 'idle' | 'syncing' | 'completed' | 'failed' | 'cancelled'
   article: Article | null
   platforms: Platform[]
   selectedPlatforms: string[]
