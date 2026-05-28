@@ -137,7 +137,9 @@ export class BilibiliAdapter extends CodeAdapter {
       logger.debug('Draft response:', res)
 
       if (res.code !== 0 || !res.data?.aid) {
-        throw new Error(res.message || '保存草稿失败')
+        logger.error('draft save failed', { code: res.code, message: res.message, contentLength: content.length })
+        const detail = res.message || JSON.stringify(res).slice(0, 200)
+        throw new Error(`保存草稿失败 (code=${res.code}, 内容长度=${content.length}): ${detail}`)
       }
 
       const draftUrl = `https://member.bilibili.com/platform/upload/text/edit?aid=${res.data.aid}`
@@ -186,7 +188,8 @@ export class BilibiliAdapter extends CodeAdapter {
     logger.debug('Image upload response:', res)
 
     if (res.code !== 0 || !res.data?.url) {
-      throw new Error(res.message || '图片上传失败')
+      logger.error('image upload failed', { code: res.code, message: res.message, src: src.slice(0, 100) })
+      throw new Error(`图片上传失败 (code=${res.code}): ${res.message || JSON.stringify(res).slice(0, 200)}`)
     }
 
     return {
