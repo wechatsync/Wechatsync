@@ -30,6 +30,7 @@ import { checkForUpdates, isUpdateDismissed } from '../lib/version-check'
 import { fetchRemoteConfig, fetchConfigIfNeeded } from '../lib/remote-config'
 
 const logger = createLogger('Background')
+const MCP_RECONNECT_ALARM = 'mcp_reconnect'
 
 // CMS 类型
 type CMSType = 'wordpress' | 'typecho' | 'metaweblog'
@@ -132,6 +133,7 @@ type MessageAction =
   | { type: 'MCP_ENABLE' }
   | { type: 'MCP_DISABLE' }
   | { type: 'MCP_STATUS' }
+  | { type: 'MCP_RECONNECT' }
   | { type: 'MCP_SET_SERVER_URL'; payload: { url: string } }
   | { type: 'MCP_WATCH_START' }
   | { type: 'MCP_WATCH_STOP' }
@@ -642,10 +644,9 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       await chrome.storage.local.set({ mcpServerUrl: url || '' })
       mcpClient.setServerUrl(url)
       // 地址变更后，断开重连
-      if (mcpClient.isConnected()) {
-        mcpClient.disconnect()
-        mcpClient.resetReconnect()
-      } else {
+      mcpClient.disconnect()
+      const storage = await chrome.storage.local.get('mcpEnabled')
+      if (storage.mcpEnabled) {
         mcpClient.resetReconnect()
       }
       return { success: true }
@@ -667,9 +668,21 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       return {
         enabled: storage.mcpEnabled ?? false,
         connected: mcpStatus.connected,
+        connecting: mcpStatus.connecting,
         token: storage.mcpToken,  // 返回 token 供 MCP Server 使用
         serverUrl: storage.mcpServerUrl || '',
+        lastError: mcpStatus.lastError,
+        nextReconnectAt: mcpStatus.nextReconnectAt,
       }
+    }
+
+    case 'MCP_RECONNECT': {
+      const storage = await chrome.storage.local.get('mcpEnabled')
+      if (!storage.mcpEnabled) {
+        return { success: false, error: 'MCP connection is disabled' }
+      }
+      await initMcpIfEnabled()
+      return { success: true }
     }
 
     case 'TRACK_ARTICLE_EXTRACT': {
@@ -1164,24 +1177,36 @@ chrome.runtime.onInstalled.addListener(async details => {
 /**
  * 启动时初始化 MCP（如果已启用）
  */
+let mcpInitPromise: Promise<void> | null = null
+
 async function initMcpIfEnabled() {
-  const storage = await chrome.storage.local.get(['mcpEnabled', 'mcpToken', 'mcpServerUrl'])
-  if (storage.mcpEnabled) {
-    if (storage.mcpToken) {
-      mcpClient.setToken(storage.mcpToken)
-      logger.info(' Starting MCP client with existing token...')
-    } else {
-      // 没有 token，生成新的
-      const token = crypto.randomUUID()
-      await chrome.storage.local.set({ mcpToken: token })
-      mcpClient.setToken(token)
-      logger.info(' Starting MCP client with new token...')
+  if (mcpInitPromise) {
+    return mcpInitPromise
+  }
+
+  mcpInitPromise = (async () => {
+    const storage = await chrome.storage.local.get(['mcpEnabled', 'mcpToken', 'mcpServerUrl'])
+    if (storage.mcpEnabled) {
+      if (storage.mcpToken) {
+        mcpClient.setToken(storage.mcpToken)
+        logger.info(' Starting MCP client with existing token...')
+      } else {
+        // 没有 token，生成新的
+        const token = crypto.randomUUID()
+        await chrome.storage.local.set({ mcpToken: token })
+        mcpClient.setToken(token)
+        logger.info(' Starting MCP client with new token...')
+      }
+      // 加载自定义服务器地址（支持远程桥接）
+      mcpClient.setServerUrl(storage.mcpServerUrl || '')
+      startMcpClient()
     }
-    // 加载自定义服务器地址（支持远程桥接）
-    if (storage.mcpServerUrl) {
-      mcpClient.setServerUrl(storage.mcpServerUrl)
-    }
-    startMcpClient()
+  })()
+
+  try {
+    await mcpInitPromise
+  } finally {
+    mcpInitPromise = null
   }
 }
 
@@ -1205,6 +1230,7 @@ async function preCheckPlatformsAuth() {
 // 浏览器启动时预检查
 chrome.runtime.onStartup.addListener(() => {
   logger.info(' Browser started, pre-checking auth...')
+  initMcpIfEnabled().catch(error => logger.error(' MCP startup failed:', error))
   preCheckPlatformsAuth()
 })
 
@@ -1215,7 +1241,12 @@ preCheckPlatformsAuth()
 chrome.alarms.create('daily_growth_metrics', { periodInMinutes: 24 * 60 })
 // 设置远程配置定期拉取（每 6 小时）
 chrome.alarms.create('remote_config_fetch', { periodInMinutes: 6 * 60 })
+// 定期唤醒 MV3 Service Worker，确保 CLI 启动后扩展能主动恢复连接
+chrome.alarms.create(MCP_RECONNECT_ALARM, { periodInMinutes: 0.5 })
 chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === MCP_RECONNECT_ALARM) {
+    initMcpIfEnabled().catch(error => logger.error(' MCP reconnect failed:', error))
+  }
   if (alarm.name === 'daily_growth_metrics') {
     trackGrowthMetrics().catch(() => {})
   }

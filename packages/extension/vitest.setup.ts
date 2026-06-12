@@ -16,6 +16,7 @@ const chromeMock = {
       removeListener: vi.fn(),
     },
     getURL: vi.fn((path: string) => `chrome-extension://mock-id/${path}`),
+    getPlatformInfo: vi.fn().mockResolvedValue({ os: 'mac', arch: 'arm', nacl_arch: 'arm' }),
   },
   storage: {
     local: {

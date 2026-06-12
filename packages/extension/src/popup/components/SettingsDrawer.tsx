@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Plug, PlugZap, Plus, Trash2, ChevronRight } from 'lucide-react'
+import { X, Plug, PlugZap, Plus, Trash2, ChevronRight, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { trackFeatureDiscovery } from '../../lib/analytics'
 
@@ -11,8 +11,11 @@ interface SettingsDrawerProps {
 interface McpStatus {
   enabled: boolean
   connected: boolean
+  connecting?: boolean
   token?: string
   serverUrl?: string
+  lastError?: string | null
+  nextReconnectAt?: number | null
 }
 
 interface CMSAccount {
@@ -40,8 +43,11 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
         setMcpStatus({
           enabled: response.enabled ?? false,
           connected: response.connected ?? false,
+          connecting: response.connecting ?? false,
           token: response.token,
           serverUrl: response.serverUrl,
+          lastError: response.lastError,
+          nextReconnectAt: response.nextReconnectAt,
         })
         setServerUrlInput(response.serverUrl || '')
       }
@@ -68,7 +74,13 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
     const interval = setInterval(() => {
       chrome.runtime.sendMessage({ type: 'MCP_STATUS' }, (response) => {
         if (response && !response.error) {
-          setMcpStatus(prev => ({ ...prev, connected: response.connected ?? false }))
+          setMcpStatus(prev => ({
+            ...prev,
+            connected: response.connected ?? false,
+            connecting: response.connecting ?? false,
+            lastError: response.lastError,
+            nextReconnectAt: response.nextReconnectAt,
+          }))
         }
       })
     }, 3000)
@@ -101,6 +113,11 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
         }))
       }
     })
+  }
+
+  const reconnectMcp = () => {
+    setMcpStatus(prev => ({ ...prev, connecting: true, lastError: null }))
+    chrome.runtime.sendMessage({ type: 'MCP_RECONNECT' })
   }
 
   // 服务器地址变更（防抖 800ms）
@@ -182,7 +199,9 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                     {mcpStatus.enabled
                       ? mcpStatus.connected
                         ? '已连接'
-                        : '等待连接...'
+                        : mcpStatus.connecting
+                          ? '连接中...'
+                          : '等待连接...'
                       : '未启用'}
                   </p>
                 </div>
@@ -211,6 +230,20 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                 <p className="text-xs text-muted-foreground">
                   供 CLI 和 MCP Server 通过 WebSocket 桥接同步文章
                 </p>
+                {!mcpStatus.connected && (
+                  <button
+                    onClick={reconnectMcp}
+                    className="flex items-center justify-center gap-1.5 w-full p-2 rounded border border-border text-xs hover:bg-muted"
+                  >
+                    <RefreshCw className={cn('w-3.5 h-3.5', mcpStatus.connecting && 'animate-spin')} />
+                    立即重连
+                  </button>
+                )}
+                {mcpStatus.lastError && !mcpStatus.connecting && (
+                  <p className="text-xs text-destructive break-all">
+                    {mcpStatus.lastError}
+                  </p>
+                )}
                 {mcpStatus.token && (
                   <div className="p-2 bg-muted/50 rounded text-xs">
                     <p className="text-muted-foreground mb-1">Token:</p>
