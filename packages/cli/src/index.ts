@@ -714,15 +714,15 @@ program
     let processedHtml = html
 
     if (localImages.length > 0) {
-      // 使用第一个目标平台作为图床
-      const imageHost = platforms[0]
-      console.log(chalk.bold(`发现 ${localImages.length} 张本地图片，上传到 ${imageHost}...`))
+      // 改为内嵌 data URI，交给各平台适配器自己的 publish() 上传到各自图床。
+      // 这样每个平台都走自己 publish() 里的签名/Header 管线（等同扩展按钮那条路），
+      // 头条等反爬平台也能传图，且各平台图片各存自己图床，避免跨站盗链。
+      console.log(chalk.bold(`发现 ${localImages.length} 张本地图片，转为内嵌（各平台自传图床）...`))
       console.log()
 
-      const imageResult = await processLocalImages(parsed.content, fileDir, bridge, imageHost)
+      const imageResult = convertImagesToDataUri(parsed.content, fileDir)
 
-      if (imageResult.uploadedCount > 0) {
-        // 更新内容
+      if (imageResult.convertedCount > 0) {
         if (parsed.format === 'markdown') {
           processedMarkdown = imageResult.content
           processedHtml = markdownToHtml(imageResult.content)
@@ -733,11 +733,9 @@ program
 
       console.log()
       console.log(
-        `图片上传完成: ${chalk.green(imageResult.uploadedCount + ' 成功')}, ${chalk.red(imageResult.failedCount + ' 失败')}`
+        `本地图片内嵌完成: ${chalk.green(imageResult.convertedCount + ' 成功')}, ${chalk.yellow(imageResult.failedCount + ' 跳过')}`
       )
-      if (platforms.length > 1) {
-        console.log(chalk.gray(`(其他平台将从 ${imageHost} 图床转存)`))
-      }
+      console.log(chalk.gray('(各平台将各自把内嵌图上传到自己的图床)'))
       console.log()
     }
 
