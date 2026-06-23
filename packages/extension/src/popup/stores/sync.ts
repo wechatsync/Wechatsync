@@ -208,7 +208,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         set({
           status: syncState.status,
           article: syncState.article,
-          selectedPlatforms: syncState.selectedPlatforms,
+          selectedPlatforms: Array.isArray(syncState.selectedPlatforms) ? syncState.selectedPlatforms : [],
           results: syncState.results || [],
           currentSyncId: syncState.syncId || null,
           recovered: true,
