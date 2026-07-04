@@ -11,6 +11,7 @@ import {
 } from '../adapters'
 import * as wordpressAdapter from '../adapters/cms/wordpress'
 import * as metaweblogAdapter from '../adapters/cms/metaweblog'
+import * as devtoAdapter from '../adapters/api-key/devto'
 import { startMcpClient, stopMcpClient, getMcpStatus, mcpClient } from '../mcp/client'
 import { createLogger } from '../lib/logger'
 import {
@@ -33,6 +34,10 @@ const logger = createLogger('Background')
 
 // CMS 类型
 type CMSType = 'wordpress' | 'typecho' | 'metaweblog'
+// 配置账号类型：传统 CMS 站点与 API Key 授权平台共用本地账号存储
+type ConfigAccountKind = 'cms' | 'apiKey'
+// API Key 平台标识
+type ApiKeyProvider = 'devto'
 
 // 同步状态类型
 interface ActiveSyncState {
@@ -127,7 +132,7 @@ type MessageAction =
   | { type: 'CHECK_AUTH'; payload: { platformId: string } }
   | { type: 'SYNC_ARTICLE'; payload: { article: any; platforms: string[]; allSelectedPlatforms?: string[]; skipHistory?: boolean; source?: string; syncId?: string } }
   | { type: 'OPEN_SYNC_PAGE'; path?: string }
-  | { type: 'TEST_CMS_CONNECTION'; payload: { type: CMSType; url: string; username: string; password: string } }
+  | { type: 'TEST_CMS_CONNECTION'; payload: { kind?: ConfigAccountKind; type?: CMSType; provider?: ApiKeyProvider; url?: string; username?: string; password: string } }
   | { type: 'SYNC_TO_CMS'; payload: { accountId: string; article: any } }
   | { type: 'MCP_ENABLE' }
   | { type: 'MCP_DISABLE' }
@@ -179,18 +184,10 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       // 同时加载 CMS 账户
       const cmsStorage = await chrome.storage.local.get('cmsAccounts')
       const cmsAccounts = cmsStorage.cmsAccounts || []
+      // 配置账号包含 CMS 与 API Key 平台，统一转换为同步平台展示
       const cmsPlatforms = cmsAccounts
         .filter((a: any) => a.isConnected)
-        .map((a: any) => ({
-          id: a.id,
-          name: a.name,
-          icon: getCmsIcon(a.type),
-          homepage: a.url,
-          isAuthenticated: true,
-          username: a.username,
-          sourceType: 'cms' as const,
-          cmsType: a.type,
-        }))
+        .map(toConfiguredPlatform)
 
       const allPlatforms = [...dslWithType, ...cmsPlatforms]
       // 缓存完整平台列表，供 popup 启动时立即渲染
@@ -369,21 +366,8 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
             payload: { platform: accountId, platformName: account.name, stage: 'saving' },
           })
 
-          const credentials = { url: account.url, username: account.username, password }
-          let result
-          switch (account.type) {
-            case 'wordpress':
-              result = await wordpressAdapter.publish(credentials, article, { draftOnly: true })
-              break
-            case 'typecho':
-              result = await metaweblogAdapter.publishToTypecho(credentials, article, { draftOnly: true })
-              break
-            case 'metaweblog':
-              result = await metaweblogAdapter.publish(credentials, article, { draftOnly: true })
-              break
-            default:
-              result = { success: false, error: '不支持的 CMS 类型' }
-          }
+          // 配置账号可能是 CMS 或 API Key 平台，统一交给分发函数处理
+          const result = await publishConfiguredAccount(account, password, article)
 
           const cmsResult = {
             platform: accountId,
@@ -482,29 +466,34 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
     }
 
     case 'TEST_CMS_CONNECTION': {
-      const { type, url, username, password } = message.payload
-      const credentials = { url, username, password }
+      const { kind = 'cms', type, provider, url, username, password } = message.payload
+      const credentials = { url: url || '', username: username || '', password }
 
       try {
         let result
-        switch (type) {
-          case 'wordpress':
-            result = await wordpressAdapter.testConnection(credentials)
-            break
-          case 'typecho':
-            result = await metaweblogAdapter.testTypechoConnection(credentials)
-            break
-          case 'metaweblog':
-            result = await metaweblogAdapter.testConnection(credentials)
-            break
-          default:
-            return { success: false, error: '不支持的 CMS 类型' }
+        // API Key 平台没有站点地址和用户名，按 provider 选择专用校验逻辑
+        if (kind === 'apiKey' && provider === 'devto') {
+          result = await devtoAdapter.testConnection({ apiKey: password })
+        } else {
+          switch (type) {
+            case 'wordpress':
+              result = await wordpressAdapter.testConnection(credentials)
+              break
+            case 'typecho':
+              result = await metaweblogAdapter.testTypechoConnection(credentials)
+              break
+            case 'metaweblog':
+              result = await metaweblogAdapter.testConnection(credentials)
+              break
+            default:
+              return { success: false, error: '不支持的配置账号类型' }
+          }
         }
-        // 追踪 CMS 测试连接
-        trackCmsManagement('test', type, result.success).catch(() => {})
+        // 追踪配置账号测试连接，兼容原 CMS 埋点字段
+        trackCmsManagement('test', provider || type || kind, result.success).catch(() => {})
         return result
       } catch (error) {
-        trackCmsManagement('test', type, false).catch(() => {})
+        trackCmsManagement('test', provider || type || kind, false).catch(() => {})
         return { success: false, error: (error as Error).message }
       }
     }
@@ -527,29 +516,11 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
           return { success: false, error: '密码未找到，请重新添加账户' }
         }
 
-        const credentials = {
-          url: account.url,
-          username: account.username,
-          password,
-        }
-
-        let result
-        switch (account.type) {
-          case 'wordpress':
-            result = await wordpressAdapter.publish(credentials, article, { draftOnly: true })
-            break
-          case 'typecho':
-            result = await metaweblogAdapter.publishToTypecho(credentials, article, { draftOnly: true })
-            break
-          case 'metaweblog':
-            result = await metaweblogAdapter.publish(credentials, article, { draftOnly: true })
-            break
-          default:
-            return { success: false, error: '不支持的 CMS 类型' }
-        }
+        // 配置账号可能是 CMS 或 API Key 平台，统一交给分发函数处理
+        const result = await publishConfiguredAccount(account, password, article)
 
         // 追踪 CMS 同步结果（含错误类型）
-        trackCmsSync('popup', account.type, result.success).catch(() => {})
+        trackCmsSync('popup', account.provider || account.type, result.success).catch(() => {})
         if (result.success) {
           // 追踪 CMS 用户里程碑
           trackMilestone('cms_user').catch(() => {})
@@ -557,6 +528,7 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
           // 额外追踪错误类型用于问题分析
           trackFeatureUse('cms_sync_error', {
             cms_type: account.type,
+            provider: account.provider,
             error_type: inferErrorType(result.error),
           }).catch(() => {})
         }
@@ -831,21 +803,8 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
             platform: accountId, platformName: account.name, stage: 'saving',
           })
 
-          const credentials = { url: account.url, username: account.username, password }
-          let result
-          switch (account.type) {
-            case 'wordpress':
-              result = await wordpressAdapter.publish(credentials, article, { draftOnly: true })
-              break
-            case 'typecho':
-              result = await metaweblogAdapter.publishToTypecho(credentials, article, { draftOnly: true })
-              break
-            case 'metaweblog':
-              result = await metaweblogAdapter.publish(credentials, article, { draftOnly: true })
-              break
-            default:
-              result = { success: false, error: '不支持的 CMS 类型' }
-          }
+          // 配置账号可能是 CMS 或 API Key 平台，统一交给分发函数处理
+          const result = await publishConfiguredAccount(account, password, article)
 
           const cmsResult = {
             platform: accountId,
@@ -1014,18 +973,10 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
 
       const cmsStorage = await chrome.storage.local.get('cmsAccounts')
       const cmsAccounts = cmsStorage.cmsAccounts || []
+      // 编辑器打开时也需要带上已连接的配置账号
       const cmsPlatforms = cmsAccounts
         .filter((a: any) => a.isConnected)
-        .map((a: any) => ({
-          id: a.id,
-          name: a.name,
-          icon: getCmsIcon(a.type),
-          homepage: a.url,
-          isAuthenticated: true,
-          username: a.username,
-          sourceType: 'cms' as const,
-          cmsType: a.type,
-        }))
+        .map(toConfiguredPlatform)
 
       chrome.tabs.sendMessage(tabId, {
         type: 'OPEN_EDITOR',
@@ -1049,6 +1000,70 @@ function createContextMenu() {
     title: '同步助手 - 提取并编辑文章',
     contexts: ['page', 'selection'],
   })
+}
+
+/**
+ * 获取配置账号图标
+ * API Key 平台按 provider 返回图标，传统 CMS 继续复用 CMS 图标逻辑
+ */
+function getConfiguredAccountIcon(account: { kind?: ConfigAccountKind; type?: string; provider?: string }): string {
+  if (account.kind === 'apiKey' && account.provider === 'devto') {
+    return 'https://dev.to/favicon.ico'
+  }
+
+  return getCmsIcon(account.type || '')
+}
+
+/**
+ * 获取配置账号主页
+ * API Key 平台没有用户填写的站点地址，使用平台官网作为主页
+ */
+function getConfiguredAccountHomepage(account: { kind?: ConfigAccountKind; url?: string; provider?: string }): string {
+  if (account.kind === 'apiKey' && account.provider === 'devto') {
+    return 'https://dev.to'
+  }
+
+  return account.url || ''
+}
+
+/**
+ * 将本地配置账号转换为同步平台信息
+ * 注意：sourceType 保持为 cms，兼容现有同步选择和历史记录通道
+ */
+function toConfiguredPlatform(account: any) {
+  return {
+    id: account.id,
+    name: account.name,
+    icon: getConfiguredAccountIcon(account),
+    homepage: getConfiguredAccountHomepage(account),
+    isAuthenticated: true,
+    username: account.username,
+    sourceType: 'cms' as const,
+    cmsType: account.kind === 'apiKey' ? undefined : account.type,
+    provider: account.provider,
+  }
+}
+
+/**
+ * 发布到配置账号
+ * 传统 CMS 走原有适配器，API Key 平台按 provider 分发到专用适配器
+ */
+async function publishConfiguredAccount(account: any, password: string, article: any) {
+  if (account.kind === 'apiKey' && account.provider === 'devto') {
+    return await devtoAdapter.publish({ apiKey: password }, article, { draftOnly: true })
+  }
+
+  const credentials = { url: account.url, username: account.username, password }
+  switch (account.type) {
+    case 'wordpress':
+      return await wordpressAdapter.publish(credentials, article, { draftOnly: true })
+    case 'typecho':
+      return await metaweblogAdapter.publishToTypecho(credentials, article, { draftOnly: true })
+    case 'metaweblog':
+      return await metaweblogAdapter.publish(credentials, article, { draftOnly: true })
+    default:
+      return { success: false, error: '不支持的配置账号类型' }
+  }
 }
 
 // CMS 图标
@@ -1083,18 +1098,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       // 获取 CMS 账户
       const cmsStorage = await chrome.storage.local.get('cmsAccounts')
       const cmsAccounts = cmsStorage.cmsAccounts || []
+      // 右键菜单打开编辑器时同样合并已连接的配置账号
       const cmsPlatforms = cmsAccounts
         .filter((a: any) => a.isConnected)
-        .map((a: any) => ({
-          id: a.id,
-          name: a.name,
-          icon: getCmsIcon(a.type),
-          homepage: a.url,
-          isAuthenticated: true,
-          username: a.username,
-          sourceType: 'cms' as const,
-          cmsType: a.type,
-        }))
+        .map(toConfiguredPlatform)
 
       // 合并所有平台
       const allPlatforms = [...dslWithType, ...cmsPlatforms]

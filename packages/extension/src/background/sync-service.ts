@@ -12,6 +12,7 @@ import {
 } from '../adapters'
 import * as wordpressAdapter from '../adapters/cms/wordpress'
 import * as metaweblogAdapter from '../adapters/cms/metaweblog'
+import * as devtoAdapter from '../adapters/api-key/devto'
 import { createLogger } from '../lib/logger'
 
 const logger = createLogger('SyncService')
@@ -375,18 +376,23 @@ export async function performSync(
       const credentials = { url: account.url, username: account.username, password }
       let result
 
-      switch (account.type) {
-        case 'wordpress':
-          result = await wordpressAdapter.publish(credentials, normalizedArticle, { draftOnly: true })
-          break
-        case 'typecho':
-          result = await metaweblogAdapter.publishToTypecho(credentials, normalizedArticle, { draftOnly: true })
-          break
-        case 'metaweblog':
-          result = await metaweblogAdapter.publish(credentials, normalizedArticle, { draftOnly: true })
-          break
-        default:
-          result = { success: false, error: '不支持的 CMS 类型' }
+      // MCP/CLI 同步复用配置账号存储，API Key 平台按 provider 分发
+      if (account.kind === 'apiKey' && account.provider === 'devto') {
+        result = await devtoAdapter.publish({ apiKey: password }, normalizedArticle, { draftOnly: true })
+      } else {
+        switch (account.type) {
+          case 'wordpress':
+            result = await wordpressAdapter.publish(credentials, normalizedArticle, { draftOnly: true })
+            break
+          case 'typecho':
+            result = await metaweblogAdapter.publishToTypecho(credentials, normalizedArticle, { draftOnly: true })
+            break
+          case 'metaweblog':
+            result = await metaweblogAdapter.publish(credentials, normalizedArticle, { draftOnly: true })
+            break
+          default:
+            result = { success: false, error: '不支持的配置账号类型' }
+        }
       }
 
       const cmsResult: SyncResult = {

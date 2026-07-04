@@ -2,11 +2,19 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Globe, Loader2 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
-import { useCMSStore, type CMSType } from '../stores/cms'
+import { useCMSStore, type ApiKeyProvider, type CMSType } from '../stores/cms'
 import { trackPageView, trackPlatformExpansion } from '../../lib/analytics'
 
 interface CMSOption {
   id: CMSType
+  name: string
+  description: string
+  icon: string
+}
+
+// API Key 平台不是 CMS，单独建模以避免混入 CMS 类型
+interface ApiKeyOption {
+  id: ApiKeyProvider
   name: string
   description: string
   icon: string
@@ -33,6 +41,16 @@ const cmsOptions: CMSOption[] = [
   },
 ]
 
+// 使用 API Key 授权的平台列表，首批只接入 dev.to
+const apiKeyOptions: ApiKeyOption[] = [
+  {
+    id: 'devto',
+    name: 'dev.to',
+    description: '使用 Forem API Key 发布草稿',
+    icon: 'https://dev.to/favicon.ico',
+  },
+]
+
 // 第三方平台类型（从 adapter registry 获取）
 interface ThirdPartyPlatform {
   id: string
@@ -46,6 +64,8 @@ export function AddCMSPage() {
   const { addAccount } = useCMSStore()
   const [step, setStep] = useState<'select' | 'config'>('select')
   const [selectedCMS, setSelectedCMS] = useState<CMSType | null>(null)
+  // API Key 平台与 CMS 互斥选择，共用后续配置表单
+  const [selectedApiKeyProvider, setSelectedApiKeyProvider] = useState<ApiKeyProvider | null>(null)
   const [config, setConfig] = useState({
     url: '',
     username: '',
@@ -85,6 +105,15 @@ export function AddCMSPage() {
 
   const handleSelectCMS = (cmsId: CMSType) => {
     setSelectedCMS(cmsId)
+    // 切换到 CMS 时清空 API Key 平台选择，避免提交混合配置
+    setSelectedApiKeyProvider(null)
+    setStep('config')
+  }
+
+  const handleSelectApiKeyProvider = (provider: ApiKeyProvider) => {
+    // 切换到 API Key 平台时清空 CMS 类型，保持语义独立
+    setSelectedCMS(null)
+    setSelectedApiKeyProvider(provider)
     setStep('config')
   }
 
@@ -95,7 +124,10 @@ export function AddCMSPage() {
 
     try {
       const result = await addAccount({
-        type: selectedCMS!,
+        // CMS 与 API Key 平台共用本地账号存储，通过 kind/provider 区分
+        kind: selectedApiKeyProvider ? 'apiKey' : 'cms',
+        type: selectedCMS || undefined,
+        provider: selectedApiKeyProvider || undefined,
         name: config.name,
         url: config.url,
         username: config.username,
@@ -106,7 +138,7 @@ export function AddCMSPage() {
         // 追踪平台扩展（获取当前 CMS 账户数量）
         chrome.storage.local.get('cmsAccounts').then((storage) => {
           const total = (storage.cmsAccounts || []).length
-          trackPlatformExpansion(`cms_${selectedCMS}`, total).catch(() => {})
+          trackPlatformExpansion(`cms_${selectedCMS || selectedApiKeyProvider}`, total).catch(() => {})
         })
         navigate('/')
       } else {
@@ -118,6 +150,12 @@ export function AddCMSPage() {
 
     setLoading(false)
   }
+
+  const selectedOption = selectedCMS
+    ? cmsOptions.find(c => c.id === selectedCMS)
+    : apiKeyOptions.find(c => c.id === selectedApiKeyProvider)
+  // API Key 平台只需要名称和密钥，不需要站点地址与用户名
+  const isApiKeyPlatform = !!selectedApiKeyProvider
 
   return (
     <div className="p-4">
@@ -165,6 +203,39 @@ export function AddCMSPage() {
             </div>
           </div>
 
+          {/* API Key 平台 */}
+          <div>
+            <h2 className="text-lg font-semibold mb-1">API Key 平台</h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              添加使用 API Key 授权的平台
+            </p>
+
+            <div className="space-y-2">
+              {apiKeyOptions.map(platform => (
+                <button
+                  key={platform.id}
+                  onClick={() => handleSelectApiKeyProvider(platform.id)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border hover:border-primary transition-colors text-left"
+                >
+                  <img
+                    src={platform.icon}
+                    alt={platform.name}
+                    className="w-8 h-8 rounded"
+                    onError={e => {
+                      (e.target as HTMLImageElement).src = '/assets/icon-48.png'
+                    }}
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{platform.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {platform.description}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* 第三方平台 */}
           <div>
             <h2 className="text-lg font-semibold mb-1">第三方平台</h2>
@@ -204,13 +275,13 @@ export function AddCMSPage() {
         </div>
       )}
 
-      {step === 'config' && selectedCMS && (
+      {step === 'config' && selectedOption && (
         <>
           <h2 className="text-lg font-semibold mb-1">
-            配置 {cmsOptions.find(c => c.id === selectedCMS)?.name}
+            配置 {selectedOption.name}
           </h2>
           <p className="text-xs text-muted-foreground mb-4">
-            输入站点信息以连接
+            {isApiKeyPlatform ? '输入 API Key 以连接' : '输入站点信息以连接'}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -226,7 +297,8 @@ export function AddCMSPage() {
               />
             </div>
 
-            <div>
+            {/* API Key 平台不需要站点地址 */}
+            {!isApiKeyPlatform && <div>
               <label className="block text-sm font-medium mb-1">站点地址</label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -239,9 +311,10 @@ export function AddCMSPage() {
                   required
                 />
               </div>
-            </div>
+            </div>}
 
-            <div>
+            {/* API Key 平台不需要用户名 */}
+            {!isApiKeyPlatform && <div>
               <label className="block text-sm font-medium mb-1">用户名</label>
               <input
                 type="text"
@@ -251,20 +324,22 @@ export function AddCMSPage() {
                 className="w-full px-3 py-2 rounded-md border bg-background text-sm"
                 required
               />
-            </div>
+            </div>}
 
             <div>
-              <label className="block text-sm font-medium mb-1">密码</label>
+              <label className="block text-sm font-medium mb-1">
+                {isApiKeyPlatform ? 'API Key' : '密码'}
+              </label>
               <input
                 type="password"
                 value={config.password}
                 onChange={e => setConfig({ ...config, password: e.target.value })}
-                placeholder="••••••••"
+                placeholder={isApiKeyPlatform ? 'dev.to API Key' : '••••••••'}
                 className="w-full px-3 py-2 rounded-md border bg-background text-sm"
                 required
               />
               <p className="text-xs text-muted-foreground mt-1">
-                密码仅存储在本地，不会上传到任何服务器
+                {isApiKeyPlatform ? 'API Key 仅存储在本地' : '密码仅存储在本地，不会上传到任何服务器'}
               </p>
             </div>
 
