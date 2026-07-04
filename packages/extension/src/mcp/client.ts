@@ -12,6 +12,9 @@ import { performSync } from '../background/sync-service'
 
 const logger = createLogger('MCPClient')
 
+// MCP 平台列表需要同时返回内置平台与本地配置账号
+type ConfigAccountKind = 'cms' | 'apiKey'
+
 // 消息类型
 interface RequestMessage {
   id: string
@@ -37,6 +40,39 @@ interface PendingUpload {
   platform: string
   createdAt: number
   timeoutId: ReturnType<typeof setTimeout>
+}
+
+/**
+ * 获取配置账号图标
+ * 与 background 中的平台展示保持一致，供 CLI/MCP 平台列表使用
+ */
+function getConfiguredAccountIcon(account: { kind?: ConfigAccountKind; type?: string; provider?: string }): string {
+  if (account.kind === 'apiKey' && account.provider === 'devto') {
+    return 'https://dev.to/favicon.ico'
+  }
+
+  switch (account.type) {
+    case 'wordpress':
+      return 'https://s.w.org/style/images/about/WordPress-logotype-simplified.png'
+    case 'typecho':
+      return chrome.runtime.getURL('assets/typecho.ico')
+    case 'metaweblog':
+      return 'https://www.cnblogs.com/favicon.ico'
+    default:
+      return chrome.runtime.getURL('assets/icon-48.png')
+  }
+}
+
+/**
+ * 获取配置账号主页
+ * API Key 平台没有自定义站点地址，返回平台固定主页
+ */
+function getConfiguredAccountHomepage(account: { kind?: ConfigAccountKind; url?: string; provider?: string }): string {
+  if (account.kind === 'apiKey' && account.provider === 'devto') {
+    return 'https://dev.to'
+  }
+
+  return account.url || ''
 }
 
 const DEFAULT_SERVER_URL = 'ws://localhost:9527'
@@ -313,7 +349,25 @@ class McpClient {
     switch (method) {
       case 'listPlatforms': {
         const forceRefresh = (params?.forceRefresh as boolean) ?? false
-        return await checkAllPlatformsAuth(forceRefresh)
+        const platforms = await checkAllPlatformsAuth(forceRefresh)
+        // CLI 的 platforms --auth 也应展示已连接的配置账号
+        const cmsStorage = await chrome.storage.local.get('cmsAccounts')
+        const cmsAccounts = cmsStorage.cmsAccounts || []
+        const configuredPlatforms = cmsAccounts
+          .filter((a: any) => a.isConnected)
+          .map((a: any) => ({
+            id: a.id,
+            name: a.name,
+            icon: getConfiguredAccountIcon(a),
+            homepage: getConfiguredAccountHomepage(a),
+            isAuthenticated: true,
+            username: a.username,
+            sourceType: 'cms',
+            cmsType: a.kind === 'apiKey' ? undefined : a.type,
+            provider: a.provider,
+          }))
+
+        return [...platforms, ...configuredPlatforms]
       }
 
       case 'checkAuth': {
