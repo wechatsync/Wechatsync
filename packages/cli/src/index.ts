@@ -610,6 +610,13 @@ async function createBridge(): Promise<ExtensionBridge | null> {
         // PRIMARY 可达但 Extension 没连上
         console.log()
         console.log(chalk.red('连接超时: 已有实例正在运行但 Chrome Extension 未连接'))
+        const primaryStatus = bridge.getPrimaryStatus()
+        if (primaryStatus?.pid) {
+          const startedAt = primaryStatus.startedAt
+            ? new Date(primaryStatus.startedAt).toLocaleString()
+            : '未知'
+          console.log(chalk.gray(`PRIMARY 进程: PID ${primaryStatus.pid}，启动时间: ${startedAt}`))
+        }
         console.log(chalk.gray('请确保 Chrome 扩展已启用「同步桥接」并且 Token 正确'))
       }
     } else {

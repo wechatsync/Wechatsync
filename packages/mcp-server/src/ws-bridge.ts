@@ -12,6 +12,14 @@ import type { RequestMessage, ResponseMessage } from './types.js'
 // WebSocket 状态常量 (readyState: 1 = OPEN)
 const WS_OPEN = WebSocket.OPEN
 
+interface PrimaryStatus {
+  connected: boolean
+  pid?: number
+  startedAt?: number
+  uptimeMs?: number
+  error?: string
+}
+
 export class ExtensionBridge {
   private wss: any = null
   private httpServer: http.Server | null = null
@@ -23,7 +31,13 @@ export class ExtensionBridge {
     timeout: NodeJS.Timeout
   }>()
   private requestTimeout = 360000 // 6 minutes (图片多时需要更长时间)
+  private uploadRequestTimeout = this.readPositiveTimeout(
+    process.env.WECHATSYNC_UPLOAD_TIMEOUT,
+    60000
+  )
   private connectionResolvers: Array<() => void> = []
+  private readonly startedAt = Date.now()
+  private primaryStatus: PrimaryStatus | null = null
 
   // 安全验证 token（从环境变量读取，优先使用 WECHATSYNC_TOKEN）
   private token: string = process.env.WECHATSYNC_TOKEN || process.env.MCP_TOKEN || ''
@@ -130,7 +144,10 @@ export class ExtensionBridge {
           res.writeHead(200, { 'Content-Type': 'application/json' })
           res.end(JSON.stringify({
             connected: this.isConnected(),
-            mode: 'primary'
+            mode: 'primary',
+            pid: process.pid,
+            startedAt: this.startedAt,
+            uptimeMs: Date.now() - this.startedAt,
           }))
           return
         }
@@ -170,6 +187,16 @@ export class ExtensionBridge {
    * 停止服务器
    */
   stop(): void {
+    for (const pending of this.pendingRequests.values()) {
+      clearTimeout(pending.timeout)
+      pending.reject(new Error('Bridge stopped before the request completed'))
+    }
+    this.pendingRequests.clear()
+
+    if (this.client) {
+      this.client.close()
+      this.client = null
+    }
     if (this.wss) {
       this.wss.close()
       this.wss = null
@@ -188,6 +215,10 @@ export class ExtensionBridge {
    */
   getMode(): 'primary' | 'secondary' {
     return this.isServerMode ? 'primary' : 'secondary'
+  }
+
+  getPrimaryStatus(): PrimaryStatus | null {
+    return this.primaryStatus
   }
 
   /**
@@ -245,6 +276,7 @@ export class ExtensionBridge {
           }
 
           const health = await this.checkPrimaryHealth()
+          this.primaryStatus = health
           if (health.connected) {
             resolve()
             return
@@ -296,7 +328,7 @@ export class ExtensionBridge {
   /**
    * 检查 Primary 实例健康状态（Secondary 模式用）
    */
-  private async checkPrimaryHealth(): Promise<{ connected: boolean; error?: string }> {
+  private async checkPrimaryHealth(): Promise<PrimaryStatus> {
     return new Promise((resolve) => {
       const options = {
         hostname: 'localhost',
@@ -312,7 +344,12 @@ export class ExtensionBridge {
         res.on('end', () => {
           try {
             const status = JSON.parse(body)
-            resolve({ connected: status.connected })
+            resolve({
+              connected: status.connected,
+              pid: status.pid,
+              startedAt: status.startedAt,
+              uptimeMs: status.uptimeMs,
+            })
           } catch {
             resolve({ connected: false, error: 'Invalid response from primary' })
           }
@@ -368,6 +405,7 @@ export class ExtensionBridge {
 
       // 检查 PRIMARY 健康状态
       const health = await this.checkPrimaryHealth()
+      this.primaryStatus = health
       if (!health.connected) {
         if (health.error?.includes('not reachable')) {
           // PRIMARY 已退出，尝试接管
@@ -434,7 +472,7 @@ export class ExtensionBridge {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(id)
         reject(new Error(`Request timeout: ${method}`))
-      }, this.requestTimeout)
+      }, this.getRequestTimeout(method))
 
       this.pendingRequests.set(id, { resolve: resolve as (value: unknown) => void, reject, timeout })
 
@@ -483,7 +521,7 @@ export class ExtensionBridge {
         reject(new Error(`Failed to connect to primary MCP instance: ${error.message}${hint}`))
       })
 
-      req.setTimeout(this.requestTimeout, () => {
+      req.setTimeout(this.getRequestTimeout(method), () => {
         req.destroy()
         reject(new Error(`Request timeout: ${method}`))
       })
@@ -524,6 +562,17 @@ export class ExtensionBridge {
    */
   private generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+  }
+
+  private readPositiveTimeout(value: string | undefined, fallback: number): number {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+  }
+
+  private getRequestTimeout(method: string): number {
+    return method === 'uploadImage' || method === 'uploadImage:complete'
+      ? this.uploadRequestTimeout
+      : this.requestTimeout
   }
 
   // 分片上传配置
