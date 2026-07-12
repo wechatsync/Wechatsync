@@ -124,6 +124,7 @@ yarn build
 
 - `MCP_TOKEN`: 安全验证 Token（必需）
 - `SYNC_WS_PORT`: WebSocket 端口（默认 9527）
+- `WECHATSYNC_UPLOAD_TIMEOUT`: 单张图片上传超时，单位毫秒（默认 60000）
 - `SYNC_HTTP_PORT`: HTTP 端口（默认 9528，仅 SSE 模式）
 
 ## 开发
