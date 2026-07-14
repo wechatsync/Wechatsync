@@ -6,6 +6,12 @@ import type { RuntimeInterface } from '../runtime/interface'
  */
 export type OutputFormat = 'html' | 'markdown'
 
+/** 表格输出格式 */
+export type TableFormat = 'semantic' | 'text' | 'svg-image'
+
+/** HTML 标题级别 */
+export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
+
 /**
  * 预处理配置
  * 每个平台在 adapter 中定义自己需要的预处理选项
@@ -66,8 +72,16 @@ export interface PreprocessConfig {
   /** 压缩 HTML（移除标签间空白） */
   compactHtml?: boolean
 
-  /** 将表格转换为文本（用 | 分隔列，适用于不支持表格的平台） */
+  /** 表格输出格式，默认保留语义 HTML 表格 */
+  tableFormat?: TableFormat
+  /**
+   * 将表格转换为文本（用 | 分隔列，适用于不支持表格的平台）
+   * @deprecated 新配置请使用 tableFormat: 'text'
+   */
   convertTablesToText?: boolean
+
+  /** 需要用 strong 显式标粗的标题级别 */
+  boldHeadingLevels?: HeadingLevel[]
 
   /** 保留 <style> 标签（CLI 同步自定义 HTML 时使用） */
   keepStyles?: boolean
@@ -96,6 +110,8 @@ export const DEFAULT_PREPROCESS_CONFIG: PreprocessConfig = {
   removeDataAttributes: true,
   removeSrcset: true,
   removeSizes: true,
+  tableFormat: 'semantic',
+  boldHeadingLevels: [],
 }
 
 /**

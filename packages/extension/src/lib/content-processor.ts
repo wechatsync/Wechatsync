@@ -9,8 +9,13 @@
  * 5. Service Worker 只做图片上传 + 调用 API
  */
 
-import { htmlToMarkdownNative, SOURCE_LINK_REMOVE_DOMAINS, SOURCE_LINK_REDIRECT_RULES, type PreprocessConfig } from '@wechatsync/core'
+import { htmlToMarkdownNative, SOURCE_LINK_REMOVE_DOMAINS, SOURCE_LINK_REDIRECT_RULES, type PreprocessConfig, type TableFormat } from '@wechatsync/core'
 import { createLogger } from './logger'
+import { ensureBoldHeadings } from './heading-transformer'
+import {
+  repairMalformedTableHtml,
+  transformTablesToSvgImages,
+} from './table-transformers/svg-image'
 
 const logger = createLogger('ContentProcessor')
 
@@ -37,9 +42,13 @@ export interface PreprocessResult {
  * 此函数中的 processCodeBlocks 会跳过已处理的代码块（有 data-code-simplified 标记）
  */
 export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig): PreprocessResult {
+  const tableFormat = resolveTableFormat(config)
+
   // 创建临时 DOM 容器
   const container = document.createElement('div')
-  container.innerHTML = rawHtml
+  container.innerHTML = tableFormat === 'svg-image'
+    ? repairMalformedTableHtml(rawHtml)
+    : rawHtml
 
   if (config.processCodeBlocks) {
     processCodeBlocks(container)
@@ -135,7 +144,7 @@ export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig)
     compactHtml(container)
   }
 
-  if (config.convertTablesToText) {
+  if (tableFormat === 'text') {
     convertTablesToText(container)
   }
 
@@ -152,12 +161,31 @@ export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig)
     removeNestedEmptyContainers(container)
   }
 
+  if (config.boldHeadingLevels?.length) {
+    ensureBoldHeadings(container, config.boldHeadingLevels)
+  }
+
+  // 图片表格最后生成，避免 data URI 被前面的 SVG 占位图清理逻辑删除。
+  if (tableFormat === 'svg-image') {
+    transformTablesToSvgImages(container)
+  }
+
   // 获取处理后的 HTML
   const html = container.innerHTML
 
   // 总是生成 markdown，确保需要 markdown 的适配器能获取到内容
   const markdown = htmlToMarkdownNative(html)
   return { html, markdown }
+}
+
+/**
+ * 表格格式优先级：显式 SVG 图片 > 文本格式/旧开关 > 默认语义表格。
+ * 旧 convertTablesToText 配置继续生效，但不得覆盖平台原生格式。
+ */
+function resolveTableFormat(config: PreprocessConfig): TableFormat {
+  if (config.tableFormat === 'svg-image') return 'svg-image'
+  if (config.tableFormat === 'text' || config.convertTablesToText) return 'text'
+  return 'semantic'
 }
 
 /**

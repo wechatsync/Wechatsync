@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "文章同步助手",
-  "description": "一键同步文章到知乎、头条、掘金等 20+ 平台，支持 WordPress 等自建站",
-  "version": "2.0.9",
+  "name": "VibeMarket 发布助手",
+  "description": "VibeMarket 发布助手。一键同步文章到多个内容平台，支持今日头条、WordPress、知乎、简书、掘金、CSDN、typecho各大平台，一次发布，多平台同步发布。解放个人生产力",
+  "version": "2.0.10",
   "icons": {
     "16": "assets/icon-16.png",
     "48": "assets/icon-48.png",

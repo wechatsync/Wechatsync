@@ -3,7 +3,7 @@
  */
 import { CodeAdapter, type ImageUploadResult } from '../code-adapter'
 import type { Article, AuthResult, SyncResult, PlatformMeta } from '../../types'
-import type { PublishOptions } from '../types'
+import type { PreprocessConfig, PublishOptions } from '../types'
 import { createLogger } from '../../lib/logger'
 
 const logger = createLogger('Sohu')
@@ -35,9 +35,11 @@ export class SohuAdapter extends CodeAdapter {
     capabilities: ['article', 'draft', 'image_upload'],
   }
 
-  /** 预处理配置: 搜狐号使用 HTML 格式 */
-  readonly preprocessConfig = {
+  /** 预处理配置: 搜狐号将表格整体转为 SVG 图片，避免平台清洗 HTML 表格样式 */
+  readonly preprocessConfig: Partial<PreprocessConfig> = {
     outputFormat: 'html' as const,
+    tableFormat: 'svg-image',
+    boldHeadingLevels: [3],
   }
 
   private accountInfo: SohuAccountInfo | null = null
@@ -251,7 +253,8 @@ export class SohuAdapter extends CodeAdapter {
 
     // 2. 上传到搜狐
     const formData = new FormData()
-    formData.append('file', imageBlob, 'image.jpg')
+    const filename = imageBlob.type === 'image/svg+xml' ? 'table.svg' : 'image.jpg'
+    formData.append('file', imageBlob, filename)
     formData.append('accountId', this.accountInfo.id)
 
     const uploadResponse = await this.runtime.fetch(
