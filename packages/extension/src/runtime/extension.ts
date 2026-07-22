@@ -26,7 +26,7 @@ export class ExtensionRuntime implements RuntimeInterface {
     try {
       const response = await fetch(url, {
         ...options,
-        credentials: 'include',
+        credentials: options?.credentials ?? 'include',
         signal: controller.signal,
       })
       return response

@@ -20,6 +20,11 @@
       "types": "./src/runtime/index.ts",
       "import": "./src/runtime/index.ts",
       "require": "./src/runtime/index.ts"
+    },
+    "./publication-inspection": {
+      "types": "./src/publication-inspection/index.ts",
+      "import": "./src/publication-inspection/index.ts",
+      "require": "./src/publication-inspection/index.ts"
     }
   },
   "scripts": {

@@ -13,7 +13,24 @@
  */
 
 import { htmlToMarkdownNative } from '@wechatsync/core'
+import type {
+  PublicationObservation,
+  SyncerAccountV2,
+} from '@wechatsync/core/publication-inspection'
 import { createLogger } from '../lib/logger'
+import {
+  BRIDGE_API_VERSION,
+  BRIDGE_NAMESPACE,
+  createBridgeErrorResponse,
+  createBridgeSuccessResponse,
+  parseBridgeRequestEvent,
+  type BridgeErrorResponse,
+  type BridgeRequest,
+  type BridgeResponse,
+} from '../bridge'
+import { projectLegacyAccounts } from '../bridge/legacy-account'
+import { LEGACY_MAGIC_CALL_METHOD_NOT_ALLOWED } from '../bridge/legacy-magic-call'
+import { toLegacyEditResponse } from '../bridge/sync-result'
 
 const logger = createLogger('Wechatsync')
 
@@ -23,6 +40,18 @@ const SENSITIVE_API_WHITELIST = [
   'https://developer.wechatsync.com',
   'http://localhost:8080',
 ];
+
+const BRIDGE_CAPABILITIES = [
+  'account_identity',
+  'publication_inspect',
+  'public_url',
+] as const
+
+interface BridgeRuntimeResponse {
+  accounts?: SyncerAccountV2[]
+  observations?: PublicationObservation[]
+  error?: string
+}
 
 // 当前同步任务 ID（用于过滤消息）
 let currentSyncId: string | null = null;
@@ -40,7 +69,7 @@ interface AccountStatus {
   status: 'pending' | 'uploading' | 'done' | 'failed';
   msg?: string;
   error?: string;
-  editResp?: { draftLink?: string } | null;
+  editResp?: { draftLink?: string; postId?: string } | null;
 }
 let currentAccounts: AccountStatus[] = [];
 
@@ -71,6 +100,124 @@ function sendConsoleLog(args: unknown) {
     args,
   }), '*');
 }
+
+function postBridgeResponse(response: BridgeResponse, targetOrigin: string) {
+  window.postMessage(response, targetOrigin)
+}
+
+function createBridgeFailure(
+  request: BridgeRequest,
+  code: string,
+  message: string
+): BridgeErrorResponse {
+  switch (request.method) {
+    case 'getBridgeInfo':
+      return createBridgeErrorResponse(request, { code, message })
+    case 'getAccountsV2':
+      return createBridgeErrorResponse(request, { code, message })
+    case 'inspectPublication':
+      return createBridgeErrorResponse(request, { code, message })
+  }
+}
+
+function sendBridgeRuntimeMessage(
+  message: Record<string, unknown>
+): Promise<BridgeRuntimeResponse> {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response: BridgeRuntimeResponse) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message))
+        return
+      }
+
+      if (response?.error) {
+        reject(new Error(response.error))
+        return
+      }
+
+      resolve(response || {})
+    })
+  })
+}
+
+async function handleBridgeRequest(evt: MessageEvent): Promise<void> {
+  if (window.top !== window) return
+
+  const data = evt.data
+  if (
+    typeof data !== 'object' ||
+    data === null ||
+    data.namespace !== BRIDGE_NAMESPACE
+  ) {
+    return
+  }
+
+  const parsed = parseBridgeRequestEvent(evt, window)
+  if (!parsed.success) return
+
+  const request = parsed.data
+
+  try {
+    switch (request.method) {
+      case 'getBridgeInfo': {
+        postBridgeResponse(
+          createBridgeSuccessResponse(request, {
+            apiVersion: BRIDGE_API_VERSION,
+            extensionVersion: chrome.runtime.getManifest().version,
+            capabilities: [...BRIDGE_CAPABILITIES],
+          }),
+          evt.origin
+        )
+        return
+      }
+
+      case 'getAccountsV2': {
+        const response = await sendBridgeRuntimeMessage({
+          type: 'BRIDGE_GET_ACCOUNTS_V2',
+          requestId: request.requestId,
+          payload: request.payload,
+        })
+        if (!response.accounts) {
+          throw new Error('Bridge account response is missing')
+        }
+        postBridgeResponse(
+          createBridgeSuccessResponse(request, response.accounts),
+          evt.origin
+        )
+        return
+      }
+
+      case 'inspectPublication': {
+        const response = await sendBridgeRuntimeMessage({
+          type: 'BRIDGE_INSPECT_PUBLICATION',
+          requestId: request.requestId,
+          payload: request.payload,
+        })
+        if (!response.observations) {
+          throw new Error('Bridge inspection response is missing')
+        }
+        postBridgeResponse(
+          createBridgeSuccessResponse(request, response.observations),
+          evt.origin
+        )
+        return
+      }
+    }
+  } catch (error) {
+    postBridgeResponse(
+      createBridgeFailure(
+        request,
+        'BRIDGE_RUNTIME_ERROR',
+        (error as Error).message || 'Bridge request failed'
+      ),
+      evt.origin
+    )
+  }
+}
+
+window.addEventListener('message', (evt) => {
+  void handleBridgeRequest(evt)
+})
 
 /**
  * 监听来自 background 的消息
@@ -110,7 +257,7 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
           account.status = result.success ? 'done' : 'failed';
           account.error = result.error;
           account.msg = undefined;
-          account.editResp = result.success ? { draftLink: result.postUrl || result.url } : null;
+          account.editResp = toLegacyEditResponse(result);
         }
         // 发送完整的账户状态列表
         sendTaskUpdate({ accounts: currentAccounts });
@@ -160,18 +307,7 @@ window.addEventListener('message', async (evt) => {
         }
 
         // 只返回已登录的平台（与旧版保持一致）
-        const accounts = (resp?.platforms || [])
-          .filter((p: any) => p.isAuthenticated)
-          .map((p: any) => ({
-            type: p.id,
-            title: p.username || p.name,
-            displayName: p.name,
-            icon: p.icon,
-            avatar: p.icon,
-            uid: p.username,
-            home: p.homepage,
-            supportTypes: ['html'],
-          }));
+        const accounts = projectLegacyAccounts(resp?.platforms || []);
 
         sendToWindow({ eventID: action.eventID, result: accounts });
       });
@@ -250,16 +386,9 @@ window.addEventListener('message', async (evt) => {
           sendToWindow({ eventID: action.eventID, result: resp });
         });
       } else {
-        // 其他 magicCall 方法
-        chrome.runtime.sendMessage({
-          type: 'MAGIC_CALL',
-          payload: { methodName, data },
-        }, (resp) => {
-          if (chrome.runtime.lastError) {
-            sendToWindow({ eventID: action.eventID, result: { error: chrome.runtime.lastError.message } });
-            return;
-          }
-          sendToWindow({ eventID: action.eventID, result: resp });
+        sendToWindow({
+          eventID: action.eventID,
+          result: { error: LEGACY_MAGIC_CALL_METHOD_NOT_ALLOWED },
         });
       }
     }

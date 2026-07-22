@@ -5,6 +5,7 @@ export default defineConfig({
     index: 'src/index.ts',
     'adapters/index': 'src/adapters/index.ts',
     'runtime/index': 'src/runtime/index.ts',
+    'publication-inspection/index': 'src/publication-inspection/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: true,

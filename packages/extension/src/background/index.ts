@@ -28,6 +28,14 @@ import {
 import { checkSyncFrequency, recordSync } from '../lib/rate-limit'
 import { checkForUpdates, isUpdateDismissed } from '../lib/version-check'
 import { fetchRemoteConfig, fetchConfigIfNeeded } from '../lib/remote-config'
+import {
+  buildSyncerAccountsV2,
+  runPublicationInspection,
+  validateBridgeMessageSender,
+  validateGetAccountsV2Payload,
+  validateInspectPublicationPayload,
+} from './bridge-v2'
+import { dispatchLegacyMagicCall } from '../bridge/legacy-magic-call'
 
 const logger = createLogger('Background')
 
@@ -124,6 +132,8 @@ async function clearSyncState() {
 type MessageAction =
   | { type: 'GET_PLATFORMS' }
   | { type: 'CHECK_ALL_AUTH'; payload?: { forceRefresh?: boolean } }
+  | { type: 'BRIDGE_GET_ACCOUNTS_V2'; requestId: string; payload: unknown }
+  | { type: 'BRIDGE_INSPECT_PUBLICATION'; requestId: string; payload: unknown }
   | { type: 'CHECK_AUTH'; payload: { platformId: string } }
   | { type: 'SYNC_ARTICLE'; payload: { article: any; platforms: string[]; allSelectedPlatforms?: string[]; skipHistory?: boolean; source?: string; syncId?: string } }
   | { type: 'OPEN_SYNC_PAGE'; path?: string }
@@ -196,6 +206,52 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       // 缓存完整平台列表，供 popup 启动时立即渲染
       chrome.storage.local.set({ platformListCache: allPlatforms }).catch(() => {})
       return { platforms: allPlatforms }
+    }
+
+    case 'BRIDGE_GET_ACCOUNTS_V2': {
+      const verifiedSender = validateBridgeMessageSender(sender || {})
+      if (!verifiedSender.success) {
+        return { error: verifiedSender.code }
+      }
+
+      const validatedPayload = validateGetAccountsV2Payload(message.payload)
+      if (!validatedPayload.success) {
+        return { error: validatedPayload.code }
+      }
+
+      const authResults = await checkAllPlatformsAuth(
+        validatedPayload.data.forceRefresh ?? false,
+        validatedPayload.data.platforms,
+      )
+      return {
+        accounts: buildSyncerAccountsV2(
+          authResults,
+          validatedPayload.data.platforms
+        ),
+      }
+    }
+
+    case 'BRIDGE_INSPECT_PUBLICATION': {
+      const verifiedSender = validateBridgeMessageSender(sender || {})
+      if (!verifiedSender.success) {
+        return { error: verifiedSender.code }
+      }
+
+      const validatedPayload = validateInspectPublicationPayload(
+        message.payload,
+        message.requestId
+      )
+      if (!validatedPayload.success) {
+        return { error: validatedPayload.code }
+      }
+
+      const adapter = await getAdapter(validatedPayload.data.platform)
+      return {
+        observations: await runPublicationInspection(
+          validatedPayload.data,
+          adapter,
+        ),
+      }
     }
 
     case 'CHECK_AUTH': {
@@ -963,28 +1019,7 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
 
     case 'MAGIC_CALL': {
       const { methodName, data } = message.payload
-
-      try {
-        // 获取平台适配器
-        const platform = data.account?.type || data.platform || 'weibo'
-        const adapter = await getAdapter(platform)
-
-        if (!adapter) {
-          return { error: `Platform not found: ${platform}` }
-        }
-
-        // 检查方法是否存在
-        if (typeof (adapter as any)[methodName] !== 'function') {
-          return { error: `Method ${methodName} not found on platform ${platform}` }
-        }
-
-        // 调用方法
-        const result = await (adapter as any)[methodName](data)
-        return { result }
-      } catch (error) {
-        logger.error(`Magic call ${methodName} failed:`, error)
-        return { error: (error as Error).message }
-      }
+      return dispatchLegacyMagicCall(methodName, data)
     }
 
     case 'CLEAR_UPDATE_BADGE': {
@@ -1275,7 +1310,9 @@ interface SyncResult {
   platform: string
   platformName?: string
   success: boolean
+  postId?: string
   postUrl?: string
+  url?: string
   draftOnly?: boolean
   error?: string
 }

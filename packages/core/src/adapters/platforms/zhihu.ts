@@ -4,6 +4,11 @@
 import { CodeAdapter, type ImageUploadResult } from '../code-adapter'
 import type { Article, AuthResult, SyncResult, PlatformMeta } from '../../types'
 import type { PublishOptions } from '../types'
+import type {
+  PublicationInspectRequest,
+  PublicationObservation,
+} from '../../publication-inspection/types'
+import { inspectZhihuPublication } from '../../publication-inspection/zhihu'
 import { createLogger } from '../../lib/logger'
 import md5Lib from 'js-md5'
 
@@ -89,6 +94,15 @@ export class ZhihuAdapter extends CodeAdapter {
       logger.debug('checkAuth: not logged in -', error)
       return { isAuthenticated: false, error: (error as Error).message }
     }
+  }
+
+  async inspectPublication(
+    request: PublicationInspectRequest
+  ): Promise<PublicationObservation[]> {
+    return inspectZhihuPublication(request, {
+      checkAuth: () => this.checkAuth(),
+      fetch: (url, options) => this.runtime.fetch(url, options),
+    })
   }
 
   async publish(article: Article, options?: PublishOptions): Promise<SyncResult> {

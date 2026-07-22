@@ -1,5 +1,9 @@
 import type { Article, AuthResult, SyncResult, PlatformMeta } from '../types'
 import type { RuntimeInterface } from '../runtime/interface'
+import type {
+  PublicationInspectRequest,
+  PublicationObservation,
+} from '../publication-inspection/types'
 
 /**
  * 输出格式类型
@@ -131,6 +135,15 @@ export interface PlatformAdapter {
 
   /** 发布文章 */
   publish(article: Article, options?: PublishOptions): Promise<SyncResult>
+
+  /**
+   * Read-only publication verification. Implementations must validate the
+   * requested external account and must not infer NOT_FOUND from a failed
+   * request or an unverified response shape.
+   */
+  inspectPublication?(
+    request: PublicationInspectRequest
+  ): Promise<PublicationObservation[]>
 
   /** 上传图片 (如果支持) */
   uploadImage?(file: Blob, filename?: string): Promise<string>

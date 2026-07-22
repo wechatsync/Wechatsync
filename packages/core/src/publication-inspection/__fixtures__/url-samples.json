@@ -1,0 +1,21 @@
+[
+  {
+    "name": "zhihu article draft",
+    "platform": "zhihu",
+    "href": "https://zhuanlan.zhihu.com/p/2000000000000000001/edit",
+    "expected": {
+      "surface": "DRAFT",
+      "postId": "2000000000000000001"
+    }
+  },
+  {
+    "name": "zhihu published article",
+    "platform": "zhihu",
+    "href": "https://zhuanlan.zhihu.com/p/2000000000000000001?utm_source=test",
+    "expected": {
+      "surface": "PUBLISHED",
+      "postId": "2000000000000000001",
+      "canonicalUrl": "https://zhuanlan.zhihu.com/p/2000000000000000001"
+    }
+  }
+]

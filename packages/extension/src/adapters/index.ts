@@ -5,6 +5,7 @@ import {
   adapterRegistry,
   type PlatformAdapter,
   type PlatformMeta,
+  type AuthResult,
   type Article,
   type SyncResult,
 } from '@wechatsync/core'
@@ -223,10 +224,7 @@ export async function checkPlatformAuth(platformId: string) {
   }
 }
 
-interface AuthCacheItem {
-  isAuthenticated: boolean
-  username?: string
-  error?: string
+interface AuthCacheItem extends AuthResult {
   timestamp: number
 }
 
@@ -263,13 +261,21 @@ export async function clearAuthCache(): Promise<void> {
 /**
  * 检查所有平台登录状态（带缓存，并行检查）
  */
-export async function checkAllPlatformsAuth(forceRefresh = false) {
+export async function checkAllPlatformsAuth(
+  forceRefresh = false,
+  targetPlatformIds?: readonly string[],
+) {
   await initAdapters()
 
-  const metas = adapterRegistry.getAllMeta()
+  const targetPlatforms = targetPlatformIds
+    ? new Set(targetPlatformIds)
+    : null
+  const metas = adapterRegistry
+    .getAllMeta()
+    .filter(meta => !targetPlatforms || targetPlatforms.has(meta.id))
   const cache = await getCachedAuth()
   const now = Date.now()
-  const results: Array<PlatformMeta & { isAuthenticated: boolean; username?: string; error?: string }> = []
+  const results: Array<PlatformMeta & AuthResult> = []
   const needsCheck: PlatformMeta[] = [] // 需要实际检查的平台
 
   logger.debug(' Checking auth for platforms:', metas.map(m => m.id), forceRefresh ? '(force refresh)' : '')
@@ -286,6 +292,8 @@ export async function checkAllPlatformsAuth(forceRefresh = false) {
         ...meta,
         isAuthenticated: cached.isAuthenticated,
         username: cached.username,
+        userId: cached.userId,
+        avatar: cached.avatar,
         error: cached.error,
       })
     } else {
@@ -318,6 +326,8 @@ export async function checkAllPlatformsAuth(forceRefresh = false) {
             cache[meta.id] = {
               isAuthenticated: auth.isAuthenticated,
               username: auth.username,
+              userId: auth.userId,
+              avatar: auth.avatar,
               error: auth.error,
               timestamp: now,
             }
@@ -326,6 +336,8 @@ export async function checkAllPlatformsAuth(forceRefresh = false) {
               ...meta,
               isAuthenticated: auth.isAuthenticated,
               username: auth.username,
+              userId: auth.userId,
+              avatar: auth.avatar,
               error: auth.error,
             }
           }
