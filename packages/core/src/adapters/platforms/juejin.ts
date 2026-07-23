@@ -222,6 +222,23 @@ export class JuejinAdapter extends CodeAdapter {
         }
       )
 
+      // 上传封面图(如有),只将新的平台图床 URL 写入草稿
+      let coverImage = ''
+      if (article.cover) {
+        try {
+          logger.info('Uploading cover image...')
+          const coverRes = await this.uploadImageByUrl(article.cover)
+          if (coverRes.url && coverRes.url !== article.cover && !coverRes.url.startsWith('data:')) {
+            coverImage = coverRes.url
+            logger.debug('Cover uploaded:', coverImage)
+          } else {
+            logger.warn('Cover upload did not produce a usable platform URL, skipping cover')
+          }
+        } catch (err) {
+          logger.warn('Cover upload failed, skipping cover:', (err as Error).message)
+        }
+      }
+
       // 6. 创建草稿 (参数来自 DSL juejin.yaml + juejin.transform.ts prepareBody)
       const createResponse = await this.runtime.fetch(
         'https://api.juejin.cn/content_api/v1/article_draft/create',
@@ -235,7 +252,7 @@ export class JuejinAdapter extends CodeAdapter {
           body: JSON.stringify({
             brief_content: '',
             category_id: '0',
-            cover_image: '',
+            cover_image: coverImage,
             edit_type: 10,
             html_content: 'deprecated',
             link_url: '',
