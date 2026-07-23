@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.0.9 (2026-06-12)
+
+- 🔧 修复 MCP Server 连接稳定性，新增 WebSocket 心跳保活机制
+- 🔧 优化 MCP 重连策略：前 5 次快速轮询 + 指数退避 + 本地服务器智能识别
+- 🔧 新增 MCP_RECONNECT 手动重连指令，设置页支持显示连接状态和错误信息
+- 🔧 新增 Chrome MV3 Service Worker 定期唤醒机制（每 30s），确保扩展后台常驻
+- 🔧 延长默认连接超时至 45 秒
+- 🔧 要求 minimum_chrome_version >= 120
+- 🧪 新增 MCP Client 单元测试
+
 ## v2.0.8 (2026-03-17)
 
 - 🆕 新增抖音图文

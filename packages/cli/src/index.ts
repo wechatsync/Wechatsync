@@ -28,13 +28,13 @@ const GITHUB_URL = 'https://github.com/wechatsync/Wechatsync'
 const program = new Command()
 
 // 默认超时时间
-let connectionTimeout = 30000
+let connectionTimeout = 45000
 
 program
   .name('wechatsync')
   .description('同步文章到多个内容平台 (知乎、掘金、CSDN 等)')
   .version('1.1.0')
-  .option('--timeout <ms>', '等待 Extension 连接超时（毫秒）', '30000')
+  .option('--timeout <ms>', '等待 Extension 连接超时（毫秒）', '45000')
   .hook('preAction', (thisCommand) => {
     const opts = thisCommand.opts()
     if (opts.timeout) {

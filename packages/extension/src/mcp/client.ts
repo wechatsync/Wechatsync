@@ -40,10 +40,13 @@ interface PendingUpload {
 }
 
 const DEFAULT_SERVER_URL = 'ws://localhost:9527'
+const HEARTBEAT_INTERVAL = 20000
+const FAST_RECONNECT_ATTEMPTS = 5
 
-class McpClient {
+export class McpClient {
   private ws: WebSocket | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private serverUrl = DEFAULT_SERVER_URL
 
   // 安全验证 token
@@ -52,6 +55,8 @@ class McpClient {
   // 温热/冷却双阶段重连配置
   private reconnectAttempts = 0
   private lastConnectedAt = 0 // 上次成功连接的时间戳
+  private lastError: string | null = null
+  private nextReconnectAt: number | null = null
   private activelyWatched = false // 用户正在查看设置页
   private readonly WARM_WINDOW = 5 * 60 * 1000 // 5 分钟内视为温热
   // 温热阶段：刚断开，快速重连
@@ -101,10 +106,19 @@ class McpClient {
    * 连接到 MCP Server
    */
   connect(): void {
+    this.startHeartbeat()
+
     // 清理旧连接
     if (this.ws) {
-      if (this.ws.readyState === WebSocket.OPEN) {
-        logger.debug('Already connected')
+      if (
+        this.ws.readyState === WebSocket.OPEN
+        || this.ws.readyState === WebSocket.CONNECTING
+      ) {
+        logger.debug(
+          this.ws.readyState === WebSocket.OPEN
+            ? 'Already connected'
+            : 'Connection already in progress'
+        )
         return
       }
       // 清理非 OPEN 状态的连接
@@ -112,12 +126,10 @@ class McpClient {
       this.ws.onerror = null
       this.ws.onmessage = null
       this.ws.onopen = null
-      if (this.ws.readyState === WebSocket.CONNECTING) {
-        this.ws.close()
-      }
       this.ws = null
     }
 
+    this.nextReconnectAt = null
     logger.debug(`Connecting to ${this.serverUrl} (attempt ${this.reconnectAttempts + 1})`)
 
     try {
@@ -127,10 +139,13 @@ class McpClient {
         logger.debug('Connected to MCP Server')
         this.reconnectAttempts = 0 // 重置重连计数
         this.lastConnectedAt = Date.now() // 记录连接时间
+        this.lastError = null
+        this.nextReconnectAt = null
         if (this.reconnectTimer) {
           clearTimeout(this.reconnectTimer)
           this.reconnectTimer = null
         }
+        this.startHeartbeat()
       }
 
       this.ws.onmessage = (event) => {
@@ -139,16 +154,19 @@ class McpClient {
 
       this.ws.onclose = (event) => {
         logger.debug(`Disconnected (code: ${event.code}), scheduling reconnect...`)
+        this.lastError = event.reason || this.lastError || `WebSocket closed (${event.code})`
         this.ws = null
         this.scheduleReconnect()
       }
 
       this.ws.onerror = () => {
         // error 事件后通常会触发 close，不需要在这里重连
+        this.lastError = `Unable to connect to ${this.serverUrl}`
         logger.debug('Connection error')
       }
     } catch (error) {
       logger.error('Connection failed:', error)
+      this.lastError = (error as Error).message
       this.ws = null
       this.scheduleReconnect()
     }
@@ -159,10 +177,12 @@ class McpClient {
    */
   disconnect(): void {
     this.reconnectAttempts = this.maxReconnectAttempts // 防止自动重连
+    this.nextReconnectAt = null
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
+    this.stopHeartbeat()
     if (this.ws) {
       this.ws.onclose = null // 防止触发重连
       this.ws.close()
@@ -175,6 +195,33 @@ class McpClient {
    */
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN
+  }
+
+  /**
+   * 检查是否正在建立连接
+   */
+  isConnecting(): boolean {
+    return this.ws?.readyState === WebSocket.CONNECTING
+  }
+
+  /**
+   * MCP 启用期间定期调用 Chrome API，重置 MV3 Service Worker 的空闲计时器。
+   * 连接建立前也保持活跃，确保本地 CLI 启动后能在超时窗口内被发现。
+   */
+  private startHeartbeat(): void {
+    if (this.heartbeatTimer !== null) return
+
+    this.heartbeatTimer = setInterval(() => {
+      chrome.runtime.getPlatformInfo()
+        .catch(error => logger.debug('Heartbeat failed:', error))
+    }, HEARTBEAT_INTERVAL)
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer !== null) {
+      clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = null
+    }
   }
 
   /**
@@ -201,7 +248,9 @@ class McpClient {
   private _doScheduleReconnect(): void {
     // 温热/冷却双阶段退避
     const timeSinceLastConnection = Date.now() - this.lastConnectedAt
-    const isWarm = this.activelyWatched
+    const isWarm = this.isLocalServer()
+      || this.activelyWatched
+      || this.reconnectAttempts < FAST_RECONNECT_ATTEMPTS
       || (this.lastConnectedAt > 0 && timeSinceLastConnection < this.WARM_WINDOW)
 
     let interval: number
@@ -215,8 +264,9 @@ class McpClient {
     } else {
       // 冷却：长时间未连接，server 可能没启动，慢速重试
       // 10s, 20s, 40s, 60s, 60s, ...
+      const coldAttempt = this.reconnectAttempts - FAST_RECONNECT_ATTEMPTS
       interval = Math.min(
-        this.coldMinInterval * Math.pow(2, this.reconnectAttempts),
+        this.coldMinInterval * Math.pow(2, coldAttempt),
         this.coldMaxInterval
       )
     }
@@ -224,10 +274,17 @@ class McpClient {
     logger.debug(`Reconnecting in ${interval / 1000}s (${isWarm ? 'warm' : 'cold'})...`)
 
     this.reconnectAttempts++
+    this.nextReconnectAt = Date.now() + interval
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
+      this.nextReconnectAt = null
       this.connect()
     }, interval)
+  }
+
+  private isLocalServer(): boolean {
+    return /^wss?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::|\/|$)/i
+      .test(this.serverUrl)
   }
 
   /**
@@ -252,8 +309,29 @@ class McpClient {
    */
   resetReconnect(): void {
     this.reconnectAttempts = 0
-    if (!this.isConnected()) {
+    this.nextReconnectAt = null
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    if (!this.isConnected() && !this.isConnecting()) {
       this.connect()
+    }
+  }
+
+  getStatus(): {
+    connected: boolean
+    connecting: boolean
+    serverUrl: string
+    lastError: string | null
+    nextReconnectAt: number | null
+  } {
+    return {
+      connected: this.isConnected(),
+      connecting: this.isConnecting(),
+      serverUrl: this.serverUrl,
+      lastError: this.lastError,
+      nextReconnectAt: this.nextReconnectAt,
     }
   }
 
@@ -571,9 +649,6 @@ export function stopMcpClient(): void {
 }
 
 // 获取连接状态
-export function getMcpStatus(): { connected: boolean; serverUrl: string } {
-  return {
-    connected: mcpClient.isConnected(),
-    serverUrl: mcpClient.getServerUrl(),
-  }
+export function getMcpStatus() {
+  return mcpClient.getStatus()
 }
