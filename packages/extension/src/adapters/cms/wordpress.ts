@@ -419,7 +419,7 @@ export async function processArticleImages(
  */
 export async function publish(
   credentials: WordPressCredentials,
-  article: { title: string; content: string },
+  article: { title: string; content?: string; html?: string; markdown?: string },
   options?: { draftOnly?: boolean; processImages?: boolean; onImageProgress?: (current: number, total: number) => void; signal?: AbortSignal }
 ): Promise<{ success: boolean; postId?: string; postUrl?: string; message?: string; error?: string }> {
   const xmlrpcUrl = credentials.url.replace(/\/$/, '') + '/xmlrpc.php'
@@ -431,7 +431,7 @@ export async function publish(
     }
 
     // 如果启用图片处理，先处理文章中的图片
-    let content = article.content
+    let content = article.content || article.html || article.markdown || ''
     let failedImages = 0
     if (options?.processImages !== false) {
       logger.debug(' Processing images before publish...')
