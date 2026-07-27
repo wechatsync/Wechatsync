@@ -11,6 +11,7 @@
     "build": "yarn workspaces run build",
     "build:core": "yarn workspace @wechatsync/core build",
     "build:extension": "yarn workspace @wechatsync/extension build",
+    "package:extension": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-extension.ps1",
     "build:mcp": "yarn workspace @wechatsync/mcp-server build",
     "build:cli": "yarn workspace @wechatsync/cli build",
     "mcp": "yarn workspace @wechatsync/mcp-server start",

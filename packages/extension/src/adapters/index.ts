@@ -44,6 +44,7 @@ import {
   ZipDownloadAdapter,
   EastmoneyAdapter,
 } from '@wechatsync/core'
+import { XiaoheiheAdapter } from './xiaoheihe'
 
 // 私有适配器 - private/ 目录通过 git submodule 管理
 const privateModules = import.meta.glob<Record<string, unknown>>(
@@ -97,6 +98,7 @@ const ADAPTER_CLASSES: AdapterConstructor[] = [
   CnblogsAdapter,
   ZipDownloadAdapter,
   EastmoneyAdapter,
+  XiaoheiheAdapter,
   ...getPrivateAdapters(),
 ]
 
