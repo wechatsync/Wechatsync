@@ -242,7 +242,9 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
     processLazyImages: true,
   }
 
-  private userId: string | null = null
+  // IndexedDB 中的 uid 必须与小红书接口返回值保持同一类型。
+  // 数字 uid 被转换成字符串后虽然可以写入，但草稿箱不会将其识别为当前账号草稿。
+  private userId: string | number | null = null
   private headerRuleIds: string[] = []
 
   private async setupHeaderRules(): Promise<void> {
@@ -287,15 +289,15 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
       })
       const result = await response.json() as {
         success?: boolean
-        data?: { userId?: string; userName?: string; userAvatar?: string }
+        data?: { userId?: string | number; userName?: string; userAvatar?: string }
       }
-      if (!result.success || !result.data?.userId) {
+      if (!result.success || result.data?.userId === undefined || result.data.userId === null) {
         return { isAuthenticated: false, error: '未登录小红书创作服务平台' }
       }
-      this.userId = String(result.data.userId)
+      this.userId = result.data.userId
       return {
         isAuthenticated: true,
-        userId: this.userId,
+        userId: String(this.userId),
         username: result.data.userName,
         avatar: result.data.userAvatar,
       }
@@ -451,28 +453,38 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
           id: string,
           title: string,
           documentJson: ProseMirrorNode,
-          uid: string
+          uid: string | number
         ): Promise<DraftWriteResult> => {
           const timeout = new Promise<DraftWriteResult>(resolve => {
             setTimeout(() => resolve({ success: false, error: 'IndexedDB timeout (10s)' }), 10_000)
           })
           const save = new Promise<DraftWriteResult>(resolve => {
-            const request = indexedDB.open('draft-database-v1')
-            request.onerror = () => resolve({
-              success: false,
-              error: `IndexedDB open error: ${request.error?.message || 'unknown'}`,
-            })
-            request.onsuccess = () => {
-              const database = request.result
-              if (!database.objectStoreNames.contains('article-draft')) {
+            const openDatabase = (deadline: number) => {
+              const request = indexedDB.open('draft-database-v1')
+              request.onerror = () => resolve({
+                success: false,
+                error: `IndexedDB open error: ${request.error?.message || 'unknown'}`,
+              })
+              request.onsuccess = () => {
+                const database = request.result
+                if (database.objectStoreNames.contains('article-draft')) {
+                  writeDraft(database)
+                  return
+                }
                 const stores = Array.from(database.objectStoreNames)
                 database.close()
+                if (Date.now() < deadline) {
+                  setTimeout(() => openDatabase(deadline), 250)
+                  return
+                }
                 resolve({
                   success: false,
                   error: `article-draft store not found; stores: ${stores.join(', ')}`,
                 })
-                return
               }
+            }
+
+            const writeDraft = (database: IDBDatabase) => {
               const transaction = database.transaction(['article-draft'], 'readwrite')
               const store = transaction.objectStore('article-draft')
               const draft = {
@@ -497,7 +509,7 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
                         width: 0,
                         height: 0,
                         fileid: '',
-                        frame: { ts: 0, isUserSelect: true, isUpload: true },
+                        frame: { ts: 0, isUserSelect: false, isUpload: false },
                         stickers: { version: 2, neptune: [] },
                         fonts: [],
                         coverTemplateId: '',
@@ -535,7 +547,7 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
                       width: 0,
                       height: 0,
                       fileid: '',
-                      frame: { ts: 0, isUserSelect: true, isUpload: true },
+                      frame: { ts: 0, isUserSelect: false, isUpload: false },
                       stickers: { neptune: [], version: 2 },
                       fonts: [],
                     },
@@ -555,7 +567,7 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
                     orderId: '',
                     brandAccountId: '',
                     noteSketch: { id: '', name: '' },
-                    original: true,
+                    original: false,
                     originalDateStamp: '',
                     coProduceBind: { enable: true },
                     noteCopyBind: { copyable: true },
@@ -605,7 +617,7 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
                       length: 0,
                       image: '',
                       imageFileId: '',
-                      isManualInsert: true,
+                      isManualInsert: false,
                     }],
                     coverList: [],
                     currentCoverIdx: 0,
@@ -639,6 +651,8 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
                 resolve({ success: false, error: `transaction error: ${transaction.error?.message}` })
               }
             }
+
+            openDatabase(Date.now() + 8_000)
           })
           return Promise.race([save, timeout])
         },
