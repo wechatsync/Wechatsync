@@ -529,9 +529,13 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
 
       // 新版编辑器不会稳定地从 IndexedDB richJson 恢复正文。再通过
       // ProseMirror 的输入事件写入一次，让页面状态和自动保存逻辑同步。
+      // 必须新开编辑页，使小红书先从 IndexedDB 加载刚写入的草稿；
+      // 在旧编辑页上修改 DOM 会被其已有的 ProseMirror 状态立即覆盖。
+      const editorTab = await this.runtime.tabs.create(EDITOR_URL, false)
+      await this.runtime.tabs.waitForLoad(editorTab.id, TAB_TIMEOUT_MS)
       const plainText = markdownToPlainText(markdown)
       const editorResult = await this.runtime.tabs.executeScript(
-        tabId,
+        editorTab.id,
         async (title: string, body: string): Promise<DraftWriteResult> => {
           const deadline = Date.now() + 10_000
           while (Date.now() < deadline) {
@@ -567,6 +571,8 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
               }
               editor.dispatchEvent(new Event('change', { bubbles: true }))
 
+              // 等待框架完成一次渲染和自动保存，避免把瞬时 DOM 改动误判为成功。
+              await new Promise(resolve => setTimeout(resolve, 1_500))
               const contentLength = (editor.innerText || editor.textContent || '').trim().length
               return contentLength > 0
                 ? { success: true, contentLength }
