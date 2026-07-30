@@ -67,10 +67,14 @@ function parseInline(
   let match: RegExpExecArray | null
 
   const pushText = (value: string, mark?: string) => {
-    if (!value) return
+    // 小红书的 ProseMirror schema 不接受 text 节点中的裸换行。
+    // 原版转换器会把 Markdown 换行解析成 break 节点并在该平台丢弃，
+    // 因此这里必须做相同处理，否则整个 richJson 会被编辑器判为无效并清空正文。
+    const normalized = value.replace(/\r?\n/g, '')
+    if (!normalized) return
     nodes.push({
       type: 'text',
-      text: value,
+      text: normalized,
       ...(mark ? { marks: [{ type: mark }] } : {}),
     })
   }
