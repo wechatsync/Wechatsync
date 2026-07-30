@@ -538,6 +538,7 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
         editorTab.id,
         async (title: string, body: string): Promise<DraftWriteResult> => {
           const deadline = Date.now() + 10_000
+          let openedEditor = false
           while (Date.now() < deadline) {
             const titleInput = document.querySelector<HTMLTextAreaElement>(
               'textarea[placeholder="输入标题"]'
@@ -577,6 +578,17 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
               return contentLength > 0
                 ? { success: true, contentLength }
                 : { success: false, error: '正文编辑器写入后仍为空', contentLength }
+            }
+
+            // 当前小红书会先落到长文首页，即使 URL 带有 target=article。
+            // 从页面提供的入口进入编辑器后，再继续等待 ProseMirror 初始化。
+            if (!openedEditor) {
+              const createButton = Array.from(document.querySelectorAll('button'))
+                .find(button => button.textContent?.trim() === '新的创作')
+              if (createButton instanceof HTMLButtonElement) {
+                createButton.click()
+                openedEditor = true
+              }
             }
             await new Promise(resolve => setTimeout(resolve, 250))
           }
