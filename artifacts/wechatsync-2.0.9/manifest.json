@@ -1,0 +1,165 @@
+{
+  "manifest_version": 3,
+  "name": "文章同步助手",
+  "description": "一键同步文章到知乎、头条、掘金等 20+ 平台，支持 WordPress 等自建站",
+  "version": "2.0.9",
+  "icons": {
+    "16": "assets/icon-16.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  },
+  "action": {
+    "default_icon": "assets/icon-48.png",
+    "default_popup": "src/popup/index.html"
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "cookies",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "scripting",
+    "tabs",
+    "alarms",
+    "contextMenus",
+    "downloads"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "service-worker-loader.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "reader.js",
+        "Readability.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "js": [
+        "assets/api.ts-loader-BeWX74ls.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "js": [
+        "assets/weixin.ts-loader-BkP9dtF8.js"
+      ],
+      "matches": [
+        "https://mp.weixin.qq.com/s/*",
+        "https://mp.weixin.qq.com/s?*"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "js": [
+        "assets/weixin-editor.ts-loader-Bxvjk4W5.js"
+      ],
+      "matches": [
+        "https://mp.weixin.qq.com/cgi-bin/appmsg*"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "js": [
+        "assets/toutiao.ts-loader-DpEsQ3dD.js"
+      ],
+      "matches": [
+        "https://mp.toutiao.com/*"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "js": [
+        "assets/extractor.ts-loader-6yxQsJBU.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": [
+        "assets/*",
+        "src/editor/index.html",
+        "src/sync-dialog/index.html",
+        "inject-api.js"
+      ],
+      "use_dynamic_url": false
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "resources": [
+        "assets/jszip.min-DpCewD43.js",
+        "assets/logger-CvfM-6aa.js",
+        "assets/_commonjsHelpers-BosuxZz1.js",
+        "assets/api.ts-CHQebYkU.js",
+        "assets/content-processor-COHfnfLF.js",
+        "assets/fab-W2bspDnB.js",
+        "assets/extractor.ts-ysAklU8v.js"
+      ],
+      "use_dynamic_url": false
+    },
+    {
+      "matches": [
+        "https://mp.weixin.qq.com/*",
+        "https://mp.weixin.qq.com/*"
+      ],
+      "resources": [
+        "assets/jszip.min-DpCewD43.js",
+        "assets/content-processor-COHfnfLF.js",
+        "assets/fab-W2bspDnB.js",
+        "assets/_commonjsHelpers-BosuxZz1.js",
+        "assets/logger-CvfM-6aa.js",
+        "assets/weixin.ts-DnI7OB4I.js"
+      ],
+      "use_dynamic_url": false
+    },
+    {
+      "matches": [
+        "https://mp.weixin.qq.com/*"
+      ],
+      "resources": [
+        "assets/logger-CvfM-6aa.js",
+        "assets/jszip.min-DpCewD43.js",
+        "assets/content-processor-COHfnfLF.js",
+        "assets/_commonjsHelpers-BosuxZz1.js",
+        "assets/weixin-editor.ts-BvjP2fPl.js"
+      ],
+      "use_dynamic_url": false
+    },
+    {
+      "matches": [
+        "https://mp.toutiao.com/*"
+      ],
+      "resources": [
+        "assets/logger-CvfM-6aa.js",
+        "assets/toutiao.ts-Brq6w7IU.js"
+      ],
+      "use_dynamic_url": false
+    }
+  ]
+}

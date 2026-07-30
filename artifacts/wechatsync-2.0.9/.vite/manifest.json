@@ -1,0 +1,212 @@
+{
+  "../../../../../../../../../@crx/manifest": {
+    "file": "assets/crx-manifest.js-6ynAG0wB.js",
+    "name": "crx-manifest.js",
+    "src": "../../../../../../../../../@crx/manifest",
+    "isEntry": true
+  },
+  "__commonjsHelpers-BosuxZz1.js": {
+    "file": "assets/_commonjsHelpers-BosuxZz1.js",
+    "name": "_commonjsHelpers"
+  },
+  "_content-processor-COHfnfLF.js": {
+    "file": "assets/content-processor-COHfnfLF.js",
+    "name": "content-processor",
+    "imports": [
+      "_jszip.min-DpCewD43.js",
+      "_logger-CvfM-6aa.js"
+    ]
+  },
+  "_fab-W2bspDnB.js": {
+    "file": "assets/fab-W2bspDnB.js",
+    "name": "fab"
+  },
+  "_globals-!~{007}~.js": {
+    "file": "assets/globals-BNIxMcJw.css",
+    "src": "_globals-!~{007}~.js"
+  },
+  "_globals-Cn4U41aQ.js": {
+    "file": "assets/globals-Cn4U41aQ.js",
+    "name": "globals",
+    "imports": [
+      "__commonjsHelpers-BosuxZz1.js",
+      "_remote-config-BEX-YVxx.js"
+    ],
+    "css": [
+      "assets/globals-BNIxMcJw.css"
+    ]
+  },
+  "_jszip.min-DpCewD43.js": {
+    "file": "assets/jszip.min-DpCewD43.js",
+    "name": "jszip.min",
+    "imports": [
+      "__commonjsHelpers-BosuxZz1.js"
+    ]
+  },
+  "_logger-CvfM-6aa.js": {
+    "file": "assets/logger-CvfM-6aa.js",
+    "name": "logger"
+  },
+  "_modulepreload-polyfill-B5Qt9EMX.js": {
+    "file": "assets/modulepreload-polyfill-B5Qt9EMX.js",
+    "name": "modulepreload-polyfill"
+  },
+  "_remote-config-BEX-YVxx.js": {
+    "file": "assets/remote-config-BEX-YVxx.js",
+    "name": "remote-config",
+    "imports": [
+      "_logger-CvfM-6aa.js"
+    ]
+  },
+  "_version-check-C8vm5ItJ.js": {
+    "file": "assets/version-check-C8vm5ItJ.js",
+    "name": "version-check",
+    "imports": [
+      "_logger-CvfM-6aa.js"
+    ]
+  },
+  "api.ts-loader.js": {
+    "file": "assets/api.ts-loader-BeWX74ls.js",
+    "src": "api.ts-loader.js"
+  },
+  "extractor.ts-loader.js": {
+    "file": "assets/extractor.ts-loader-6yxQsJBU.js",
+    "src": "extractor.ts-loader.js"
+  },
+  "src/background/index.ts": {
+    "file": "assets/index.ts-Bw-475TG.js",
+    "name": "index.ts",
+    "src": "src/background/index.ts",
+    "isEntry": true,
+    "imports": [
+      "_jszip.min-DpCewD43.js",
+      "_logger-CvfM-6aa.js",
+      "_version-check-C8vm5ItJ.js",
+      "_remote-config-BEX-YVxx.js",
+      "__commonjsHelpers-BosuxZz1.js"
+    ]
+  },
+  "src/content/api.ts": {
+    "file": "assets/api.ts-CHQebYkU.js",
+    "name": "api.ts",
+    "src": "src/content/api.ts",
+    "isEntry": true,
+    "imports": [
+      "_jszip.min-DpCewD43.js",
+      "_logger-CvfM-6aa.js",
+      "__commonjsHelpers-BosuxZz1.js"
+    ]
+  },
+  "src/content/extractor.ts": {
+    "file": "assets/extractor.ts-ysAklU8v.js",
+    "name": "extractor.ts",
+    "src": "src/content/extractor.ts",
+    "isEntry": true,
+    "imports": [
+      "__commonjsHelpers-BosuxZz1.js",
+      "_logger-CvfM-6aa.js",
+      "_jszip.min-DpCewD43.js",
+      "_content-processor-COHfnfLF.js",
+      "_fab-W2bspDnB.js"
+    ]
+  },
+  "src/content/toutiao.ts": {
+    "file": "assets/toutiao.ts-Brq6w7IU.js",
+    "name": "toutiao.ts",
+    "src": "src/content/toutiao.ts",
+    "isEntry": true,
+    "imports": [
+      "_logger-CvfM-6aa.js"
+    ]
+  },
+  "src/content/weixin-editor.ts": {
+    "file": "assets/weixin-editor.ts-BvjP2fPl.js",
+    "name": "weixin-editor.ts",
+    "src": "src/content/weixin-editor.ts",
+    "isEntry": true,
+    "imports": [
+      "_logger-CvfM-6aa.js",
+      "_jszip.min-DpCewD43.js",
+      "_content-processor-COHfnfLF.js",
+      "__commonjsHelpers-BosuxZz1.js"
+    ]
+  },
+  "src/content/weixin.ts": {
+    "file": "assets/weixin.ts-DnI7OB4I.js",
+    "name": "weixin.ts",
+    "src": "src/content/weixin.ts",
+    "isEntry": true,
+    "imports": [
+      "_jszip.min-DpCewD43.js",
+      "_content-processor-COHfnfLF.js",
+      "_fab-W2bspDnB.js",
+      "__commonjsHelpers-BosuxZz1.js",
+      "_logger-CvfM-6aa.js"
+    ]
+  },
+  "src/editor/index.html": {
+    "file": "assets/editor-91KajDge.js",
+    "name": "editor",
+    "src": "src/editor/index.html",
+    "isEntry": true,
+    "imports": [
+      "_modulepreload-polyfill-B5Qt9EMX.js",
+      "_globals-Cn4U41aQ.js",
+      "_logger-CvfM-6aa.js",
+      "__commonjsHelpers-BosuxZz1.js",
+      "_remote-config-BEX-YVxx.js"
+    ]
+  },
+  "src/popup/index.html": {
+    "file": "assets/popup-BNNxEQIB.js",
+    "name": "popup",
+    "src": "src/popup/index.html",
+    "isEntry": true,
+    "imports": [
+      "_modulepreload-polyfill-B5Qt9EMX.js",
+      "_globals-Cn4U41aQ.js",
+      "__commonjsHelpers-BosuxZz1.js",
+      "_version-check-C8vm5ItJ.js",
+      "_logger-CvfM-6aa.js",
+      "_remote-config-BEX-YVxx.js"
+    ]
+  },
+  "src/preprocessor/index.html": {
+    "file": "assets/preprocessor-n7jhDIUx.js",
+    "name": "preprocessor",
+    "src": "src/preprocessor/index.html",
+    "isEntry": true,
+    "imports": [
+      "_modulepreload-polyfill-B5Qt9EMX.js",
+      "_content-processor-COHfnfLF.js",
+      "_jszip.min-DpCewD43.js",
+      "_logger-CvfM-6aa.js",
+      "__commonjsHelpers-BosuxZz1.js"
+    ]
+  },
+  "src/sync-dialog/index.html": {
+    "file": "assets/sync-dialog-B0jLMiJM.js",
+    "name": "sync-dialog",
+    "src": "src/sync-dialog/index.html",
+    "isEntry": true,
+    "imports": [
+      "_modulepreload-polyfill-B5Qt9EMX.js",
+      "_globals-Cn4U41aQ.js",
+      "_logger-CvfM-6aa.js",
+      "__commonjsHelpers-BosuxZz1.js",
+      "_remote-config-BEX-YVxx.js"
+    ]
+  },
+  "toutiao.ts-loader.js": {
+    "file": "assets/toutiao.ts-loader-DpEsQ3dD.js",
+    "src": "toutiao.ts-loader.js"
+  },
+  "weixin-editor.ts-loader.js": {
+    "file": "assets/weixin-editor.ts-loader-Bxvjk4W5.js",
+    "src": "weixin-editor.ts-loader.js"
+  },
+  "weixin.ts-loader.js": {
+    "file": "assets/weixin.ts-loader-BkP9dtF8.js",
+    "src": "weixin.ts-loader.js"
+  }
+}
