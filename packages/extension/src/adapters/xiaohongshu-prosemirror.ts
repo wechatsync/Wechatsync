@@ -2,7 +2,34 @@ interface UploadedImage {
   url: string
   width: number
   height: number
+  fileId?: string
 }
+
+export const XIAOHONGSHU_PLATFORM_CONFIG = {
+  id: 'xiaohongshu',
+  outputFormat: 'prosemirror',
+  maxHeadingLevel: 3,
+  supportNestedList: false,
+  supportTable: false,
+  supportCodeBlock: false,
+  supportInlineCode: false,
+  supportLink: false,
+  supportImage: true,
+  supportBlockquote: true,
+  supportHorizontalRule: false,
+  supportBold: false,
+  supportItalic: false,
+  supportStrikethrough: false,
+  supportHighlight: true,
+  supportLatex: false,
+} as const
+
+type UploadImage = (url: string) => Promise<{
+  url: string
+  width?: number
+  height?: number
+  fileId?: string
+}>
 
 export interface XiaohongshuProseMirrorNode {
   type: string
@@ -243,7 +270,11 @@ function inlineToProseMirror(nodes: InlineNode[]): XiaohongshuProseMirrorNode[] 
       case 'strong': {
         const children = inlineToProseMirror(node.children)
         for (const child of children) {
-          if (child.type === 'text') child.marks = [...(child.marks || []), { type: 'bold' }]
+          if (child.type === 'text' && XIAOHONGSHU_PLATFORM_CONFIG.supportBold) {
+            child.marks = [...(child.marks || []), { type: 'bold' }]
+          } else if (child.type === 'text' && XIAOHONGSHU_PLATFORM_CONFIG.supportHighlight) {
+            child.marks = [...(child.marks || []), { type: 'highlight' }]
+          }
         }
         result.push(...children)
         break
@@ -251,7 +282,9 @@ function inlineToProseMirror(nodes: InlineNode[]): XiaohongshuProseMirrorNode[] 
       case 'emphasis': {
         const children = inlineToProseMirror(node.children)
         for (const child of children) {
-          if (child.type === 'text') child.marks = [...(child.marks || []), { type: 'italic' }]
+          if (child.type === 'text' && XIAOHONGSHU_PLATFORM_CONFIG.supportItalic) {
+            child.marks = [...(child.marks || []), { type: 'italic' }]
+          }
         }
         result.push(...children)
         break
@@ -259,13 +292,17 @@ function inlineToProseMirror(nodes: InlineNode[]): XiaohongshuProseMirrorNode[] 
       case 'delete': {
         const children = inlineToProseMirror(node.children)
         for (const child of children) {
-          if (child.type === 'text') child.marks = [...(child.marks || []), { type: 'strike' }]
+          if (child.type === 'text' && XIAOHONGSHU_PLATFORM_CONFIG.supportStrikethrough) {
+            child.marks = [...(child.marks || []), { type: 'strike' }]
+          }
         }
         result.push(...children)
         break
       }
       case 'inlineCode':
-        result.push({ type: 'text', text: node.value })
+        result.push(XIAOHONGSHU_PLATFORM_CONFIG.supportInlineCode
+          ? { type: 'text', text: node.value, marks: [{ type: 'code' }] }
+          : { type: 'text', text: node.value })
         break
       case 'link':
         // 小红书不支持正文链接，保留链接文字。
@@ -313,7 +350,9 @@ function blocksToProseMirror(
       case 'heading':
         result.push({
           type: 'heading',
-          attrs: { level: Math.min(node.depth, 3) },
+          attrs: {
+            level: Math.min(node.depth, XIAOHONGSHU_PLATFORM_CONFIG.maxHeadingLevel),
+          },
           content: inlineToProseMirror(node.children),
         })
         break
@@ -382,6 +421,10 @@ function blocksToProseMirror(
         })
         break
       case 'thematicBreak':
+        if (XIAOHONGSHU_PLATFORM_CONFIG.supportHorizontalRule) {
+          result.push({ type: 'horizontalRule' })
+        }
+        break
       case 'tableRow':
       case 'tableCell':
         break
@@ -409,11 +452,51 @@ function cleanNode(node: XiaohongshuProseMirrorNode): XiaohongshuProseMirrorNode
   return cleaned
 }
 
-export function markdownToXiaohongshuProseMirror(
+function collectImages(nodes: Array<BlockNode | InlineNode>, queue: Array<{ src: string; alt: string }>) {
+  for (const node of nodes) {
+    if (node.type === 'image') queue.push({ src: node.url, alt: node.alt || '' })
+    if ('children' in node && Array.isArray(node.children)) {
+      collectImages(node.children, queue)
+    }
+  }
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
+
+export async function markdownToXiaohongshuProseMirror(
   markdown: string,
-  images: Map<string, UploadedImage>
-): XiaohongshuProseMirrorNode {
-  let content = blocksToProseMirror(parseMarkdown(markdown), images)
+  uploadImage?: UploadImage,
+  onImageProgress?: (current: number, total: number) => void
+): Promise<XiaohongshuProseMirrorNode> {
+  const parsed = parseMarkdown(markdown)
+  const images = new Map<string, UploadedImage>()
+  const imageQueue: Array<{ src: string; alt: string }> = []
+  collectImages(parsed, imageQueue)
+
+  if (uploadImage && imageQueue.length > 0) {
+    let current = 0
+    for (const image of imageQueue) {
+      if (images.has(image.src)) continue
+      try {
+        current++
+        onImageProgress?.(current, imageQueue.length)
+        const uploaded = await uploadImage(image.src)
+        images.set(image.src, {
+          url: uploaded.url,
+          width: uploaded.width || 800,
+          height: uploaded.height || 600,
+          fileId: uploaded.fileId,
+        })
+        await delay(300)
+      } catch (error) {
+        console.error('Failed to upload image:', image.src, error)
+      }
+    }
+  }
+
+  let content = blocksToProseMirror(parsed, images)
   while (
     content.length &&
     content[0].type === 'paragraph' &&
