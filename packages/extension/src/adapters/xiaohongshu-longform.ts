@@ -26,6 +26,7 @@ interface UploadedImage {
 interface DraftWriteResult {
   success: boolean
   error?: string
+  contentLength?: number
 }
 
 function generateUuid(): string {
@@ -51,6 +52,23 @@ function plainTextLength(content: string): number {
     .replace(/\s+/g, ' ')
     .trim()
     .length
+}
+
+function markdownToPlainText(markdown: string): string {
+  return markdown
+    .replace(/!\[([^\]]*)]\([^)]+\)/g, '$1')
+    .replace(/\[([^\]]+)]\([^)]+\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^>\s?/gm, '')
+    .replace(/^[-*+]\s+/gm, '• ')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/```(?:\w+)?\n?([\s\S]*?)```/g, '$1')
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    .replace(/~~(.*?)~~/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 }
 
 function collectImageUrls(markdown: string): string[] {
@@ -508,6 +526,62 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
       )
 
       if (!result.success) throw new Error(result.error || '保存小红书长文草稿失败')
+
+      // 新版编辑器不会稳定地从 IndexedDB richJson 恢复正文。再通过
+      // ProseMirror 的输入事件写入一次，让页面状态和自动保存逻辑同步。
+      const plainText = markdownToPlainText(markdown)
+      const editorResult = await this.runtime.tabs.executeScript(
+        tabId,
+        async (title: string, body: string): Promise<DraftWriteResult> => {
+          const deadline = Date.now() + 10_000
+          while (Date.now() < deadline) {
+            const titleInput = document.querySelector<HTMLTextAreaElement>(
+              'textarea[placeholder="输入标题"]'
+            )
+            const editor = document.querySelector<HTMLElement>(
+              'div.tiptap.ProseMirror[contenteditable="true"]'
+            )
+            if (titleInput && editor) {
+              const valueSetter = Object.getOwnPropertyDescriptor(
+                HTMLTextAreaElement.prototype,
+                'value'
+              )?.set
+              valueSetter?.call(titleInput, title)
+              titleInput.dispatchEvent(new Event('input', { bubbles: true }))
+              titleInput.dispatchEvent(new Event('change', { bubbles: true }))
+
+              editor.focus()
+              const selection = window.getSelection()
+              const range = document.createRange()
+              range.selectNodeContents(editor)
+              selection?.removeAllRanges()
+              selection?.addRange(range)
+              const inserted = document.execCommand('insertText', false, body)
+              if (!inserted) {
+                editor.textContent = body
+                editor.dispatchEvent(new InputEvent('input', {
+                  bubbles: true,
+                  inputType: 'insertText',
+                  data: body,
+                }))
+              }
+              editor.dispatchEvent(new Event('change', { bubbles: true }))
+
+              const contentLength = (editor.innerText || editor.textContent || '').trim().length
+              return contentLength > 0
+                ? { success: true, contentLength }
+                : { success: false, error: '正文编辑器写入后仍为空', contentLength }
+            }
+            await new Promise(resolve => setTimeout(resolve, 250))
+          }
+          return { success: false, error: '未找到小红书长文正文编辑器' }
+        },
+        [article.title.slice(0, 64), plainText]
+      )
+      if (!editorResult.success || !editorResult.contentLength) {
+        throw new Error(editorResult.error || '小红书正文写入失败')
+      }
+
       return this.createResult(true, {
         postId: draftId,
         postUrl: EDITOR_URL,
