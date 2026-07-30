@@ -25,11 +25,8 @@ interface EditorState {
 
 interface UploadedImage {
   url: string
-}
-
-interface ContentPart {
-  type: 'html' | 'image'
-  value: string
+  width: number
+  height: number
 }
 
 function createDraftUrl(): string {
@@ -48,20 +45,36 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
-function splitHtml(html: string): ContentPart[] {
-  const parts: ContentPart[] = []
+function extractImageSources(html: string): string[] {
+  const sources: string[] = []
   const imagePattern = /<img\b[^>]*\bsrc=(["'])(.*?)\1[^>]*>/gi
-  let lastIndex = 0
   let match: RegExpExecArray | null
   while ((match = imagePattern.exec(html)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push({ type: 'html', value: html.slice(lastIndex, match.index) })
-    }
-    parts.push({ type: 'image', value: match[2] })
-    lastIndex = match.index + match[0].length
+    sources.push(match[2])
   }
-  if (lastIndex < html.length) parts.push({ type: 'html', value: html.slice(lastIndex) })
-  return parts
+  return sources
+}
+
+function replaceImageSources(
+  html: string,
+  uploadedBySource: Map<string, UploadedImage>
+): { html: string; images: UploadedImage[] } {
+  const images: UploadedImage[] = []
+  const imagePattern = /<img\b([^>]*?)\bsrc=(["'])(.*?)\2([^>]*)>/gi
+  const replacedHtml = html.replace(
+    imagePattern,
+    (_full, before: string, quote: string, source: string, after: string) => {
+      const uploaded = uploadedBySource.get(source)
+      if (!uploaded) throw new Error(`图片未完成上传: ${source}`)
+      images.push(uploaded)
+      const attributes = `${before}${after}`
+        .replace(/\sdata-original=(["']).*?\1/gi, '')
+        .replace(/\sdata-width=(["']).*?\1/gi, '')
+        .replace(/\sdata-height=(["']).*?\1/gi, '')
+      return `<img${attributes} src=${quote}${uploaded.url}${quote} data-original=${quote}${uploaded.url}${quote} data-width=${quote}${uploaded.width || ''}${quote} data-height=${quote}${uploaded.height || ''}${quote}>`
+    }
+  )
+  return { html: replacedHtml, images }
 }
 
 export class XiaoheiheAdapter extends BaseAdapter {
@@ -189,40 +202,22 @@ export class XiaoheiheAdapter extends BaseAdapter {
     if (!result.ok) throw new Error(result.error || '初始化小黑盒草稿失败')
   }
 
-  private async insertHtml(tabId: number, html: string): Promise<void> {
-    if (!html || !this.runtime.tabs) return
-    const result = await this.runtime.tabs.executeScript(
-      tabId,
-      (value: string, bodySelector: string): EditorState => {
-        const editor = document.querySelector<HTMLElement>(bodySelector)
-        if (!editor) return { ok: false, error: '未找到小黑盒正文编辑器' }
-        editor.focus()
-        const range = document.createRange()
-        range.selectNodeContents(editor)
-        range.collapse(false)
-        const selection = window.getSelection()
-        selection?.removeAllRanges()
-        selection?.addRange(range)
-        const inserted = document.execCommand('insertHTML', false, value)
-        editor.dispatchEvent(new InputEvent('input', {
-          bubbles: true,
-          inputType: 'insertFromPaste',
-        }))
-        return inserted
-          ? { ok: true }
-          : { ok: false, error: '写入小黑盒正文失败' }
-      },
-      [html, BODY_SELECTOR]
-    )
-    if (!result.ok) throw new Error(result.error || '写入小黑盒正文失败')
-  }
-
   private async uploadImageToEditor(
     tabId: number,
     image: Blob,
     filename: string
   ): Promise<UploadedImage> {
     if (!this.runtime.tabs) throw new Error('小黑盒同步需要浏览器 tabs API 支持')
+    let width = 0
+    let height = 0
+    try {
+      const bitmap = await createImageBitmap(image)
+      width = bitmap.width
+      height = bitmap.height
+      bitmap.close()
+    } catch {
+      // 尺寸读取失败不阻止上传，小黑盒接口允许空尺寸。
+    }
     const dataUrl = await blobToDataUrl(image)
     const result = await this.runtime.tabs.executeScript(
       tabId,
@@ -248,7 +243,11 @@ export class XiaoheiheAdapter extends BaseAdapter {
         const blob = await response.blob()
         const transfer = new DataTransfer()
         transfer.items.add(new File([blob], imageFilename, { type: mimeType }))
-        const beforeCount = editor.querySelectorAll('img').length
+        const beforeSources = new Map<string, number>()
+        for (const item of editor.querySelectorAll<HTMLImageElement>('img')) {
+          if (!item.src || item.src.startsWith('data:') || item.src.startsWith('blob:')) continue
+          beforeSources.set(item.src, (beforeSources.get(item.src) || 0) + 1)
+        }
         editor.dispatchEvent(new ClipboardEvent('paste', {
           bubbles: true,
           cancelable: true,
@@ -257,13 +256,19 @@ export class XiaoheiheAdapter extends BaseAdapter {
 
         const startedAt = Date.now()
         while (Date.now() - startedAt < timeoutMs) {
-          const images = Array.from(editor.querySelectorAll<HTMLImageElement>('img'))
-          const uploaded = images.slice(beforeCount).find(item =>
-            Boolean(item.src) &&
-            !item.src.startsWith('data:') &&
-            !item.src.startsWith('blob:')
-          )
-          if (uploaded) return { ok: true, url: uploaded.src }
+          // 小黑盒上传成功后会由编辑器框架替换整个 ProseMirror 节点，
+          // 因此每轮必须重新从 document 获取当前编辑器，不能继续查询旧节点。
+          const currentEditor = document.querySelector<HTMLElement>(bodySelector)
+          const images = Array.from(currentEditor?.querySelectorAll<HTMLImageElement>('img') || [])
+          const currentSources = new Map<string, number>()
+          for (const item of images) {
+            if (!item.src || item.src.startsWith('data:') || item.src.startsWith('blob:')) continue
+            const currentCount = (currentSources.get(item.src) || 0) + 1
+            currentSources.set(item.src, currentCount)
+            if (currentCount > (beforeSources.get(item.src) || 0)) {
+              return { ok: true, url: item.src }
+            }
+          }
           await new Promise(resolve => setTimeout(resolve, 250))
         }
         return { ok: false, error: '等待小黑盒图片上传超时' }
@@ -271,7 +276,7 @@ export class XiaoheiheAdapter extends BaseAdapter {
       [dataUrl, image.type || 'image/png', filename, BODY_SELECTOR, IMAGE_TIMEOUT_MS]
     )
     if (!result.ok || !result.url) throw new Error(result.error || '小黑盒图片上传失败')
-    return { url: result.url }
+    return { url: result.url, width, height }
   }
 
   async uploadImage(file: Blob, filename = 'image.png'): Promise<string> {
@@ -282,7 +287,86 @@ export class XiaoheiheAdapter extends BaseAdapter {
     return (await this.uploadImageToEditor(tabId, file, filename)).url
   }
 
-  private async saveDraft(tabId: number): Promise<{ id?: string; url: string }> {
+  private async writeCompleteDraft(
+    tabId: number,
+    title: string,
+    html: string,
+    images: UploadedImage[]
+  ): Promise<void> {
+    if (!this.runtime.tabs) throw new Error('小黑盒同步需要浏览器 tabs API 支持')
+    const result = await this.runtime.tabs.executeScript(
+      tabId,
+      async (
+        draftTitle: string,
+        draftHtml: string,
+        expectedImageUrls: string[],
+        titleSelector: string,
+        bodySelector: string
+      ): Promise<EditorState> => {
+        const titleEditor = document.querySelector<HTMLElement>(titleSelector)
+        const bodyEditor = document.querySelector<HTMLElement>(bodySelector)
+        if (!titleEditor || !bodyEditor) {
+          return { ok: false, error: '未找到小黑盒文章编辑器' }
+        }
+
+        const replaceText = (editor: HTMLElement, value: string) => {
+          editor.focus()
+          const range = document.createRange()
+          range.selectNodeContents(editor)
+          const selection = window.getSelection()
+          selection?.removeAllRanges()
+          selection?.addRange(range)
+          document.execCommand('insertText', false, value)
+          editor.dispatchEvent(new InputEvent('input', {
+            bubbles: true,
+            inputType: 'insertText',
+            data: value,
+          }))
+        }
+
+        replaceText(titleEditor, draftTitle)
+        bodyEditor.focus()
+        const range = document.createRange()
+        range.selectNodeContents(bodyEditor)
+        const selection = window.getSelection()
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+        const inserted = document.execCommand('insertHTML', false, draftHtml)
+        bodyEditor.dispatchEvent(new InputEvent('input', {
+          bubbles: true,
+          inputType: 'insertFromPaste',
+        }))
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        const currentEditor = document.querySelector<HTMLElement>(bodySelector)
+        if (!inserted || !currentEditor) {
+          return { ok: false, error: '一次性写入小黑盒正文失败' }
+        }
+        const currentImages = Array.from(
+          currentEditor.querySelectorAll<HTMLImageElement>('img')
+        ).map(image => image.src)
+        if (currentImages.length !== expectedImageUrls.length) {
+          return {
+            ok: false,
+            error:
+              `正文图片数量校验失败: 期望 ${expectedImageUrls.length} 张，` +
+              `实际 ${currentImages.length} 张`,
+          }
+        }
+        const imageOrderMatches = expectedImageUrls.every(
+          (url, index) => currentImages[index]?.split('?')[0] === url.split('?')[0]
+        )
+        if (!imageOrderMatches) {
+          return { ok: false, error: '正文图片顺序校验失败' }
+        }
+        return { ok: true }
+      },
+      [title, html, images.map(image => image.url), TITLE_SELECTOR, BODY_SELECTOR]
+    )
+    if (!result.ok) throw new Error(result.error || '写入小黑盒草稿失败')
+  }
+
+  private async saveDraft(tabId: number): Promise<{ id: string; url: string }> {
     if (!this.runtime.tabs) throw new Error('小黑盒同步需要浏览器 tabs API 支持')
     const clicked = await this.runtime.tabs.executeScript(
       tabId,
@@ -304,9 +388,24 @@ export class XiaoheiheAdapter extends BaseAdapter {
       const url = current?.url || ''
       const match = url.match(/\/creator\/editor\/edit\/article\/(\d+)/)
       if (match) return { id: match[1], url }
+
+      const errorText = await this.runtime.tabs.executeScript(
+        tabId,
+        (): string => {
+          const candidates = Array.from(document.querySelectorAll<HTMLElement>(
+            '[class*="toast"], [class*="message"], [class*="notice"]'
+          ))
+          return candidates
+            .map(item => item.innerText.trim())
+            .filter(Boolean)
+            .find(text => /失败|错误|缺失|异常|请/.test(text)) || ''
+        },
+        []
+      )
+      if (errorText) throw new Error(`小黑盒保存草稿失败: ${errorText}`)
       await new Promise(resolve => setTimeout(resolve, 300))
     }
-    throw new Error('等待小黑盒保存草稿超时')
+    throw new Error('小黑盒未返回草稿 ID，无法确认保存成功')
   }
 
   async publish(article: Article, options?: PublishOptions): Promise<SyncResult> {
@@ -319,34 +418,40 @@ export class XiaoheiheAdapter extends BaseAdapter {
       // 每次同步新建独立草稿，避免覆盖用户正在编辑的页面。
       const tabId = await this.ensureEditorTab(true)
       await this.initializeDraft(tabId, title)
-      const parts = splitHtml(html)
-      const totalImages = parts.filter(part => part.type === 'image').length
-      let uploadedImages = 0
+      const imageSources = extractImageSources(html)
+      const uniqueSources = Array.from(new Set(imageSources))
+      const uploadedBySource = new Map<string, UploadedImage>()
 
-      for (const part of parts) {
-        if (part.type === 'html') {
-          await this.insertHtml(tabId, part.value)
-          continue
-        }
-
-        const response = await this.runtime.fetch(part.value)
+      for (let index = 0; index < uniqueSources.length; index++) {
+        const source = uniqueSources[index]
+        const response = await this.runtime.fetch(source)
         if (!response.ok) {
-          throw new Error(`下载第 ${uploadedImages + 1} 张图片失败: HTTP ${response.status}`)
+          throw new Error(`下载第 ${index + 1} 张图片失败: HTTP ${response.status}`)
         }
         const blob = await response.blob()
         if (!blob.type.startsWith('image/')) {
-          throw new Error(`第 ${uploadedImages + 1} 个资源不是有效图片`)
+          throw new Error(`第 ${index + 1} 个资源不是有效图片`)
         }
         const extension = blob.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png'
-        await this.uploadImageToEditor(
+        const uploaded = await this.uploadImageToEditor(
           tabId,
           blob,
-          `xiaoheihe-image-${uploadedImages + 1}.${extension}`
+          `xiaoheihe-image-${index + 1}.${extension}`
         )
-        uploadedImages++
-        options?.onImageProgress?.(uploadedImages, totalImages)
+        uploadedBySource.set(source, uploaded)
+        options?.onImageProgress?.(index + 1, uniqueSources.length)
       }
 
+      const prepared = replaceImageSources(html, uploadedBySource)
+      // 图片上传仅用于取得小黑盒 CDN 地址；完成后清空暂存内容，
+      // 再一次性写入完整正文，避免逐段操作造成重复和顺序错乱。
+      await this.initializeDraft(tabId, title)
+      await this.writeCompleteDraft(
+        tabId,
+        title.slice(0, 30),
+        prepared.html,
+        prepared.images
+      )
       const draft = await this.saveDraft(tabId)
       return this.createResult(true, {
         postId: draft.id,
