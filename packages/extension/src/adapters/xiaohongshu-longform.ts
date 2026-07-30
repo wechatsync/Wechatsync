@@ -27,6 +27,7 @@ interface DraftWriteResult {
   success: boolean
   error?: string
   contentLength?: number
+  imageCount?: number
 }
 
 function generateUuid(): string {
@@ -536,9 +537,10 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
       const plainText = markdownToPlainText(markdown)
       const editorResult = await this.runtime.tabs.executeScript(
         editorTab.id,
-        async (title: string, body: string): Promise<DraftWriteResult> => {
+        async (title: string, body: string, expectedImages: number): Promise<DraftWriteResult> => {
           const deadline = Date.now() + 10_000
           let openedEditor = false
+          let editorHydrated = false
           while (Date.now() < deadline) {
             const titleInput = document.querySelector<HTMLTextAreaElement>(
               'textarea[placeholder="输入标题"]'
@@ -547,6 +549,27 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
               'div.tiptap.ProseMirror[contenteditable="true"]'
             )
             if (titleInput && editor) {
+              if (!editorHydrated) {
+                editorHydrated = true
+                await new Promise(resolve => setTimeout(resolve, 1_500))
+              }
+
+              const restoredLength = (editor.innerText || editor.textContent || '').trim().length
+              const restoredImages = editor.querySelectorAll('img, [data-type="image"]').length
+              if (restoredLength > 0 && restoredImages >= expectedImages) {
+                return {
+                  success: true,
+                  contentLength: restoredLength,
+                  imageCount: restoredImages,
+                }
+              }
+
+              // 含图片的文章必须保留 richJson 恢复出的图片节点，不能用纯文本覆盖。
+              if (expectedImages > 0) {
+                await new Promise(resolve => setTimeout(resolve, 250))
+                continue
+              }
+
               const valueSetter = Object.getOwnPropertyDescriptor(
                 HTMLTextAreaElement.prototype,
                 'value'
@@ -576,7 +599,7 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
               await new Promise(resolve => setTimeout(resolve, 1_500))
               const contentLength = (editor.innerText || editor.textContent || '').trim().length
               return contentLength > 0
-                ? { success: true, contentLength }
+                ? { success: true, contentLength, imageCount: 0 }
                 : { success: false, error: '正文编辑器写入后仍为空', contentLength }
             }
 
@@ -592,9 +615,11 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
             }
             await new Promise(resolve => setTimeout(resolve, 250))
           }
-          return { success: false, error: '未找到小红书长文正文编辑器' }
+          return expectedImages > 0
+            ? { success: false, error: `小红书正文已恢复，但缺少图片节点（预期 ${expectedImages} 张）` }
+            : { success: false, error: '未找到小红书长文正文编辑器' }
         },
-        [article.title.slice(0, 64), plainText]
+        [article.title.slice(0, 64), plainText, imageUrls.length]
       )
       if (!editorResult.success || !editorResult.contentLength) {
         throw new Error(editorResult.error || '小红书正文写入失败')
