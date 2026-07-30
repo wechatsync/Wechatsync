@@ -6,6 +6,10 @@ import {
   type SyncResult,
 } from '@wechatsync/core'
 import type { PublishOptions } from '@wechatsync/core/adapters/types'
+import {
+  markdownToXiaohongshuProseMirror,
+  type XiaohongshuProseMirrorNode,
+} from './xiaohongshu-prosemirror'
 
 const EDITOR_URL = 'https://creator.xiaohongshu.com/publish/publish?from=menu&target=article'
 const CREATOR_ORIGIN = 'https://creator.xiaohongshu.com'
@@ -17,14 +21,6 @@ interface UploadedImage {
   fileId: string
   width: number
   height: number
-}
-
-interface ProseMirrorNode {
-  type: string
-  attrs?: Record<string, unknown>
-  marks?: Array<{ type: string }>
-  content?: ProseMirrorNode[]
-  text?: string
 }
 
 interface DraftWriteResult {
@@ -55,158 +51,6 @@ function plainTextLength(content: string): number {
     .replace(/\s+/g, ' ')
     .trim()
     .length
-}
-
-function parseInline(
-  text: string,
-  images: Map<string, UploadedImage>
-): ProseMirrorNode[] {
-  const nodes: ProseMirrorNode[] = []
-  const pattern = /!\[([^\]]*)]\(([^)]+)\)|(\*\*|__)(.+?)\3|~~(.+?)~~|(\*|_)(.+?)\6/g
-  let lastIndex = 0
-  let match: RegExpExecArray | null
-
-  const pushText = (value: string, mark?: string) => {
-    // 小红书的 ProseMirror schema 不接受 text 节点中的裸换行。
-    // 原版转换器会把 Markdown 换行解析成 break 节点并在该平台丢弃，
-    // 因此这里必须做相同处理，否则整个 richJson 会被编辑器判为无效并清空正文。
-    const normalized = value.replace(/\r?\n/g, '')
-    if (!normalized) return
-    nodes.push({
-      type: 'text',
-      text: normalized,
-      ...(mark ? { marks: [{ type: mark }] } : {}),
-    })
-  }
-
-  while ((match = pattern.exec(text)) !== null) {
-    pushText(text.slice(lastIndex, match.index))
-    if (match[2]) {
-      const uploaded = images.get(match[2])
-      const width = 410
-      const height = uploaded?.width
-        ? Math.round(width * uploaded.height / uploaded.width)
-        : 0
-      nodes.push({
-        type: 'image',
-        attrs: {
-          imgs: [{
-            src: uploaded?.url || match[2],
-            desc: match[1] || '',
-            percent: 30,
-            width,
-            height,
-          }],
-        },
-      })
-    } else if (match[4]) {
-      pushText(match[4], 'bold')
-    } else if (match[5]) {
-      pushText(match[5], 'strike')
-    } else if (match[7]) {
-      pushText(match[7], 'italic')
-    }
-    lastIndex = match.index + match[0].length
-  }
-  pushText(text.slice(lastIndex))
-  return nodes
-}
-
-function markdownToProseMirror(
-  markdown: string,
-  images: Map<string, UploadedImage>
-): ProseMirrorNode {
-  const content: ProseMirrorNode[] = []
-  const lines = markdown.replace(/\r\n?/g, '\n').split('\n')
-
-  for (let index = 0; index < lines.length;) {
-    const line = lines[index]
-    if (!line.trim()) {
-      index++
-      continue
-    }
-
-    const heading = line.match(/^(#{1,6})\s+(.+)$/)
-    if (heading) {
-      content.push({
-        type: 'heading',
-        attrs: { level: Math.min(heading[1].length, 3) },
-        content: parseInline(heading[2], images),
-      })
-      index++
-      continue
-    }
-
-    if (/^>\s?/.test(line)) {
-      const quoteLines: string[] = []
-      while (index < lines.length && /^>\s?/.test(lines[index])) {
-        quoteLines.push(lines[index].replace(/^>\s?/, ''))
-        index++
-      }
-      content.push({
-        type: 'blockquote',
-        content: quoteLines.map(value => ({
-          type: 'paragraph',
-          content: parseInline(value, images),
-        })),
-      })
-      continue
-    }
-
-    const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/)
-    if (listMatch) {
-      const ordered = /\d+\./.test(listMatch[2])
-      const items: ProseMirrorNode[] = []
-      while (index < lines.length) {
-        const item = lines[index].match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/)
-        if (!item || /\d+\./.test(item[2]) !== ordered) break
-        items.push({
-          type: 'listItem',
-          content: [{
-            type: 'paragraph',
-            content: parseInline(item[3], images),
-          }],
-        })
-        index++
-      }
-      content.push({
-        type: ordered ? 'orderedList' : 'bulletList',
-        ...(ordered ? { attrs: { start: 1, type: null } } : {}),
-        content: items,
-      })
-      continue
-    }
-
-    const paragraphLines: string[] = []
-    while (
-      index < lines.length &&
-      lines[index].trim() &&
-      !/^(#{1,6})\s+/.test(lines[index]) &&
-      !/^>\s?/.test(lines[index]) &&
-      !/^(\s*)([-*+]|\d+\.)\s+/.test(lines[index])
-    ) {
-      paragraphLines.push(lines[index])
-      index++
-    }
-    const inlineNodes = parseInline(paragraphLines.join('\n'), images)
-    const pending: ProseMirrorNode[] = []
-    for (const node of inlineNodes) {
-      if (node.type === 'image') {
-        if (pending.length) {
-          content.push({ type: 'paragraph', content: pending.splice(0) })
-        }
-        content.push(node)
-      } else {
-        pending.push(node)
-      }
-    }
-    if (pending.length) content.push({ type: 'paragraph', content: pending })
-  }
-
-  return {
-    type: 'doc',
-    content: content.length ? content : [{ type: 'paragraph' }],
-  }
 }
 
 function collectImageUrls(markdown: string): string[] {
@@ -445,7 +289,7 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
         images.set(url, await this.uploadImageByUrl(url))
         options?.onImageProgress?.(index + 1, imageUrls.length)
       }
-      const richJson = markdownToProseMirror(markdown, images)
+      const richJson = markdownToXiaohongshuProseMirror(markdown, images)
 
       if (!this.userId && !(await this.checkAuth()).isAuthenticated) {
         throw new Error('请先登录小红书创作服务平台')
@@ -456,7 +300,7 @@ export class XiaohongshuLongformAdapter extends BaseAdapter {
         async (
           id: string,
           title: string,
-          documentJson: ProseMirrorNode,
+          documentJson: XiaohongshuProseMirrorNode,
           uid: string | number
         ): Promise<DraftWriteResult> => {
           const timeout = new Promise<DraftWriteResult>(resolve => {
