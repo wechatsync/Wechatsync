@@ -29,6 +29,7 @@ export function TipBar() {
   if (dismissed) return null
 
   const tip = tips[index]
+  if (!tip) return null // tips.json 为空或结构异常时不渲染，避免拖垮整个同步面板
   const isNew = tip.category === 'new'
   const isNotice = tip.category === 'notice'
 

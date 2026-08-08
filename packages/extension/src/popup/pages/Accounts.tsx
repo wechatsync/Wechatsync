@@ -75,6 +75,7 @@ export function AccountsPage() {
 
   const [platforms, setPlatforms] = useState<PlatformStatus[]>([])
   const [platformsLoading, setPlatformsLoading] = useState(true)
+  const [platformsError, setPlatformsError] = useState('')
   const [cmsAccounts, setCmsAccounts] = useState<CMSAccount[]>([])
 
   // CMS form state
@@ -85,28 +86,44 @@ export function AccountsPage() {
   const [error, setError] = useState('')
 
   const mapPlatforms = (list: any[]): PlatformStatus[] =>
-    list.map((p: any) => ({
-      id: p.id, name: p.name, icon: p.icon,
-      homepage: p.homepage, isAuthenticated: p.isAuthenticated,
-      username: p.username,
-    }))
+    list
+      // CMS 站点只在「自建站点」区展示，避免重复出现且删除后残留
+      .filter((p: any) => p.sourceType !== 'cms')
+      .map((p: any) => ({
+        id: p.id, name: p.name, icon: p.icon,
+        homepage: p.homepage, isAuthenticated: p.isAuthenticated,
+        username: p.username,
+      }))
+
+  const loadPlatforms = () => {
+    setPlatformsError('')
+    chrome.runtime.sendMessage({ type: 'CHECK_ALL_AUTH', payload: { forceRefresh: false } }).then((response) => {
+      if (response?.platforms) {
+        setPlatforms(mapPlatforms(response.platforms))
+      } else if (response?.error) {
+        // background 把异常包成 { error } 返回，永远 resolve
+        setPlatformsError(response.error)
+      }
+      setPlatformsLoading(false)
+    }).catch((e) => {
+      setPlatformsError(e?.message || '加载失败')
+      setPlatformsLoading(false)
+    })
+  }
 
   useEffect(() => {
     trackPageView('accounts').catch(() => {})
 
-    // Cache first, then live refresh
+    // Cache first, then live refresh（缓存回调不覆盖已到达的新回包）
     chrome.storage.local.get(['platformListCache', 'cmsAccounts'], (result) => {
       if (result.platformListCache?.length) {
-        setPlatforms(mapPlatforms(result.platformListCache))
+        setPlatforms(prev => prev.length ? prev : mapPlatforms(result.platformListCache))
         setPlatformsLoading(false)
       }
       setCmsAccounts(result.cmsAccounts || [])
     })
 
-    chrome.runtime.sendMessage({ type: 'CHECK_ALL_AUTH', payload: { forceRefresh: false } }).then((response) => {
-      if (response?.platforms) setPlatforms(mapPlatforms(response.platforms))
-      setPlatformsLoading(false)
-    }).catch(() => setPlatformsLoading(false))
+    loadPlatforms()
   }, [])
 
   const deleteCmsAccount = async (id: string) => {
@@ -229,6 +246,19 @@ export function AccountsPage() {
         {platformsLoading && platforms.length === 0 && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Load error */}
+        {!platformsLoading && platformsError && platforms.length === 0 && (
+          <div className="text-center py-10">
+            <p className="text-xs text-muted-foreground">平台状态加载失败</p>
+            <button
+              onClick={() => { setPlatformsLoading(true); loadPlatforms() }}
+              className="mt-2 text-xs text-primary hover:underline"
+            >
+              重试
+            </button>
           </div>
         )}
 

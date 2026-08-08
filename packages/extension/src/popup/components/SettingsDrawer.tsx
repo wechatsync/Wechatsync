@@ -78,8 +78,17 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
     })
 
     // 加载平台列表和隐藏配置
+    // 先用缓存立即渲染，避免「常用平台」入口在认证检查完成前不显示
+    chrome.storage.local.get('platformListCache', (result) => {
+      if (result.platformListCache?.length) {
+        setAllPlatforms(prev => prev.length ? prev : result.platformListCache.map((p: any) => ({
+          id: p.id, name: p.name, icon: p.icon, isAuthenticated: p.isAuthenticated,
+        })))
+      }
+    })
     chrome.runtime.sendMessage({ type: 'CHECK_ALL_AUTH', payload: { forceRefresh: false } }, (response) => {
-      if (response?.platforms) {
+      // 空数组/错误回包不清空已渲染的列表
+      if (response?.platforms?.length) {
         setAllPlatforms(response.platforms.map((p: any) => ({
           id: p.id, name: p.name, icon: p.icon, isAuthenticated: p.isAuthenticated,
         })))
@@ -202,6 +211,9 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
 
   if (!open) return null
 
+  // 按当前列表过滤计算，避免 hiddenPlatforms 含已下线平台时计数偏小甚至为负
+  const shownCount = allPlatforms.filter(p => !hiddenPlatforms.has(p.id)).length
+
   return (
     <>
       {/* 遮罩 */}
@@ -225,7 +237,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
               </button>
               <h2 className="font-semibold flex-1">常用平台</h2>
               <span className="text-xs text-muted-foreground">
-                {allPlatforms.length - hiddenPlatforms.size}/{allPlatforms.length}
+                {shownCount}/{allPlatforms.length}
               </span>
             </div>
 
@@ -380,24 +392,25 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                 </div>
               </div>
 
-              {/* 常用平台 — 入口行 */}
-              {allPlatforms.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-muted-foreground">同步设置</h3>
-                  <button
-                    onClick={() => setView('platforms')}
-                    className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">常用平台</p>
-                      <p className="text-xs text-muted-foreground">
-                        隐藏不需要的平台 · {allPlatforms.length - hiddenPlatforms.size}/{allPlatforms.length} 个显示
-                      </p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  </button>
-                </div>
-              )}
+              {/* 常用平台 — 入口行（无条件渲染，数据未到时显示加载占位而不是整块消失） */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-muted-foreground">同步设置</h3>
+                <button
+                  onClick={() => setView('platforms')}
+                  disabled={allPlatforms.length === 0}
+                  className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors disabled:opacity-60"
+                >
+                  <div className="text-left">
+                    <p className="text-sm font-medium">常用平台</p>
+                    <p className="text-xs text-muted-foreground">
+                      {allPlatforms.length > 0
+                        ? `隐藏不需要的平台 · ${shownCount}/${allPlatforms.length} 个显示`
+                        : '加载平台列表中…'}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                </button>
+              </div>
 
               {/* 高级选项 */}
               <div className="space-y-3">

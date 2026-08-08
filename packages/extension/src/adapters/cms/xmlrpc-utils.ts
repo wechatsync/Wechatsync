@@ -173,12 +173,14 @@ export async function processArticleImages(
   onProgress?: (current: number, total: number) => void,
   signal?: AbortSignal
 ): Promise<{ content: string; failedImages: number }> {
-  const imgRegex = /<img[^>]+src=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi
+  // 无引号分支限定 URL 形态，避免把 alt 等属性值里的 "src=" 误当作图片地址
+  const imgRegex = /<img[^>]+src=(?:"([^"]*)"|'([^']*)'|((?:https?:)?\/\/[^\s>"']+|data:[^\s>"']+))[^>]*>/gi
   const matches: { full: string; src: string }[] = []
 
   let match
   while ((match = imgRegex.exec(content)) !== null) {
-    matches.push({ full: match[0], src: match[1] || match[2] || match[3] })
+    const src = match[1] || match[2] || match[3]
+    if (src) matches.push({ full: match[0], src })
   }
 
   for (const mdMatch of parseMarkdownImages(content)) {

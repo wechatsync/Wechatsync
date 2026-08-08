@@ -23,6 +23,8 @@ export function HomeNew() {
 
     platformProgress,
     recovered,
+    hiddenPlatforms,
+    setHiddenPlatforms,
     loadPlatforms,
     loadArticle,
     recoverSyncState,
@@ -43,7 +45,6 @@ export function HomeNew() {
   const [floatingEnabled, setFloatingEnabled] = useState(false)
   const [isFirstSync, setIsFirstSync] = useState(false)
   const [showShareTip, setShowShareTip] = useState(false)
-  const [hiddenPlatforms, setHiddenPlatforms] = useState<Set<string>>(new Set())
 
   // Load data
   useEffect(() => {
@@ -62,9 +63,6 @@ export function HomeNew() {
       } catch {}
       loadAllPlatforms()
       loadArticle()
-      chrome.storage.local.get('hiddenPlatforms', (r) => {
-        setHiddenPlatforms(new Set(r.hiddenPlatforms || []))
-      })
       chrome.storage.local.get(['floatingButtonEnabled', 'syncHistory', 'dismissedShareTip'], (r) => {
         setFloatingEnabled(r.floatingButtonEnabled ?? false)
         setIsFirstSync(!r.syncHistory || r.syncHistory.length === 0)
@@ -102,7 +100,7 @@ export function HomeNew() {
     if (tab?.id) {
       chrome.tabs.sendMessage(tab.id, {
         type: 'OPEN_EDITOR',
-        platforms: allPlatforms,
+        platforms: allPlatforms.filter(p => !hiddenPlatforms.includes(p.id)),
         selectedPlatforms,
       })
       window.close()
@@ -250,7 +248,7 @@ export function HomeNew() {
       {/* SyncDialog — the unified sync flow */}
       <SyncDialog
         article={article}
-        platforms={allPlatforms.filter(p => !hiddenPlatforms.has(p.id))}
+        platforms={allPlatforms.filter(p => !hiddenPlatforms.includes(p.id))}
         status={status}
         selectedPlatforms={selectedPlatforms}
         results={results}
@@ -295,9 +293,9 @@ export function HomeNew() {
       {/* Settings drawer */}
       <SettingsDrawer open={settingsOpen} onClose={() => {
         setSettingsOpen(false)
-        // 刷新隐藏平台配置（用户可能修改了）
+        // 刷新隐藏平台配置（用户可能修改了），并把新隐藏的平台从已选中裁掉
         chrome.storage.local.get('hiddenPlatforms', (r) => {
-          setHiddenPlatforms(new Set(r.hiddenPlatforms || []))
+          setHiddenPlatforms(r.hiddenPlatforms || [])
         })
       }} />
 

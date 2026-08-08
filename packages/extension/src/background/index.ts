@@ -148,42 +148,8 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
           source,
           syncId,
           allSelectedPlatforms,
-          preprocessArticle: article.platformContents
-            ? undefined
-            : async (normalizedArticle, dslPlatformIds, sourcePlatform) => {
-                const platformsToPreprocess = dslPlatformIds.filter((id: string) => id !== sourcePlatform)
-                if (platformsToPreprocess.length === 0) return normalizedArticle
-                try {
-                  const configs = getPlatformPreprocessConfigs(platformsToPreprocess)
-                  const { deepCleanEnabled = false } = await chrome.storage.local.get('deepCleanEnabled')
-                  for (const key of Object.keys(configs)) {
-                    configs[key] = {
-                      ...configs[key],
-                      normalizeViaMarkdown: sourcePlatform === 'weixin' ? false : deepCleanEnabled,
-                    }
-                  }
-                  const rawHtml = normalizedArticle.html || normalizedArticle.content || ''
-                  if (!rawHtml) return normalizedArticle
-
-                  let targetTabId = senderTabId
-                  if (!targetTabId) {
-                    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
-                    targetTabId = activeTab?.id
-                  }
-                  if (!targetTabId) return normalizedArticle
-
-                  const response = await chrome.tabs.sendMessage(targetTabId, {
-                    type: 'PREPROCESS_FOR_PLATFORMS',
-                    payload: { rawHtml, platforms: platformsToPreprocess, configs },
-                  })
-                  if (response?.platformContents) {
-                    return { ...normalizedArticle, platformContents: response.platformContents }
-                  }
-                } catch (error) {
-                  logger.debug('Preprocess failed, using original content:', error)
-                }
-                return normalizedArticle
-              },
+          // 预处理统一走 performSync 内部的 sendPreprocessMessage
+          // （活动标签页 → 全部标签页 → 临时标签页三级 fallback）
         },
         {
           onResult: (result) => {
@@ -592,6 +558,11 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       // 获取平台预处理配置（供 content script 使用）
       await initAdapters()
       const configs = getPlatformPreprocessConfigs(message.platforms)
+      // 用户的深度格式清理设置在此注入，编辑器路径预计算 platformContents 时才能生效
+      const { deepCleanEnabled = false } = await chrome.storage.local.get('deepCleanEnabled')
+      for (const key of Object.keys(configs)) {
+        configs[key] = { ...configs[key], normalizeViaMarkdown: deepCleanEnabled }
+      }
       return { configs }
     }
 
@@ -621,9 +592,10 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
           cmsType: a.type,
         }))
 
+      const { hiddenPlatforms: hidden = [] } = await chrome.storage.local.get('hiddenPlatforms')
       chrome.tabs.sendMessage(tabId, {
         type: 'OPEN_EDITOR',
-        platforms: [...dslWithType, ...cmsPlatforms],
+        platforms: [...dslWithType, ...cmsPlatforms].filter(p => !hidden.includes(p.id)),
         selectedPlatforms: [],
       })
       return { success: true }
@@ -690,8 +662,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           cmsType: a.type,
         }))
 
-      // 合并所有平台
-      const allPlatforms = [...dslWithType, ...cmsPlatforms]
+      // 合并所有平台，过滤用户隐藏的平台
+      const { hiddenPlatforms: hidden = [] } = await chrome.storage.local.get('hiddenPlatforms')
+      const allPlatforms = [...dslWithType, ...cmsPlatforms].filter(p => !hidden.includes(p.id))
 
       // 发送消息到 content script 打开编辑器
       chrome.tabs.sendMessage(tab.id, {

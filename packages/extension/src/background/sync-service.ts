@@ -60,11 +60,6 @@ interface SyncOptions {
   source?: string
   syncId?: string
   allSelectedPlatforms?: string[]
-  preprocessArticle?: (
-    article: any,
-    dslPlatformIds: string[],
-    sourcePlatform: string | undefined,
-  ) => Promise<any>
 }
 
 export interface SyncProgressCallbacks {
@@ -216,20 +211,19 @@ export async function performSync(
   options: SyncOptions = {},
   callbacks: SyncProgressCallbacks = {}
 ): Promise<{ results: SyncResult[]; syncId: string }> {
-  const { skipHistory = false, source = 'mcp', syncId: passedSyncId, allSelectedPlatforms, preprocessArticle } = options
+  const { skipHistory = false, source = 'mcp', syncId: passedSyncId, allSelectedPlatforms } = options
   const { onResult, onImageProgress, onDetailProgress } = callbacks
 
   const allPlatformMetas = getAllPlatformMetas()
   const platformNameById = new Map(allPlatformMetas.map(meta => [meta.id, meta.name]))
   const syncId = passedSyncId || generateSyncId()
 
+  // 展开保留原字段（source/rawHtml 等），微信→微信快路径依赖 source.platform + rawHtml
   const normalizedArticle = {
-    title: article.title,
+    ...article,
     content: article.content || article.html || '',
     html: article.html || article.content || '',
     markdown: article.markdown || '',
-    cover: article.cover,
-    platformContents: article.platformContents,
   }
 
   const cmsStorage = await chrome.storage.local.get('cmsAccounts')
@@ -263,9 +257,7 @@ export async function performSync(
   const { deepCleanEnabled = false } = await chrome.storage.local.get('deepCleanEnabled')
   let processedArticle: any = normalizedArticle
 
-  if (preprocessArticle) {
-    processedArticle = await preprocessArticle(normalizedArticle, dslPlatformIds, sourcePlatform)
-  } else if (!article.platformContents) {
+  if (!article.platformContents) {
     const platformsToPreprocess = dslPlatformIds.filter((id: string) => id !== sourcePlatform)
     if (platformsToPreprocess.length > 0) {
       const configs = getPlatformPreprocessConfigs(platformsToPreprocess)
@@ -323,7 +315,16 @@ export async function performSync(
   if (cmsPlatformIds.length > 0) {
     const rawHtml = normalizedArticle.html || normalizedArticle.content || ''
     if (rawHtml) {
-      const cmsConfigs: Record<string, unknown> = { _cms: DEFAULT_PREPROCESS_CONFIG }
+      // CMS 只需要源平台链接清理，关闭破坏性选项（旧版 CMS 内容是原样直传的）
+      const cmsConfigs: Record<string, unknown> = {
+        _cms: {
+          ...DEFAULT_PREPROCESS_CONFIG,
+          removeIframes: false,
+          removeSpecialTags: false,
+          removeSvgImages: false,
+          keepStyles: true,
+        },
+      }
       const cmsPreprocessed = await sendPreprocessMessage(rawHtml, ['_cms'], cmsConfigs)
       if (cmsPreprocessed?._cms) {
         cmsArticle = { ...normalizedArticle, content: cmsPreprocessed._cms.html, html: cmsPreprocessed._cms.html }
