@@ -330,10 +330,11 @@ export class ModelScopeAdapter extends CodeAdapter {
   /**
    * 上传图片到魔搭
    *
-   * 前端真实流程（逆向自 OSSUpload 组件，chunk 88508）:
+   * 前端真实流程（逆向自 OSSUpload 组件，chunk 88508；已在浏览器实测验证）:
    * 1. POST /api/v1/rm/uploadUrl   {FileName, Type:"RACE_IMAGE"} → 获取预签名 UploadUrl
    * 2. PUT  <UploadUrl>            octet-stream 二进制上传
-   * 3. POST /api/v1/rm/downloadUrl {FileUrl} → 获取最终 CDN DownloadUrl
+   * 3. POST /api/v1/rm/downloadUrl {FileUrl, Type:"RACE_IMAGE"} → 获取最终 CDN DownloadUrl
+   *    （OSS 索引有延迟，DownloadUrl 可能为空，需重试）
    */
   protected async uploadImageByUrl(src: string): Promise<ImageUploadResult> {
     const csrfToken = await this.getCsrfToken()
@@ -390,35 +391,44 @@ export class ModelScopeAdapter extends CodeAdapter {
       throw new Error(`图片上传失败: HTTP ${putResponse.status}`)
     }
 
-    // 3. 换取最终 CDN 地址
-    const downloadResponse = await this.runtime.fetch(
-      'https://www.modelscope.cn/api/v1/rm/downloadUrl',
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
-        },
-        body: JSON.stringify({ FileUrl: uploadUrl.split('?')[0] }),
+    // 3. 换取最终 CDN 地址（必须带 Type；OSS 索引有延迟，空 DownloadUrl 时重试）
+    let imageUrl = ''
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await this.delay(1200)
+      const downloadResponse = await this.runtime.fetch(
+        'https://www.modelscope.cn/api/v1/rm/downloadUrl',
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+          },
+          body: JSON.stringify({ FileUrl: uploadUrl.split('?')[0], Type: 'RACE_IMAGE' }),
+        }
+      )
+
+      const downloadText = await downloadResponse.text()
+      let downloadData: ModelScopeApiResponse
+      try {
+        downloadData = JSON.parse(downloadText)
+      } catch {
+        throw new Error(`获取图片地址失败: ${downloadText.substring(0, 100)}`)
       }
-    )
+      if (downloadData.Code !== 200 || !downloadData.Success) {
+        throw new Error(`获取图片地址失败: ${downloadData.Message || downloadData.Code}`)
+      }
 
-    const downloadText = await downloadResponse.text()
-    let downloadData: ModelScopeApiResponse
-    try {
-      downloadData = JSON.parse(downloadText)
-    } catch {
-      throw new Error(`获取图片地址失败: ${downloadText.substring(0, 100)}`)
-    }
-    if (downloadData.Code !== 200 || !downloadData.Success) {
-      throw new Error(`获取图片地址失败: ${downloadData.Message || downloadData.Code}`)
+      const download = downloadData.Data as { DownloadUrl?: string } | undefined
+      if (download?.DownloadUrl) {
+        imageUrl = download.DownloadUrl
+        break
+      }
+      // DownloadUrl 为空说明 OSS 未索引完成，稍后重试
     }
 
-    const download = downloadData.Data as { DownloadUrl?: string } | undefined
-    const imageUrl = download?.DownloadUrl
     if (!imageUrl) {
-      throw new Error('获取图片地址失败: 未返回 DownloadUrl')
+      throw new Error('获取图片地址失败: 未返回 DownloadUrl（OSS 索引延迟，已重试 3 次）')
     }
 
     logger.info('Image uploaded:', imageUrl)
