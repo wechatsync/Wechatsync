@@ -67,6 +67,7 @@ export class WeixinAdapter extends CodeAdapter {
     keepLinkDomains: ['mp.weixin.qq.com', 'weixin.qq.com'],
     normalizeLists: true,
     linearizeTocLists: true,
+    flattenListItemText: true,
     compactHtml: true,
   }
 

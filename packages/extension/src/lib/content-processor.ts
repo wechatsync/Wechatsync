@@ -89,7 +89,9 @@ export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig)
   }
 
   if (config.normalizeLists) {
-    normalizeLists(container)
+    normalizeLists(container, {
+      flattenListItemText: !!config.flattenListItemText,
+    })
   }
 
   if (config.linearizeTocLists) {
@@ -587,7 +589,11 @@ export function preprocessCodeBlocks(container: HTMLElement): void {
   processCodeBlocks(container)
 }
 
-function normalizeLists(container: HTMLElement): void {
+interface ListNormalizeOptions {
+  flattenListItemText: boolean
+}
+
+function normalizeLists(container: HTMLElement, options: ListNormalizeOptions): void {
   for (let i = 0; i < 5; i++) {
     let changed = 0
     const lists = Array.from(container.querySelectorAll('ul, ol'))
@@ -608,7 +614,7 @@ function normalizeLists(container: HTMLElement): void {
 
         const el = node as HTMLElement
         if (el.tagName === 'LI') {
-          normalizeListItem(el)
+          normalizeListItem(el, options)
           if (isEmptyListItem(el)) {
             el.remove()
             previousLi = null
@@ -712,34 +718,13 @@ function buildTocList(entries: TocEntry[]): HTMLElement {
   const root = document.createElement('ul')
   root.setAttribute('data-wechatsync-toc', 'true')
 
-  const listStack: HTMLElement[] = [root]
-  const itemStack: HTMLElement[] = []
-
   for (const entry of entries) {
-    const depth = Math.max(0, Math.min(entry.depth, itemStack.length))
-
-    while (listStack.length > depth + 1) {
-      listStack.pop()
-    }
-
-    while (listStack.length < depth + 1) {
-      const parentItem = itemStack[listStack.length - 2]
-      if (!parentItem) break
-      const childList = document.createElement('ul')
-      childList.style.margin = '0.35em 0 0.35em 0'
-      childList.style.paddingLeft = '1.5em'
-      parentItem.appendChild(childList)
-      listStack.push(childList)
-    }
-
     const item = document.createElement('li')
     item.style.margin = '0 0 0.35em 0'
     item.style.fontSize = '15px'
     item.style.lineHeight = '1.75em'
-    item.textContent = entry.text
-    listStack[listStack.length - 1].appendChild(item)
-    itemStack[depth] = item
-    itemStack.length = depth + 1
+    item.textContent = `${'\u3000'.repeat(Math.max(0, entry.depth) * 2)}${entry.text}`
+    root.appendChild(item)
   }
 
   return root
@@ -768,11 +753,14 @@ function normalizeText(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
 }
 
-function normalizeListItem(li: HTMLElement): void {
+function normalizeListItem(li: HTMLElement, options: ListNormalizeOptions): void {
   removeEmptyListItemChildren(li)
   unwrapSimpleListItemBlocks(li)
   collapseDirectListItemBreaks(li)
   normalizeDirectListItemTextNodes(li)
+  if (options.flattenListItemText) {
+    flattenSimpleListItemText(li)
+  }
   moveNestedListsToEnd(li)
 }
 
@@ -806,6 +794,22 @@ function normalizeDirectListItemTextNodes(li: HTMLElement): void {
   }
 }
 
+function flattenSimpleListItemText(li: HTMLElement): void {
+  if (li.querySelector('pre, table, blockquote, img, video, audio, iframe, canvas, svg')) return
+
+  const nestedLists = Array.from(li.children).filter((child) => child.tagName === 'UL' || child.tagName === 'OL')
+  const clone = li.cloneNode(true) as HTMLElement
+  clone.querySelectorAll('ul, ol').forEach((list) => list.remove())
+
+  const text = normalizeText(clone.textContent || '')
+  if (!text) return
+
+  li.textContent = text
+  for (const nestedList of nestedLists) {
+    li.appendChild(nestedList)
+  }
+}
+
 function unwrapSimpleListItemBlocks(li: HTMLElement): void {
   for (const child of Array.from(li.children)) {
     if (!['P', 'DIV', 'SECTION'].includes(child.tagName)) continue
@@ -836,7 +840,7 @@ function moveNestedListsToEnd(li: HTMLElement): void {
 function flattenListIntoParent(childList: Element, parentList: Element): void {
   const items = Array.from(childList.children).filter((child) => child.tagName === 'LI')
   for (const item of items) {
-    normalizeListItem(item as HTMLElement)
+    normalizeListItem(item as HTMLElement, { flattenListItemText: false })
     parentList.insertBefore(item, childList)
   }
   childList.remove()
@@ -847,7 +851,7 @@ function flattenNestedListsFromItem(li: HTMLElement, parentList: Element): void 
   for (const nestedList of nestedLists) {
     const items = Array.from(nestedList.children).filter((child) => child.tagName === 'LI')
     for (const item of items) {
-      normalizeListItem(item as HTMLElement)
+      normalizeListItem(item as HTMLElement, { flattenListItemText: false })
       parentList.insertBefore(item, li)
     }
   }

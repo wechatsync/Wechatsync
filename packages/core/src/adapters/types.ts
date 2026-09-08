@@ -40,6 +40,8 @@ export interface PreprocessConfig {
   normalizeLists?: boolean
   /** 将文章目录列表转换为缩进段落（适用于富文本编辑器不稳定支持嵌套列表的平台） */
   linearizeTocLists?: boolean
+  /** 将简单列表项内的 p/div/br 合并为单行文本 */
+  flattenListItemText?: boolean
 
   /** 移除空元素 (空 p, div, section 等) */
   removeEmptyElements?: boolean
