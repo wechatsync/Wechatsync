@@ -29,6 +29,7 @@ export class ZhihuAdapter extends CodeAdapter {
     removeSpecialTagsWithParent: true,
     // processDocCode: 处理代码块
     processCodeBlocks: true,
+    normalizeLists: true,
     convertSectionToDiv: true,
     removeTrailingBr: true,
     unwrapSingleChildContainers: true,
@@ -203,13 +204,30 @@ export class ZhihuAdapter extends CodeAdapter {
       '<figure><img$1src="$2"$3></figure>'
     )
 
-    // 3. 代码块格式
+    // 3. 代码块格式。预处理后的语言通常在 pre[data-lang] 或 pre.language-* 上。
     result = result.replace(
-      /<pre><code class="language-(\w+)">/gi,
-      '<pre lang="$1"><code>'
+      /<pre([^>]*)>([\s\S]*?)<\/pre>/gi,
+      (_match, attrs, inner) => {
+        const langMatch =
+          String(attrs).match(/\sdata-lang="([^"]+)"/i) ||
+          String(attrs).match(/\sdata-language="([^"]+)"/i) ||
+          String(attrs).match(/\slang="([^"]+)"/i) ||
+          String(attrs).match(/\sclass="[^"]*(?:language|lang)-([a-zA-Z0-9+#._-]+)[^"]*"/i) ||
+          String(inner).match(/<code[^>]*class="[^"]*(?:language|lang)-([a-zA-Z0-9+#._-]+)[^"]*"/i)
+        const lang = langMatch?.[1]?.replace(/[^a-zA-Z0-9+#._-]/g, '').toLowerCase()
+        const cleanedInner = String(inner)
+          .replace(/<code([^>]*)>/i, '<code>')
+        return lang ? `<pre lang="${lang}">${cleanedInner}</pre>` : `<pre>${cleanedInner}</pre>`
+      }
     )
 
-    // 4. 移除微信样式属性 (但保留知乎的 data-draft-* 属性)
+    // 4. 引用块格式 - 保留 blockquote 语义并给 Draft.js 入口明确块类型。
+    result = result.replace(
+      /<blockquote([^>]*)>/gi,
+      '<blockquote data-draft-node="block" data-draft-type="blockquote"$1>'
+    )
+
+    // 5. 移除微信样式属性 (但保留知乎的 data-draft-* 属性)
     result = result.replace(/\s*data-(?!draft)[a-z-]+="[^"]*"/gi, '')
     result = result.replace(/\s*style="[^"]*"/gi, '')
 

@@ -88,6 +88,14 @@ export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig)
     processLazyImages(container)
   }
 
+  if (config.normalizeLists) {
+    normalizeLists(container)
+  }
+
+  if (config.linearizeTocLists) {
+    linearizeTocLists(container)
+  }
+
   if (config.removeEmptyElements) {
     removeEmptyElements(container)
   }
@@ -561,7 +569,7 @@ function detectCodeLang(pre: Element): string | null {
     if (dataLang) return dataLang.trim().toLowerCase()
 
     // class="language-xxx" / "lang-xxx" / "highlight-xxx"
-    const match = el.className.match(/(?:language|lang|highlight)-(\w+)/)
+    const match = el.className.match(/(?:language|lang|highlight)-([a-zA-Z0-9+#._-]+)/)
     if (match) return match[1].toLowerCase()
 
     // 微信 class="code-snippet__js" 等
@@ -577,6 +585,297 @@ function detectCodeLang(pre: Element): string | null {
  */
 export function preprocessCodeBlocks(container: HTMLElement): void {
   processCodeBlocks(container)
+}
+
+function normalizeLists(container: HTMLElement): void {
+  for (let i = 0; i < 5; i++) {
+    let changed = 0
+    const lists = Array.from(container.querySelectorAll('ul, ol'))
+
+    for (const list of lists) {
+      let previousLi: HTMLElement | null = null
+
+      for (const node of Array.from(list.childNodes)) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (!node.textContent?.trim()) {
+            node.remove()
+            changed++
+          }
+          continue
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE) continue
+
+        const el = node as HTMLElement
+        if (el.tagName === 'LI') {
+          normalizeListItem(el)
+          if (isEmptyListItem(el)) {
+            el.remove()
+            previousLi = null
+            changed++
+            continue
+          }
+          if (!hasDirectListItemContent(el) && hasDirectNestedList(el)) {
+            flattenNestedListsFromItem(el, list)
+            el.remove()
+            previousLi = null
+            changed++
+            continue
+          }
+          previousLi = el
+          continue
+        }
+
+        if (el.tagName === 'UL' || el.tagName === 'OL') {
+          if (previousLi && hasDirectListItemContent(previousLi)) {
+            previousLi.appendChild(el)
+          } else {
+            if (previousLi && isEmptyListItem(previousLi)) {
+              previousLi.remove()
+            }
+            flattenListIntoParent(el, list)
+            previousLi = null
+          }
+          changed++
+        }
+      }
+    }
+
+    if (changed === 0) break
+  }
+}
+
+function linearizeTocLists(container: HTMLElement): void {
+  const headings = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div, section'))
+    .filter((el) => normalizeText(el.textContent || '') === '文章目录')
+
+  for (const heading of headings) {
+    const tocList = findFollowingList(heading)
+    if (!tocList) continue
+
+    const tocEntries = collectTocEntries(tocList, 0)
+    const wrapper = buildTocList(tocEntries)
+
+    if (wrapper.childNodes.length > 0) {
+      tocList.replaceWith(wrapper)
+    }
+  }
+}
+
+function findFollowingList(start: Element): HTMLElement | null {
+  let current = start.nextElementSibling as HTMLElement | null
+
+  while (current) {
+    if (current.tagName === 'UL' || current.tagName === 'OL') return current
+
+    const directList = Array.from(current.children)
+      .find((child) => child.tagName === 'UL' || child.tagName === 'OL') as HTMLElement | undefined
+    if (directList) return directList
+
+    if (/^H[1-6]$/.test(current.tagName)) return null
+    if (normalizeText(current.textContent || '') && !current.querySelector('ul, ol')) return null
+
+    current = current.nextElementSibling as HTMLElement | null
+  }
+
+  return null
+}
+
+interface TocEntry {
+  text: string
+  depth: number
+}
+
+function collectTocEntries(list: Element, fallbackDepth: number): TocEntry[] {
+  const entries: TocEntry[] = []
+
+  for (const item of Array.from(list.children)) {
+    if (item.tagName !== 'LI') continue
+
+    const text = getListItemDirectText(item as HTMLElement)
+    if (text) {
+      entries.push({
+        text,
+        depth: detectTocDepth(text, fallbackDepth),
+      })
+    }
+
+    for (const childList of Array.from(item.children).filter((child) => child.tagName === 'UL' || child.tagName === 'OL')) {
+      entries.push(...collectTocEntries(childList, fallbackDepth + 1))
+    }
+  }
+
+  return entries
+}
+
+function buildTocList(entries: TocEntry[]): HTMLElement {
+  const root = document.createElement('ul')
+  root.setAttribute('data-wechatsync-toc', 'true')
+
+  const listStack: HTMLElement[] = [root]
+  const itemStack: HTMLElement[] = []
+
+  for (const entry of entries) {
+    const depth = Math.max(0, Math.min(entry.depth, itemStack.length))
+
+    while (listStack.length > depth + 1) {
+      listStack.pop()
+    }
+
+    while (listStack.length < depth + 1) {
+      const parentItem = itemStack[listStack.length - 2]
+      if (!parentItem) break
+      const childList = document.createElement('ul')
+      childList.style.margin = '0.35em 0 0.35em 0'
+      childList.style.paddingLeft = '1.5em'
+      parentItem.appendChild(childList)
+      listStack.push(childList)
+    }
+
+    const item = document.createElement('li')
+    item.style.margin = '0 0 0.35em 0'
+    item.style.fontSize = '15px'
+    item.style.lineHeight = '1.75em'
+    item.textContent = entry.text
+    listStack[listStack.length - 1].appendChild(item)
+    itemStack[depth] = item
+    itemStack.length = depth + 1
+  }
+
+  return root
+}
+
+function detectTocDepth(text: string, fallbackDepth: number): number {
+  const numericPrefix = text.match(/^(\d+(?:\.\d+)+)\b/)
+  if (numericPrefix) {
+    return numericPrefix[1].split('.').length - 1
+  }
+
+  if (/^[一二三四五六七八九十]+[、.．]/.test(text)) {
+    return 0
+  }
+
+  return fallbackDepth
+}
+
+function getListItemDirectText(li: HTMLElement): string {
+  const clone = li.cloneNode(true) as HTMLElement
+  clone.querySelectorAll('ul, ol').forEach((list) => list.remove())
+  return normalizeText(clone.textContent || '')
+}
+
+function normalizeText(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+function normalizeListItem(li: HTMLElement): void {
+  removeEmptyListItemChildren(li)
+  unwrapSimpleListItemBlocks(li)
+  collapseDirectListItemBreaks(li)
+  normalizeDirectListItemTextNodes(li)
+  moveNestedListsToEnd(li)
+}
+
+function removeEmptyListItemChildren(li: HTMLElement): void {
+  for (const child of Array.from(li.children)) {
+    if (!['P', 'DIV', 'SECTION', 'SPAN'].includes(child.tagName)) continue
+    if (child.querySelector('img, video, audio, iframe, canvas, svg, ul, ol')) continue
+    if (!child.textContent?.trim()) {
+      child.remove()
+    }
+  }
+}
+
+function collapseDirectListItemBreaks(li: HTMLElement): void {
+  if (li.querySelector('pre, table, blockquote')) return
+
+  for (const node of Array.from(li.childNodes)) {
+    if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === 'BR') {
+      node.replaceWith(document.createTextNode(' '))
+    }
+  }
+}
+
+function normalizeDirectListItemTextNodes(li: HTMLElement): void {
+  if (li.querySelector('pre, table, blockquote')) return
+
+  for (const node of Array.from(li.childNodes)) {
+    if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+      node.textContent = node.textContent.replace(/\s+/g, ' ')
+    }
+  }
+}
+
+function unwrapSimpleListItemBlocks(li: HTMLElement): void {
+  for (const child of Array.from(li.children)) {
+    if (!['P', 'DIV', 'SECTION'].includes(child.tagName)) continue
+    if (child.querySelector('ul, ol, table, pre, blockquote, img, video, audio, iframe, canvas, svg')) continue
+
+    const hasText = !!child.textContent?.trim()
+    if (child.previousSibling && hasText) {
+      li.insertBefore(document.createTextNode(' '), child)
+    }
+    child.querySelectorAll('br').forEach((br) => br.replaceWith(document.createTextNode(' ')))
+    while (child.firstChild) {
+      li.insertBefore(child.firstChild, child)
+    }
+    if (child.nextSibling && hasText) {
+      li.insertBefore(document.createTextNode(' '), child)
+    }
+    child.remove()
+  }
+}
+
+function moveNestedListsToEnd(li: HTMLElement): void {
+  const nestedLists = Array.from(li.children).filter((child) => child.tagName === 'UL' || child.tagName === 'OL')
+  for (const nestedList of nestedLists) {
+    li.appendChild(nestedList)
+  }
+}
+
+function flattenListIntoParent(childList: Element, parentList: Element): void {
+  const items = Array.from(childList.children).filter((child) => child.tagName === 'LI')
+  for (const item of items) {
+    normalizeListItem(item as HTMLElement)
+    parentList.insertBefore(item, childList)
+  }
+  childList.remove()
+}
+
+function flattenNestedListsFromItem(li: HTMLElement, parentList: Element): void {
+  const nestedLists = Array.from(li.children).filter((child) => child.tagName === 'UL' || child.tagName === 'OL')
+  for (const nestedList of nestedLists) {
+    const items = Array.from(nestedList.children).filter((child) => child.tagName === 'LI')
+    for (const item of items) {
+      normalizeListItem(item as HTMLElement)
+      parentList.insertBefore(item, li)
+    }
+  }
+}
+
+function hasDirectListItemContent(li: HTMLElement): boolean {
+  return Array.from(li.childNodes).some((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return !!node.textContent?.trim()
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return false
+
+    const el = node as HTMLElement
+    if (el.tagName === 'UL' || el.tagName === 'OL') return false
+    if (el.querySelector('img, video, audio, iframe, canvas, svg')) return true
+    return !!el.textContent?.trim()
+  })
+}
+
+function isEmptyListItem(li: HTMLElement): boolean {
+  const hasNestedList = hasDirectNestedList(li)
+  const hasMedia = !!li.querySelector('img, video, audio, iframe, canvas, svg')
+  return !hasNestedList && !hasMedia && !hasDirectListItemContent(li)
+}
+
+function hasDirectNestedList(li: HTMLElement): boolean {
+  return Array.from(li.children).some((child) => child.tagName === 'UL' || child.tagName === 'OL')
 }
 
 /**
