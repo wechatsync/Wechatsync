@@ -20,10 +20,12 @@ interface WeixinMeta {
 
 // 微信公众号的默认 CSS 样式
 const WEIXIN_CSS = `
-p {
+section, p, li, td, th {
   color: rgb(51, 51, 51);
   font-size: 15px;
   line-height: 1.75em;
+}
+p {
   margin: 0 0 1em 0;
 }
 h1, h2, h3, h4, h5, h6 {
@@ -33,11 +35,16 @@ h1 { font-size: 1.25em; line-height: 1.4em; margin: 1em 0 0.5em 0; }
 h2 { font-size: 1.125em; margin: 1em 0 0.5em 0; }
 h3 { font-size: 1.05em; margin: 0.8em 0 0.4em 0; }
 h4, h5, h6 { font-size: 1em; margin: 0.8em 0 0.4em 0; }
-li p { margin: 0; }
+li p { margin: 0; font-size: 15px; line-height: 1.75em; }
 ul, ol { margin: 1em 0; padding-left: 2em; }
-li { margin-bottom: 0.4em; }
-pre, tt, code, kbd, samp { font-family: monospace; }
-pre { white-space: pre; margin: 1em 0; }
+li > ul, li > ol { margin: 0.35em 0 0.35em 1em; padding-left: 1.5em; }
+li { margin-bottom: 0.4em; font-size: 15px; line-height: 1.75em; }
+table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 15px; line-height: 1.75em; }
+td, th { border: 1px solid #ddd; padding: 6px 8px; vertical-align: top; font-size: 15px; line-height: 1.75em; }
+pre, tt, code, kbd, samp { font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; }
+code { background: #f6f8fa; border-radius: 3px; padding: 0.15em 0.35em; font-size: 13px; }
+pre { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; margin: 1em 0; padding: 12px; background: #f6f8fa; border-radius: 4px; line-height: 1.6; font-size: 13px; }
+pre code { display: block; padding: 0; background: transparent; border-radius: 0; font-size: inherit; }
 blockquote { border-left: 4px solid #ddd; padding-left: 1em; margin: 1em 0; color: #666; }
 hr { border: none; border-top: 1px solid #ddd; margin: 1.5em 0; }
 i, cite, em, var, address { font-style: italic; }
@@ -58,6 +65,9 @@ export class WeixinAdapter extends CodeAdapter {
     outputFormat: 'html' as const,
     removeLinks: true,
     keepLinkDomains: ['mp.weixin.qq.com', 'weixin.qq.com'],
+    normalizeLists: true,
+    linearizeTocLists: true,
+    flattenListItemText: true,
     compactHtml: true,
   }
 
@@ -161,6 +171,7 @@ export class WeixinAdapter extends CodeAdapter {
             onProgress: options?.onImageProgress,
           }
         )
+        content = this.normalizeCodeBlocks(content)
         content = this.processContent(content)
       }
 
@@ -273,7 +284,9 @@ export class WeixinAdapter extends CodeAdapter {
       throw new Error('未登录')
     }
 
-    const imageResponse = await fetch(src)
+    const imageResponse = await this.runtime.fetch(src, {
+      method: 'GET',
+    })
     if (!imageResponse.ok) {
       throw new Error('图片下载失败: ' + src)
     }
@@ -281,7 +294,7 @@ export class WeixinAdapter extends CodeAdapter {
 
     const formData = new FormData()
     const timestamp = Date.now()
-    const fileName = `${timestamp}.jpg`
+    const fileName = `${timestamp}.${this.extensionForMime(imageBlob.type)}`
 
     formData.append('type', imageBlob.type || 'image/jpeg')
     formData.append('id', String(timestamp))
@@ -347,6 +360,43 @@ export class WeixinAdapter extends CodeAdapter {
   private processContent(content: string): string {
     const wrapped = `<section style="margin-left: 6px; margin-right: 6px; line-height: 1.75em;">${content}</section>`
     return juice.inlineContent(wrapped, WEIXIN_CSS)
+  }
+
+  private normalizeCodeBlocks(content: string): string {
+    return content.replace(/<pre([^>]*)>([\s\S]*?)<\/pre>/gi, (_match, attrs, inner) => {
+      const codeHtml = inner
+        .replace(/<\/?code[^>]*>/gi, '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(?:div|p|li)>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/^\n+|\n+$/g, '')
+
+      if (!codeHtml.trim()) {
+        return `<pre${attrs}></pre>`
+      }
+
+      const lines = codeHtml.split('\n')
+      const normalized = lines
+        .map((line: string) => `<span style="display:block;white-space:pre-wrap;min-height:1.6em;">${this.preserveCodeSpaces(line) || '&nbsp;'}</span>`)
+        .join('')
+
+      return `<pre${attrs}><code>${normalized}</code></pre>`
+    })
+  }
+
+  private preserveCodeSpaces(line: string): string {
+    return line.replace(/ {2}/g, ' &nbsp;').replace(/^\s+/, (spaces) => '&nbsp;'.repeat(spaces.length))
+  }
+
+  private extensionForMime(mime: string): string {
+    const normalized = mime.toLowerCase()
+    if (normalized.includes('png')) return 'png'
+    if (normalized.includes('gif')) return 'gif'
+    if (normalized.includes('webp')) return 'webp'
+    if (normalized.includes('jpeg') || normalized.includes('jpg')) return 'jpg'
+    return 'jpg'
   }
 
   /**

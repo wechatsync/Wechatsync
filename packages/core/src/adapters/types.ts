@@ -36,6 +36,13 @@ export interface PreprocessConfig {
   /** 处理懒加载图片 (data-src → src) */
   processLazyImages?: boolean
 
+  /** 规范化列表结构（修复源站生成的相邻嵌套列表和空列表项） */
+  normalizeLists?: boolean
+  /** 将文章目录列表转换为缩进段落（适用于富文本编辑器不稳定支持嵌套列表的平台） */
+  linearizeTocLists?: boolean
+  /** 将简单列表项内的 p/div/br 合并为单行文本 */
+  flattenListItemText?: boolean
+
   /** 移除空元素 (空 p, div, section 等) */
   removeEmptyElements?: boolean
   /** 移除没有有效 src 的 img 标签（src 为空或缺失） */

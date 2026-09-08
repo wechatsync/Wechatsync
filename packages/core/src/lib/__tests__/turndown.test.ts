@@ -187,6 +187,19 @@ describe('htmlToMarkdown', () => {
       expect(markdown).toContain('```go')
     })
 
+    it('should detect language from pre class', () => {
+      const html = '<pre class="language-typescript"><code>const x: number = 1;</code></pre>'
+      const markdown = htmlToMarkdown(html)
+      expect(markdown).toContain('```typescript')
+    })
+
+    it('should not default unknown code blocks to bash', () => {
+      const html = '<pre><code>const x = 1;</code></pre>'
+      const markdown = htmlToMarkdown(html)
+      expect(markdown).toContain('```\nconst x = 1;')
+      expect(markdown).not.toContain('```bash')
+    })
+
     it('should preserve multiline code', () => {
       const html = '<pre><code>line1\nline2\nline3</code></pre>'
       const markdown = htmlToMarkdown(html)
