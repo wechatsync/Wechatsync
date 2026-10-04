@@ -329,6 +329,7 @@ class McpClient {
           content?: string
           markdown?: string
           cover?: string
+          author?: string
         }
 
         if (!platforms?.length) throw new Error('Missing platforms parameter')
@@ -357,6 +358,7 @@ class McpClient {
           html: htmlContent,
           markdown: markdown,
           cover: articleData.cover,
+          author: articleData.author,
         }
 
         // 使用 sync-service 进行同步（支持 DSL 平台 + CMS 账户、历史记录、状态保存）

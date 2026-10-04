@@ -15,6 +15,7 @@ import open from 'open'
 import fs from 'fs'
 import path from 'path'
 import juice from 'juice'
+import { marked } from 'marked'
 import { ExtensionBridge } from '@wechatsync/mcp-server/bridge'
 import type { PlatformInfo, SyncResult } from '@wechatsync/mcp-server/bridge'
 
@@ -464,66 +465,13 @@ function parseHtml(content: string, filePath?: string): ParsedContent {
 }
 
 /**
- * 简单的 Markdown 转 HTML（用于需要 HTML 的平台）
+ * Markdown 转 HTML，保留代码块中的原始文本
  */
 function markdownToHtml(markdown: string): string {
-  let html = markdown
-
-  // 代码块
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-
-  // 行内代码
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-
-  // 图片
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
-
-  // 链接
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-
-  // 标题
-  html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>')
-  html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>')
-  html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>')
-  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
-  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
-  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
-
-  // 粗体和斜体
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
-
-  // 无序列表
-  html = html.replace(/^\s*[-*+]\s+(.+)$/gm, '<li>$1</li>')
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-
-  // 有序列表
-  html = html.replace(/^\s*\d+\.\s+(.+)$/gm, '<li>$1</li>')
-
-  // 引用
-  html = html.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>')
-
-  // 水平线
-  html = html.replace(/^---+$/gm, '<hr />')
-
-  // 段落（连续的非空行）
-  html = html.replace(/^(?!<[a-z])((?:[^\n]+\n?)+)/gm, (match) => {
-    const trimmed = match.trim()
-    if (trimmed && !trimmed.startsWith('<')) {
-      return `<p>${trimmed}</p>\n`
-    }
-    return match
-  })
-
-  return html
+  return marked.parse(markdown, { async: false, gfm: true }) as string
 }
 
-// ============ Bridge 连接 ============
 
-/**
- * 检测占用端口的进程信息
- */
 async function detectPortProcess(port: number): Promise<string | null> {
   const { execSync } = await import('child_process')
   try {
@@ -632,6 +580,7 @@ program
   .option('-p, --platforms <platforms>', '目标平台，逗号分隔', 'zhihu,juejin')
   .option('-t, --title <title>', '文章标题（默认从文件提取）')
   .option('--cover <url>', '封面图 URL 或本地路径')
+  .option('--author <name>', '公众号作者')
   .option('--dry-run', '仅显示将要执行的操作，不实际同步')
   .action(async (file: string, options) => {
     // 检查文件是否存在
@@ -706,6 +655,18 @@ program
       process.exit(1)
     }
 
+    // Initialize adapter login metadata before direct image uploads.
+    try {
+      for (const platform of platforms) {
+        const auth = await bridge.request<PlatformInfo>('checkAuth', { platform })
+        if (!auth.isAuthenticated) throw new Error(`${platform} 尚未登录，请先在 Chrome 登录后再试`)
+      }
+    } catch (error) {
+      console.error((error as Error).message)
+      bridge.stop()
+      process.exit(1)
+    }
+
     // 处理本地图片：上传到第一个目标平台作为图床
     const fileDir = path.dirname(filePath)
     const localImages = findLocalImages(parsed.content, fileDir)
@@ -721,6 +682,11 @@ program
 
       const imageResult = await processLocalImages(parsed.content, fileDir, bridge, imageHost)
 
+      if (imageResult.failedCount > 0) {
+        bridge.stop()
+        console.error(chalk.red('正文图片上传失败，停止保存草稿，避免缺图。'))
+        process.exit(1)
+      }
       if (imageResult.uploadedCount > 0) {
         // 更新内容
         if (parsed.format === 'markdown') {
@@ -741,6 +707,7 @@ program
       console.log()
     }
 
+    let syncExitCode = 1
     const syncSpinner = ora('正在同步...').start()
 
     try {
@@ -751,6 +718,7 @@ program
           markdown: processedMarkdown,
           content: processedHtml,
           cover,
+          author: options.author,
         },
       })
 
@@ -778,6 +746,7 @@ program
       }
 
       const successCount = results.filter((r) => r.success).length
+      syncExitCode = results.length === platforms.length && successCount === results.length ? 0 : 1
       console.log()
       console.log(
         `同步完成: ${chalk.green(successCount + ' 成功')}, ${chalk.red((results.length - successCount) + ' 失败')}`
@@ -787,7 +756,7 @@ program
       console.error(chalk.red((error as Error).message))
     } finally {
       bridge.stop()
-      process.exit(0)
+      process.exit(syncExitCode)
     }
   })
 

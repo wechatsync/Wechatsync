@@ -112,6 +112,7 @@ export class BilibiliAdapter extends CodeAdapter {
         }
       )
 
+      const cover = article.cover ? await this.uploadImageByUrl(article.cover) : undefined
       const res = await this.postForm<{
         code: number
         message?: string
@@ -125,6 +126,7 @@ export class BilibiliAdapter extends CodeAdapter {
           csrf: this.csrf,
           save: '0',
           pgc_id: '0',
+          image_urls: cover?.url || '',
         }
       )
 
@@ -146,6 +148,13 @@ export class BilibiliAdapter extends CodeAdapter {
     }))
   }
 
+  async uploadImage(file: Blob, filename?: string): Promise<string> {
+    if (!this.csrf) {
+      const auth = await this.checkAuth()
+      if (!auth.isAuthenticated) throw new Error('请先登录B站')
+    }
+    return this.withHeaderRules(this.HEADER_RULES, () => super.uploadImage(file, filename))
+  }
   protected async uploadImageByUrl(src: string): Promise<ImageUploadResult> {
     if (!this.csrf) {
       throw new Error('CSRF token 未获取')
@@ -168,7 +177,11 @@ export class BilibiliAdapter extends CodeAdapter {
       body: formData,
     })
 
-    const res = await uploadResponse.json() as {
+    const raw = await uploadResponse.text()
+    if (!uploadResponse.ok || !raw.trim().startsWith('{')) {
+      throw new Error(`B站图片接口返回异常：HTTP ${uploadResponse.status}，${uploadResponse.headers.get('content-type') || '未知类型'}；请在创作中心检查登录或验证提示。`)
+    }
+    const res = JSON.parse(raw) as {
       code: number
       message?: string
       data?: {

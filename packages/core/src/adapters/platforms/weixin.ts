@@ -37,7 +37,7 @@ li p { margin: 0; }
 ul, ol { margin: 1em 0; padding-left: 2em; }
 li { margin-bottom: 0.4em; }
 pre, tt, code, kbd, samp { font-family: monospace; }
-pre { white-space: pre; margin: 1em 0; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 1em 0; padding: 12px; background: #f6f8fa; font-size: 12px; line-height: 1.7; }
 blockquote { border-left: 4px solid #ddd; padding-left: 1em; margin: 1em 0; color: #666; }
 hr { border: none; border-top: 1px solid #ddd; margin: 1.5em 0; }
 i, cite, em, var, address { font-style: italic; }
@@ -164,6 +164,7 @@ export class WeixinAdapter extends CodeAdapter {
         content = this.processContent(content)
       }
 
+      const cover = article.cover ? await this.uploadImageByUrl(article.cover) : undefined
       const formData = new URLSearchParams({
         token: this.weixinMeta!.token,
         lang: 'zh_CN',
@@ -180,19 +181,19 @@ export class WeixinAdapter extends CodeAdapter {
         related_video0: '',
         is_video_recommend0: '-1',
         title0: article.title,
-        author0: '',
+        author0: article.author || '',
         writerid0: '0',
-        fileid0: '',
+        fileid0: String(cover?.attrs?.fileid || ''),
         digest0: '',
         auto_gen_digest0: '1',
         content0: content,
         sourceurl0: '',
         need_open_comment0: '1',
         only_fans_can_comment0: '0',
-        cdn_url0: '',
-        cdn_235_1_url0: '',
-        cdn_1_1_url0: '',
-        cdn_url_back0: '',
+        cdn_url0: cover?.url || '',
+        cdn_235_1_url0: cover?.url || '',
+        cdn_1_1_url0: cover?.url || '',
+        cdn_url_back0: cover?.url || '',
         crop_list0: '',
         music_id0: '',
         video_id0: '',
@@ -203,7 +204,7 @@ export class WeixinAdapter extends CodeAdapter {
         cardquantity0: '',
         cardlimit0: '',
         vid_type0: '',
-        show_cover_pic0: '0',
+        show_cover_pic0: cover ? '1' : '0',
         shortvideofileid0: '',
         copyright_type0: '0',
         releasefirst0: '',
@@ -304,6 +305,8 @@ export class WeixinAdapter extends CodeAdapter {
 
     const res = await response.json() as {
       cdn_url?: string
+      fileid?: string | number
+      file_id?: string | number
       content?: string
       base_resp?: { err_msg: string; ret: number }
     }
@@ -316,6 +319,7 @@ export class WeixinAdapter extends CodeAdapter {
 
     return {
       url: res.cdn_url,
+      attrs: { fileid: String(res.fileid ?? res.file_id ?? res.content ?? '') },
     }
   }
 
@@ -327,6 +331,12 @@ export class WeixinAdapter extends CodeAdapter {
   }
 
   private processLatex(content: string): string {
+    return content.split(/(<pre\b[^>]*>[\s\S]*?<\/pre>|<code\b[^>]*>[\s\S]*?<\/code>)/gi)
+      .map((part, index) => index % 2 === 1 ? part : this.processLatexText(part))
+      .join('')
+  }
+
+  private processLatexText(content: string): string {
     const LATEX_API = 'https://latex.codecogs.com/png.latex'
 
     content = content.replace(/\$\$([^$]+)\$\$/g, (match, latex) => {
@@ -345,6 +355,9 @@ export class WeixinAdapter extends CodeAdapter {
   }
 
   private processContent(content: string): string {
+    // Use explicit line breaks because the WeChat editor may normalize source whitespace.
+    content = content.replace(/(<pre\b[^>]*>)([\s\S]*?)(<\/pre>)/gi,
+      (_, open, code, close) => open + code.replace(/\r?\n/g, '<br />') + close)
     const wrapped = `<section style="margin-left: 6px; margin-right: 6px; line-height: 1.75em;">${content}</section>`
     return juice.inlineContent(wrapped, WEIXIN_CSS)
   }
