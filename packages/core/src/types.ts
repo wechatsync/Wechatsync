@@ -11,6 +11,7 @@ export interface Article {
   html?: string       // 原始 HTML（可选，用于某些需要 HTML 的平台）
   summary?: string
   cover?: string
+  author?: string
   tags?: string[]
   category?: string
   source?: {
