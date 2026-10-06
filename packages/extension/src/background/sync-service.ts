@@ -13,6 +13,7 @@ import {
 import * as wordpressAdapter from '../adapters/cms/wordpress'
 import * as metaweblogAdapter from '../adapters/cms/metaweblog'
 import { createLogger } from '../lib/logger'
+import { withTimeout } from '../lib/timeout'
 
 const logger = createLogger('SyncService')
 
@@ -73,6 +74,8 @@ export interface SyncProgressCallbacks {
 
 const SYNC_STATE_KEY = 'activeSyncState'
 const MAX_HISTORY_ITEMS = 25
+const PREPROCESS_MESSAGE_TIMEOUT = 3000
+const MAX_PREPROCESS_CANDIDATE_TABS = 4
 
 // Badge 颜色
 const BADGE_COLORS = {
@@ -475,9 +478,14 @@ async function sendPreprocessMessage(
       }
     }
 
-    for (const tabId of candidateTabIds) {
+    // Bound serial probes before using the dedicated preprocessing page.
+    for (const tabId of candidateTabIds.slice(0, MAX_PREPROCESS_CANDIDATE_TABS)) {
       try {
-        const response = await chrome.tabs.sendMessage(tabId, message)
+        const response = await withTimeout(
+          chrome.tabs.sendMessage(tabId, message),
+          PREPROCESS_MESSAGE_TIMEOUT,
+          'Tab preprocess response timeout'
+        )
         if (response?.platformContents) return response.platformContents
       } catch {
         continue
@@ -532,7 +540,11 @@ async function preprocessViaTemporaryTab(
       chrome.tabs.onUpdated.addListener(listener)
     })
 
-    const response = await chrome.tabs.sendMessage(tabId, message)
+    const response = await withTimeout(
+      chrome.tabs.sendMessage(tabId, message),
+      PREPROCESS_MESSAGE_TIMEOUT,
+      'Temporary tab preprocess response timeout'
+    )
     if (response?.platformContents) {
       logger.debug('Preprocessed via temporary window')
       return response.platformContents
