@@ -34,6 +34,21 @@ export function PlatformList({
   const successCount = results.filter(r => r.success).length
   const failedCount = results.filter(r => !r.success).length
 
+  // 按阶段加权计算进度：只同步一个平台时，完成前也能看到在推进，而不是一直停在 0%
+  const stageWeight = (id: string) => {
+    if (results.some(r => r.platform === id)) return 1
+    const p = platformProgress.get(id)
+    if (!p) return 0
+    if (p.stage === 'uploading_images') {
+      const { current = 0, total = 0 } = p.imageProgress || {}
+      return 0.1 + (total > 0 ? 0.6 * (current / total) : 0)
+    }
+    return { starting: 0.1, saving: 0.85, completed: 1, failed: 1 }[p.stage]
+  }
+  const progressPercent = selectedPlatforms.length > 0
+    ? (selectedPlatforms.reduce((sum, id) => sum + stageWeight(id), 0) / selectedPlatforms.length) * 100
+    : 0
+
   // Idle: only authenticated platforms; syncing/completed: only selected
   const visiblePlatforms = isIdle
     ? authenticatedPlatforms
@@ -100,7 +115,7 @@ export function PlatformList({
         <div className="h-1 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(results.length / selectedPlatforms.length) * 100}%` }}
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
       )}
