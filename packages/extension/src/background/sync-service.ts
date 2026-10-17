@@ -10,7 +10,7 @@ import {
   getPlatformPreprocessConfigs,
   type SyncDetailProgress,
 } from '../adapters'
-import { DEFAULT_PREPROCESS_CONFIG } from '@wechatsync/core'
+import { DEFAULT_PREPROCESS_CONFIG, markdownToHtml } from '@wechatsync/core'
 import * as wordpressAdapter from '../adapters/cms/wordpress'
 import * as metaweblogAdapter from '../adapters/cms/metaweblog'
 import { createLogger } from '../lib/logger'
@@ -219,10 +219,14 @@ export async function performSync(
   const syncId = passedSyncId || generateSyncId()
 
   // 展开保留原字段（source/rawHtml 等），微信→微信快路径依赖 source.platform + rawHtml
+  // 只有 markdown 时转成 HTML，避免 CMS 等依赖 HTML 的链路拿到空正文
+  const fallbackHtml = !article.content && !article.html && article.markdown
+    ? markdownToHtml(article.markdown)
+    : ''
   const normalizedArticle = {
     ...article,
-    content: article.content || article.html || '',
-    html: article.html || article.content || '',
+    content: article.content || article.html || fallbackHtml,
+    html: article.html || article.content || fallbackHtml,
     markdown: article.markdown || '',
   }
 
