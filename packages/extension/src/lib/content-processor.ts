@@ -11,6 +11,7 @@
 
 import { htmlToMarkdownNative, SOURCE_LINK_REMOVE_DOMAINS, SOURCE_LINK_REDIRECT_RULES, type PreprocessConfig } from '@wechatsync/core'
 import { createLogger } from './logger'
+import { detectCodeLang } from './code-language'
 
 const logger = createLogger('ContentProcessor')
 
@@ -545,31 +546,6 @@ function processCodeBlocks(container: HTMLElement): void {
     }
   })
 
-}
-
-/**
- * 从 pre/code 元素的 class 或 data-lang 中提取语言标识
- * 支持: class="language-js", class="lang-python", class="highlight-typescript", data-lang="go"
- */
-function detectCodeLang(pre: Element): string | null {
-  // 检查 pre 和内部 code 元素
-  const elements = [pre, pre.querySelector('code')].filter(Boolean) as Element[]
-
-  for (const el of elements) {
-    // data-lang 属性
-    const dataLang = el.getAttribute('data-lang')
-    if (dataLang) return dataLang.trim().toLowerCase()
-
-    // class="language-xxx" / "lang-xxx" / "highlight-xxx"
-    const match = el.className.match(/(?:language|lang|highlight)-(\w+)/)
-    if (match) return match[1].toLowerCase()
-
-    // 微信 class="code-snippet__js" 等
-    const wxMatch = el.className.match(/code-snippet__(\w+)/)
-    if (wxMatch) return wxMatch[1].toLowerCase()
-  }
-
-  return null
 }
 
 /**
