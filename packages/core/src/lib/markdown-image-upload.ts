@@ -2,7 +2,7 @@ import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkGfm from 'remark-gfm'
 import { visit } from 'unist-util-visit'
-import { parseHTML } from 'linkedom'
+import { parseHTML } from 'linkedom/worker'
 
 /**
  * 只替换 Markdown 中真实的图片节点，保留代码、公式和其他原文。
