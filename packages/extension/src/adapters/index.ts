@@ -10,6 +10,7 @@ import {
 } from '@wechatsync/core'
 import { createExtensionRuntime } from '../runtime/extension'
 import { createLogger } from '../lib/logger'
+import { withTimeout } from '../lib/timeout'
 import {
   trackSyncStart,
   trackPlatformSync,
@@ -182,27 +183,6 @@ const AUTH_CACHE_TTL_UNAUTHENTICATED = 30 * 1000 // 未登录：30 秒缓存（�
 const AUTH_CHECK_CONCURRENCY = 5 // 并行检查数量
 const AUTH_CHECK_TIMEOUT = 10 * 1000 // 单个平台认证检查超时：10 秒
 const PUBLISH_TIMEOUT = 10 * 60 * 1000 // 单个平台发布超时：10 分钟（包含图片上传）
-
-/**
- * 带超时的 Promise 包装
- */
-function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error(errorMessage))
-    }, ms)
-
-    promise
-      .then(result => {
-        clearTimeout(timer)
-        resolve(result)
-      })
-      .catch(error => {
-        clearTimeout(timer)
-        reject(error)
-      })
-  })
-}
 
 /**
  * 检查平台登录状态
