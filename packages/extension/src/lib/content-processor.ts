@@ -365,6 +365,36 @@ function removeLineNumberSiblings(pre: Element): void {
 }
 
 /**
+ * 查找 pre 内部与代码并排的行号列
+ *
+ * 如 doocs/md 开启行号后的结构（发布到公众号后 class 会被去掉）：
+ * <pre><code><section style="display:flex">
+ *   <section class="line-numbers"><section>1</section><section>2</section></section>
+ *   <section class="code-scroll">...</section>
+ * </section></code></pre>
+ *
+ * 判定：子元素文本依次为 1, 2, 3...，且同级还有非空的代码列。
+ * 要求同级代码列，避免误删内容本身就是 1, 2, 3 的代码块。
+ */
+function findInnerLineNumberColumns(pre: Element): HTMLElement[] {
+  return Array.from(pre.querySelectorAll<HTMLElement>('*')).filter((el) => {
+    const children = Array.from(el.children)
+    if (children.length < 2) return false
+
+    const hasTextNode = Array.from(el.childNodes).some(
+      node => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()
+    )
+    if (hasTextNode) return false
+
+    const isSequential = children.every((child, i) => child.textContent?.trim() === String(i + 1))
+    if (!isSequential) return false
+
+    const siblings = Array.from(el.parentElement?.children || [])
+    return siblings.some(sibling => sibling !== el && sibling.textContent?.trim())
+  })
+}
+
+/**
  * 可作为代码行容器的标签
  * 这些标签通常用于包裹单行代码
  */
@@ -489,6 +519,7 @@ function processCodeBlocks(container: HTMLElement): void {
 
       // 2. 再用结构检测移除未知的行号元素（通用方案）
       removeLineNumberSiblings(pre)
+      findInnerLineNumberColumns(pre).forEach(el => el.remove())
 
       // 查找代码行容器
       const linesContainer = findCodeLinesContainer(pre)
@@ -1063,7 +1094,10 @@ export function backupAndSimplifyCodeBlocks(root: Element = document.body): Elem
       const originalHTML = pre.innerHTML
 
       // 临时隐藏行号元素（不删除，因为要恢复）
-      const gutterEls = pre.querySelectorAll(GUTTER_SELECTORS)
+      const gutterEls = Array.from(new Set([
+        ...Array.from(pre.querySelectorAll(GUTTER_SELECTORS)),
+        ...findInnerLineNumberColumns(pre),
+      ]))
       const gutterDisplays: string[] = []
       gutterEls.forEach((el, i) => {
         gutterDisplays[i] = (el as HTMLElement).style.display
