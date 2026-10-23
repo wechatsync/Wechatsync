@@ -112,6 +112,12 @@ export class BilibiliAdapter extends CodeAdapter {
         }
       )
 
+      // B站要求所有图片必须在自家 CDN，移除上传失败仍保留原始 URL 的图片
+      content = content.replace(/<img[^>]+src=(?:"([^"]*)"|'([^']*)'|((?:https?:)?\/\/[^\s>"']+|data:[^\s>"']+))[^>]*>/gi, (tag, s1, s2, s3) => {
+        const src = s1 || s2 || s3 || ''
+        return (src.includes('hdslb.com') || src.includes('bilibili.com') || src.includes('biliimg.com')) ? tag : ''
+      })
+
       const res = await this.postForm<{
         code: number
         message?: string
@@ -131,7 +137,9 @@ export class BilibiliAdapter extends CodeAdapter {
       logger.debug('Draft response:', res)
 
       if (res.code !== 0 || !res.data?.aid) {
-        throw new Error(res.message || '保存草稿失败')
+        logger.error('draft save failed', { code: res.code, message: res.message, contentLength: content.length })
+        const detail = res.message || JSON.stringify(res).slice(0, 200)
+        throw new Error(`保存草稿失败 (code=${res.code}, 内容长度=${content.length}): ${detail}`)
       }
 
       const draftUrl = `https://member.bilibili.com/platform/upload/text/edit?aid=${res.data.aid}`
@@ -180,7 +188,8 @@ export class BilibiliAdapter extends CodeAdapter {
     logger.debug('Image upload response:', res)
 
     if (res.code !== 0 || !res.data?.url) {
-      throw new Error(res.message || '图片上传失败')
+      logger.error('image upload failed', { code: res.code, message: res.message, src: src.slice(0, 100) })
+      throw new Error(`图片上传失败 (code=${res.code}): ${res.message || JSON.stringify(res).slice(0, 200)}`)
     }
 
     return {

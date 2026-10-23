@@ -2,12 +2,10 @@ import {
   initAdapters,
   checkAllPlatformsAuth,
   checkPlatformAuth,
-  syncToMultiplePlatforms,
   getAllPlatformMetas,
   cancelSync,
   getAdapter,
   getPlatformPreprocessConfigs,
-  type SyncDetailProgress,
 } from '../adapters'
 import * as wordpressAdapter from '../adapters/cms/wordpress'
 import * as metaweblogAdapter from '../adapters/cms/metaweblog'
@@ -28,97 +26,19 @@ import {
 import { checkSyncFrequency, recordSync } from '../lib/rate-limit'
 import { checkForUpdates, isUpdateDismissed } from '../lib/version-check'
 import { fetchRemoteConfig, fetchConfigIfNeeded } from '../lib/remote-config'
+import {
+  performSync,
+  generateSyncId,
+  saveSyncState,
+  clearSyncState,
+  SYNC_STATE_KEY,
+  BADGE_COLORS,
+  type ActiveSyncState,
+} from './sync-service'
 
 const logger = createLogger('Background')
 
-// CMS 类型
 type CMSType = 'wordpress' | 'typecho' | 'metaweblog'
-
-// 同步状态类型
-interface ActiveSyncState {
-  syncId: string  // 唯一同步任务ID
-  status: 'syncing' | 'completed' | 'failed' | 'cancelled'
-  article: {
-    title: string
-    cover?: string
-    content?: string
-    html?: string
-    markdown?: string
-  } | null
-  selectedPlatforms: string[]
-  results: SyncResult[]
-  startTime: number
-}
-
-// 生成唯一同步ID
-function generateSyncId(): string {
-  return `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-}
-
-const SYNC_STATE_KEY = 'activeSyncState'
-
-// Badge 颜色
-const BADGE_COLORS = {
-  syncing: '#3B82F6',   // 蓝色
-  success: '#22C55E',   // 绿色
-  error: '#EF4444',     // 红色
-  partial: '#F59E0B',   // 橙色
-  update: '#8B5CF6',    // 紫色 - 有新版本
-}
-
-/**
- * 更新扩展 Badge
- */
-async function updateBadge(state: ActiveSyncState | null) {
-  if (!state) {
-    await chrome.action.setBadgeText({ text: '' })
-    return
-  }
-
-  if (state.status === 'syncing') {
-    // 同步中不显示 badge，避免卡住后残留
-    await chrome.action.setBadgeText({ text: '' })
-  } else if (state.status === 'completed') {
-    const successCount = state.results.filter(r => r.success).length
-    const total = state.selectedPlatforms.length
-    const failedCount = total - successCount
-
-    if (failedCount === 0) {
-      await chrome.action.setBadgeText({ text: '✓' })
-      await chrome.action.setBadgeBackgroundColor({ color: BADGE_COLORS.success })
-    } else if (successCount === 0) {
-      await chrome.action.setBadgeText({ text: '!' })
-      await chrome.action.setBadgeBackgroundColor({ color: BADGE_COLORS.error })
-    } else {
-      await chrome.action.setBadgeText({ text: `${successCount}` })
-      await chrome.action.setBadgeBackgroundColor({ color: BADGE_COLORS.partial })
-    }
-
-    // 5秒后清除 badge
-    setTimeout(async () => {
-      const storage = await chrome.storage.local.get(SYNC_STATE_KEY)
-      if (storage[SYNC_STATE_KEY]?.status === 'completed') {
-        await chrome.action.setBadgeText({ text: '' })
-      }
-    }, 5000)
-  }
-}
-
-/**
- * 保存同步状态
- */
-async function saveSyncState(state: ActiveSyncState) {
-  await chrome.storage.local.set({ [SYNC_STATE_KEY]: state })
-  await updateBadge(state)
-}
-
-/**
- * 清除同步状态
- */
-async function clearSyncState() {
-  await chrome.storage.local.remove(SYNC_STATE_KEY)
-  await chrome.action.setBadgeText({ text: '' })
-}
 
 // 消息类型
 type MessageAction =
@@ -206,240 +126,44 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
 
     case 'SYNC_ARTICLE': {
       const { article, platforms, allSelectedPlatforms, skipHistory, source = 'popup', syncId: passedSyncId } = message.payload
-      const allPlatformMetas = getAllPlatformMetas()
-
-      // 使用传入的 syncId 或生成新的
-      const syncId = passedSyncId || generateSyncId()
-
-      // 获取发送消息的 tabId（如果来自 content script）
       const senderTabId = sender?.tab?.id
 
-      // 辅助函数：发送消息到正确的接收者（所有消息带上 syncId）
+      const rateLimitWarning = await checkSyncFrequency(platforms)
+
+      const syncId = passedSyncId || generateSyncId()
+
       const sendProgress = (msg: Record<string, unknown>) => {
         const msgWithSyncId = { ...msg, syncId }
-        // 发送到 popup 等扩展页面
         chrome.runtime.sendMessage(msgWithSyncId).catch(() => {})
-        // 如果请求来自 content script，也发送到该 tab
         if (senderTabId) {
           chrome.tabs.sendMessage(senderTabId, msgWithSyncId).catch(() => {})
         }
       }
 
-      // 检查频率限制（不阻止，只返回警告）
-      const rateLimitWarning = await checkSyncFrequency(platforms)
-
-      // 获取 CMS 账户信息以区分 DSL 和 CMS
-      const cmsStorage = await chrome.storage.local.get('cmsAccounts')
-      const cmsAccounts = cmsStorage.cmsAccounts || []
-      const cmsAccountIds = new Set(cmsAccounts.map((a: any) => a.id))
-
-      // 分离 DSL 平台和 CMS 账户
-      const dslPlatformIds = platforms.filter((id: string) => !cmsAccountIds.has(id))
-      const cmsPlatformIds = platforms.filter((id: string) => cmsAccountIds.has(id))
-
-      // 如果没有 platformContents，请求 content script 预处理
-      // 同源平台跳过预处理（如微信到微信，源内容已是目标格式）
-      const sourcePlatform = article.source?.platform
-      const platformsToPreprocess = dslPlatformIds.filter((id: string) => id !== sourcePlatform)
-      let processedArticle = article
-      if (!article.platformContents && platformsToPreprocess.length > 0) {
-        try {
-          const configs = getPlatformPreprocessConfigs(platformsToPreprocess)
-          const rawHtml = article.html || article.content || ''
-          if (rawHtml) {
-            // 获取目标 tabId：优先使用 sender tab，否则获取当前活动标签页
-            let targetTabId = senderTabId
-            if (!targetTabId) {
-              const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
-              targetTabId = activeTab?.id
-            }
-
-            if (targetTabId) {
-              const response = await chrome.tabs.sendMessage(targetTabId, {
-                type: 'PREPROCESS_FOR_PLATFORMS',
-                payload: { rawHtml, platforms: platformsToPreprocess, configs },
-              })
-              if (response?.platformContents) {
-                processedArticle = { ...article, platformContents: response.platformContents }
-                logger.debug('Preprocessed for platforms:', Object.keys(response.platformContents))
-              }
-            }
-          }
-        } catch (error) {
-          // 预处理失败，继续使用原始内容
-          logger.debug('Preprocess failed, using original content:', error)
-        }
-      }
-
-      // 初始化同步状态（保存完整文章信息）
-      const syncState: ActiveSyncState = {
-        syncId,
-        status: 'syncing',
-        article: {
-          title: article.title,
-          cover: article.cover,
-          content: article.content,
-          html: article.html,
-          markdown: article.markdown,
+      const { results: allResults } = await performSync(
+        article,
+        platforms,
+        {
+          skipHistory,
+          source,
+          syncId,
+          allSelectedPlatforms,
+          // 预处理统一走 performSync 内部的 sendPreprocessMessage
+          // （活动标签页 → 全部标签页 → 临时标签页三级 fallback）
         },
-        selectedPlatforms: allSelectedPlatforms || platforms,
-        results: [],
-        startTime: Date.now(),
-      }
-      await saveSyncState(syncState)
-
-      // 创建历史记录（开始同步时就创建）
-      if (!skipHistory) {
-        await createHistoryItem(syncId, article, platforms)
-      }
-
-      const allResults: any[] = []
-
-      // 同步到 DSL 平台
-      if (dslPlatformIds.length > 0) {
-        await syncToMultiplePlatforms(dslPlatformIds, processedArticle, {
+        {
           onResult: (result) => {
-            // 更新持久化状态
-            const resultWithName = {
-              ...result,
-              platformName: allPlatformMetas.find(p => p.id === result.platform)?.name || result.platform,
-            }
-            syncState.results.push(resultWithName)
-            allResults.push(resultWithName)
-            saveSyncState(syncState).catch(() => {})
-
-            // 发送同步进度通知
-            sendProgress({
-              type: 'SYNC_PROGRESS',
-              payload: { result: resultWithName },
-            })
+            sendProgress({ type: 'SYNC_PROGRESS', payload: { result } })
           },
           onImageProgress: (platform, current, total) => {
-            // 发送图片上传进度通知
-            sendProgress({
-              type: 'IMAGE_PROGRESS',
-              payload: { platform, current, total },
-            })
+            sendProgress({ type: 'IMAGE_PROGRESS', payload: { platform, current, total } })
           },
-          // 新增：发送详细进度
-          onDetailProgress: (progress: SyncDetailProgress) => {
-            sendProgress({
-              type: 'SYNC_DETAIL_PROGRESS',
-              payload: progress,
-            })
+          onDetailProgress: (progress) => {
+            sendProgress({ type: 'SYNC_DETAIL_PROGRESS', payload: progress })
           },
-        }, source)
-      }
-
-      // 同步到 CMS 账户
-      for (const accountId of cmsPlatformIds) {
-        const account = cmsAccounts.find((a: any) => a.id === accountId)
-        if (!account) continue
-
-        // 发送 CMS 开始同步的详细进度
-        sendProgress({
-          type: 'SYNC_DETAIL_PROGRESS',
-          payload: { platform: accountId, platformName: account.name, stage: 'starting' },
-        })
-
-        try {
-          const passwordStorage = await chrome.storage.local.get(`cms_pwd_${accountId}`)
-          const password = passwordStorage[`cms_pwd_${accountId}`]
-          if (!password) {
-            const cmsResult = {
-              platform: accountId,
-              platformName: account.name,
-              success: false,
-              error: '密码未找到',
-            }
-            allResults.push(cmsResult)
-            syncState.results.push(cmsResult)
-            saveSyncState(syncState).catch(() => {})
-            sendProgress({ type: 'SYNC_PROGRESS', payload: { result: cmsResult } })
-            sendProgress({
-              type: 'SYNC_DETAIL_PROGRESS',
-              payload: { platform: accountId, platformName: account.name, stage: 'failed', result: cmsResult, error: '密码未找到' },
-            })
-            continue
-          }
-
-          // 发送保存阶段
-          sendProgress({
-            type: 'SYNC_DETAIL_PROGRESS',
-            payload: { platform: accountId, platformName: account.name, stage: 'saving' },
-          })
-
-          const credentials = { url: account.url, username: account.username, password }
-          let result
-          switch (account.type) {
-            case 'wordpress':
-              result = await wordpressAdapter.publish(credentials, article, { draftOnly: true })
-              break
-            case 'typecho':
-              result = await metaweblogAdapter.publishToTypecho(credentials, article, { draftOnly: true })
-              break
-            case 'metaweblog':
-              result = await metaweblogAdapter.publish(credentials, article, { draftOnly: true })
-              break
-            default:
-              result = { success: false, error: '不支持的 CMS 类型' }
-          }
-
-          const cmsResult = {
-            platform: accountId,
-            platformName: account.name,
-            success: result.success,
-            postUrl: result.postUrl,
-            draftOnly: true,
-            error: result.error,
-          }
-          allResults.push(cmsResult)
-          syncState.results.push(cmsResult)
-          saveSyncState(syncState).catch(() => {})
-          sendProgress({ type: 'SYNC_PROGRESS', payload: { result: cmsResult } })
-          sendProgress({
-            type: 'SYNC_DETAIL_PROGRESS',
-            payload: {
-              platform: accountId,
-              platformName: account.name,
-              stage: result.success ? 'completed' : 'failed',
-              result: cmsResult,
-              error: result.error,
-            },
-          })
-        } catch (error) {
-          const cmsResult = {
-            platform: accountId,
-            platformName: account.name,
-            success: false,
-            error: (error as Error).message,
-          }
-          allResults.push(cmsResult)
-          syncState.results.push(cmsResult)
-          saveSyncState(syncState).catch(() => {})
-          sendProgress({ type: 'SYNC_PROGRESS', payload: { result: cmsResult } })
-          sendProgress({
-            type: 'SYNC_DETAIL_PROGRESS',
-            payload: { platform: accountId, platformName: account.name, stage: 'failed', result: cmsResult, error: (error as Error).message },
-          })
         }
-      }
+      )
 
-      // 确定最终状态
-      const successCount = allResults.filter(r => r.success).length
-      const failedCount = allResults.length - successCount
-      const finalStatus: SyncHistoryStatus = failedCount === allResults.length ? 'failed' : 'completed'
-
-      // 更新为完成状态
-      syncState.status = finalStatus
-      await saveSyncState(syncState)
-
-      // 更新历史记录
-      if (!skipHistory) {
-        await updateHistoryItem(syncId, finalStatus, allResults, allPlatformMetas)
-      }
-
-      // 记录同步频率（统一在 background 记录，确保所有来源都被记录）
       const successfulPlatforms = allResults
         .filter(r => r.success)
         .map(r => r.platform)
@@ -708,202 +432,38 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
     case 'START_SYNC_FROM_EDITOR': {
       const { article, platforms, syncId: passedSyncId } = message
       const tabId = sender?.tab?.id
-      const allPlatformMetas = getAllPlatformMetas()
 
       if (!tabId) {
         return { error: 'No tab ID found' }
       }
 
-      // 使用传入的 syncId 或生成新的
       const syncId = passedSyncId || generateSyncId()
 
-      // 辅助函数：发送消息到 tab（带 syncId）
       const sendToTab = (msg: Record<string, unknown>) => {
         chrome.tabs.sendMessage(tabId, { ...msg, syncId }).catch(() => {})
       }
 
-      // 检查频率限制（不阻止，只返回警告）
       const rateLimitWarning = await checkSyncFrequency(platforms)
 
-      // content script 已经转换好 html 和 markdown 字段
-
-      // 获取 CMS 账户信息以区分 DSL 和 CMS
-      const cmsStorage = await chrome.storage.local.get('cmsAccounts')
-      const cmsAccounts = cmsStorage.cmsAccounts || []
-      const cmsAccountIds = new Set(cmsAccounts.map((a: any) => a.id))
-
-      // 分离 DSL 平台和 CMS 账户
-      const dslPlatformIds = platforms.filter((id: string) => !cmsAccountIds.has(id))
-      const cmsPlatformIds = platforms.filter((id: string) => cmsAccountIds.has(id))
-
-      // 初始化同步状态
-      const syncState: ActiveSyncState = {
-        syncId,
-        status: 'syncing',
-        article: {
-          title: article.title,
-          cover: article.cover,
-          content: article.content,
-          html: article.html,
-        },
-        selectedPlatforms: platforms,
-        results: [],
-        startTime: Date.now(),
-      }
-      await saveSyncState(syncState)
-
-      // 创建历史记录（开始同步时就创建）
-      await createHistoryItem(syncId, article, platforms)
-
-      const allResults: any[] = []
-
-      // 同步到 DSL 平台
-      if (dslPlatformIds.length > 0) {
-        await syncToMultiplePlatforms(dslPlatformIds, article, {
+      const { results: allResults } = await performSync(
+        article,
+        platforms,
+        { source: 'editor', syncId },
+        {
           onResult: (result) => {
-            // 更新持久化状态
-            const resultWithName = {
-              ...result,
-              platformName: allPlatformMetas.find(p => p.id === result.platform)?.name || result.platform,
-            }
-            syncState.results.push(resultWithName)
-            allResults.push(resultWithName)
-            saveSyncState(syncState).catch(() => {})
-
-            // 发送进度到 content script (编辑器)
-            sendToTab({
-              type: 'SYNC_PROGRESS',
-              result: resultWithName,
-            })
+            sendToTab({ type: 'SYNC_PROGRESS', result })
           },
           onImageProgress: (platform, current, total) => {
-            sendToTab({
-              type: 'IMAGE_PROGRESS',
-              platform, current, total,
-            })
+            sendToTab({ type: 'IMAGE_PROGRESS', platform, current, total })
           },
-          // 新增：发送详细进度到编辑器
-          onDetailProgress: (progress: SyncDetailProgress) => {
-            sendToTab({
-              type: 'SYNC_DETAIL_PROGRESS',
-              ...progress,
-            })
+          onDetailProgress: (progress) => {
+            sendToTab({ type: 'SYNC_DETAIL_PROGRESS', ...progress })
           },
-        }, 'editor')
-        // dslResults 已经通过 onResult 回调添加到 allResults
-      }
-
-      // 同步到 CMS 账户
-      for (const accountId of cmsPlatformIds) {
-        const account = cmsAccounts.find((a: any) => a.id === accountId)
-        if (!account) continue
-
-        // 发送 CMS 开始同步的详细进度
-        sendToTab({
-          type: 'SYNC_DETAIL_PROGRESS',
-          platform: accountId, platformName: account.name, stage: 'starting',
-        })
-
-        try {
-          const passwordStorage = await chrome.storage.local.get(`cms_pwd_${accountId}`)
-          const password = passwordStorage[`cms_pwd_${accountId}`]
-          if (!password) {
-            const cmsResult = {
-              platform: accountId,
-              platformName: account.name,
-              success: false,
-              error: '密码未找到',
-            }
-            allResults.push(cmsResult)
-            syncState.results.push(cmsResult)
-            saveSyncState(syncState).catch(() => {})
-            sendToTab({ type: 'SYNC_PROGRESS', result: cmsResult })
-            sendToTab({
-              type: 'SYNC_DETAIL_PROGRESS',
-              platform: accountId, platformName: account.name, stage: 'failed', result: cmsResult, error: '密码未找到',
-            })
-            continue
-          }
-
-          // 发送保存阶段
-          sendToTab({
-            type: 'SYNC_DETAIL_PROGRESS',
-            platform: accountId, platformName: account.name, stage: 'saving',
-          })
-
-          const credentials = { url: account.url, username: account.username, password }
-          let result
-          switch (account.type) {
-            case 'wordpress':
-              result = await wordpressAdapter.publish(credentials, article, { draftOnly: true })
-              break
-            case 'typecho':
-              result = await metaweblogAdapter.publishToTypecho(credentials, article, { draftOnly: true })
-              break
-            case 'metaweblog':
-              result = await metaweblogAdapter.publish(credentials, article, { draftOnly: true })
-              break
-            default:
-              result = { success: false, error: '不支持的 CMS 类型' }
-          }
-
-          const cmsResult = {
-            platform: accountId,
-            platformName: account.name,
-            success: result.success,
-            postUrl: result.postUrl,
-            draftOnly: true,
-            error: result.error,
-          }
-          allResults.push(cmsResult)
-          syncState.results.push(cmsResult)
-          saveSyncState(syncState).catch(() => {})
-          sendToTab({ type: 'SYNC_PROGRESS', result: cmsResult })
-          sendToTab({
-            type: 'SYNC_DETAIL_PROGRESS',
-            platform: accountId,
-            platformName: account.name,
-            stage: result.success ? 'completed' : 'failed',
-            result: cmsResult,
-            error: result.error,
-          })
-        } catch (error) {
-          const cmsResult = {
-            platform: accountId,
-            platformName: account.name,
-            success: false,
-            error: (error as Error).message,
-          }
-          allResults.push(cmsResult)
-          syncState.results.push(cmsResult)
-          saveSyncState(syncState).catch(() => {})
-          sendToTab({ type: 'SYNC_PROGRESS', result: cmsResult })
-          sendToTab({
-            type: 'SYNC_DETAIL_PROGRESS',
-            platform: accountId, platformName: account.name, stage: 'failed', result: cmsResult, error: (error as Error).message,
-          })
         }
-      }
+      )
 
-      // 确定最终状态
-      const successCount = allResults.filter(r => r.success).length
-      const failedCount = allResults.length - successCount
-      const finalStatus: SyncHistoryStatus = failedCount === allResults.length ? 'failed' : 'completed'
+      sendToTab({ type: 'SYNC_COMPLETE', rateLimitWarning })
 
-      // 更新为完成状态
-      syncState.status = finalStatus
-      await saveSyncState(syncState)
-
-      // 通知编辑器同步完成（带上 syncId）
-      sendToTab({
-        type: 'SYNC_COMPLETE',
-        rateLimitWarning,
-      })
-
-      // 更新历史记录
-      await updateHistoryItem(syncId, finalStatus, allResults, allPlatformMetas)
-
-      // 记录同步频率（统一在 background 记录）
       const successfulPlatforms = allResults
         .filter((r: any) => r.success)
         .map((r: any) => r.platform)
@@ -998,6 +558,11 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       // 获取平台预处理配置（供 content script 使用）
       await initAdapters()
       const configs = getPlatformPreprocessConfigs(message.platforms)
+      // 用户的深度格式清理设置在此注入，编辑器路径预计算 platformContents 时才能生效
+      const { deepCleanEnabled = false } = await chrome.storage.local.get('deepCleanEnabled')
+      for (const key of Object.keys(configs)) {
+        configs[key] = { ...configs[key], normalizeViaMarkdown: deepCleanEnabled }
+      }
       return { configs }
     }
 
@@ -1027,9 +592,10 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
           cmsType: a.type,
         }))
 
+      const { hiddenPlatforms: hidden = [] } = await chrome.storage.local.get('hiddenPlatforms')
       chrome.tabs.sendMessage(tabId, {
         type: 'OPEN_EDITOR',
-        platforms: [...dslWithType, ...cmsPlatforms],
+        platforms: [...dslWithType, ...cmsPlatforms].filter(p => !hidden.includes(p.id)),
         selectedPlatforms: [],
       })
       return { success: true }
@@ -1096,8 +662,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           cmsType: a.type,
         }))
 
-      // 合并所有平台
-      const allPlatforms = [...dslWithType, ...cmsPlatforms]
+      // 合并所有平台，过滤用户隐藏的平台
+      const { hiddenPlatforms: hidden = [] } = await chrome.storage.local.get('hiddenPlatforms')
+      const allPlatforms = [...dslWithType, ...cmsPlatforms].filter(p => !hidden.includes(p.id))
 
       // 发送消息到 content script 打开编辑器
       chrome.tabs.sendMessage(tab.id, {
@@ -1267,141 +834,3 @@ async function clearOrphanedRules() {
 clearOrphanedRules()
 
 logger.info('Service Worker started')
-
-// 最大历史记录数
-const MAX_HISTORY_ITEMS = 25
-
-interface SyncResult {
-  platform: string
-  platformName?: string
-  success: boolean
-  postUrl?: string
-  draftOnly?: boolean
-  error?: string
-}
-
-type SyncHistoryStatus = 'syncing' | 'completed' | 'failed' | 'cancelled'
-
-interface SyncHistoryItem {
-  id: string  // syncId
-  status: SyncHistoryStatus
-  title: string
-  cover?: string
-  platforms: string[]  // 选中的平台ID列表
-  results: SyncResult[]
-  startTime: number
-  endTime?: number
-}
-
-/**
- * 创建同步历史记录（开始同步时调用）
- */
-async function createHistoryItem(
-  syncId: string,
-  article: { title: string; cover?: string },
-  platforms: string[]
-): Promise<void> {
-  try {
-    const storage = await chrome.storage.local.get('syncHistory')
-    const existingHistory: SyncHistoryItem[] = storage.syncHistory || []
-
-    const historyItem: SyncHistoryItem = {
-      id: syncId,
-      status: 'syncing',
-      title: article.title || '未知文章',
-      cover: article.cover,
-      platforms,
-      results: [],
-      startTime: Date.now(),
-    }
-
-    // 添加到历史并限制数量
-    const newHistory = [historyItem, ...existingHistory].slice(0, MAX_HISTORY_ITEMS)
-    await chrome.storage.local.set({ syncHistory: newHistory })
-    logger.info('History created:', syncId, historyItem.title)
-  } catch (error) {
-    logger.error('Failed to create history:', error)
-  }
-}
-
-/**
- * 更新同步历史记录（同步完成/失败时调用）
- */
-async function updateHistoryItem(
-  syncId: string,
-  status: SyncHistoryStatus,
-  results: SyncResult[],
-  allPlatformMetas: Array<{ id: string; name: string }>
-): Promise<void> {
-  try {
-    const storage = await chrome.storage.local.get('syncHistory')
-    const existingHistory: SyncHistoryItem[] = storage.syncHistory || []
-
-    // 为结果添加平台名称
-    const resultsWithNames = results.map(r => ({
-      ...r,
-      platformName: r.platformName || allPlatformMetas.find(p => p.id === r.platform)?.name || r.platform,
-    }))
-
-    // 查找并更新历史条目
-    const updatedHistory = existingHistory.map(item => {
-      if (item.id === syncId) {
-        return {
-          ...item,
-          status,
-          results: resultsWithNames,
-          endTime: Date.now(),
-        }
-      }
-      return item
-    })
-
-    await chrome.storage.local.set({ syncHistory: updatedHistory })
-    logger.info('History updated:', syncId, status)
-  } catch (error) {
-    logger.error('Failed to update history:', error)
-  }
-}
-
-/**
- * 保存同步历史记录（兼容旧逻辑，开始时创建+完成时更新）
- * @deprecated Use createHistoryItem and updateHistoryItem instead
- */
-async function saveToHistory(
-  article: { title: string; cover?: string },
-  results: SyncResult[],
-  allPlatformMetas: Array<{ id: string; name: string }>
-): Promise<void> {
-  try {
-    // 为结果添加平台名称（保留已有的 platformName，如 CMS 平台）
-    const resultsWithNames = results.map(r => ({
-      ...r,
-      platformName: r.platformName || allPlatformMetas.find(p => p.id === r.platform)?.name || r.platform,
-    }))
-
-    // 读取现有历史
-    const storage = await chrome.storage.local.get('syncHistory')
-    const existingHistory: SyncHistoryItem[] = storage.syncHistory || []
-
-    // 创建新历史条目（兼容旧格式）
-    const historyItem: SyncHistoryItem = {
-      id: Date.now().toString(),
-      status: 'completed',
-      title: article.title || '未知文章',
-      cover: article.cover,
-      platforms: results.map(r => r.platform),
-      results: resultsWithNames,
-      startTime: Date.now(),
-      endTime: Date.now(),
-    }
-
-    // 添加到历史并限制数量
-    const newHistory = [historyItem, ...existingHistory].slice(0, MAX_HISTORY_ITEMS)
-
-    // 保存到 storage
-    await chrome.storage.local.set({ syncHistory: newHistory })
-    logger.info('History saved:', historyItem.title)
-  } catch (error) {
-    logger.error('Failed to save history:', error)
-  }
-}

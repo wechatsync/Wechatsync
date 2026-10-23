@@ -109,10 +109,11 @@ interface SyncHistoryItem {
 
 interface SyncState {
   // 状态
-  status: 'loading' | 'idle' | 'syncing' | 'completed'
+  status: 'loading' | 'idle' | 'syncing' | 'completed' | 'failed' | 'cancelled'
   article: Article | null
   platforms: Platform[]
   selectedPlatforms: string[]
+  hiddenPlatforms: string[]
   results: SyncResult[]
   error: string | null
 
@@ -140,6 +141,7 @@ interface SyncState {
   loadHistory: () => Promise<void>
   recoverSyncState: () => Promise<void>
   togglePlatform: (platformId: string) => void
+  setHiddenPlatforms: (ids: string[]) => void
   selectAll: () => void
   deselectAll: () => void
   checkRateLimit: () => Promise<string | null>
@@ -185,6 +187,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   article: null,
   platforms: [],
   selectedPlatforms: [],
+  hiddenPlatforms: [],
   results: [],
   error: null,
   currentSyncId: null,
@@ -208,7 +211,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         set({
           status: syncState.status,
           article: syncState.article,
-          selectedPlatforms: syncState.selectedPlatforms,
+          selectedPlatforms: Array.isArray(syncState.selectedPlatforms) ? syncState.selectedPlatforms : [],
           results: syncState.results || [],
           currentSyncId: syncState.syncId || null,
           recovered: true,
@@ -248,9 +251,10 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   },
 
   loadPlatforms: async () => {
-    // 如果正在同步或已完成，不覆盖状态
+    // 同步中或已到终态时，不覆盖状态
     const currentStatus = get().status
     const preserveStatus = currentStatus === 'syncing' || currentStatus === 'completed'
+      || currentStatus === 'failed' || currentStatus === 'cancelled'
 
     if (!preserveStatus) {
       set({ status: 'loading' })
@@ -264,21 +268,25 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       const allPlatforms: Platform[] = (platformResponse.platforms || [])
         .filter((p: any) => p.isAuthenticated)
 
-      // 加载保存的平台选择
+      // 加载保存的平台选择和隐藏配置
       const savedSelections = await loadSelectedPlatforms()
+      const hiddenResult = await chrome.storage.local.get('hiddenPlatforms')
+      const hiddenPlatforms: string[] = hiddenResult.hiddenPlatforms || []
       const authenticatedIds = allPlatforms.map(p => p.id)
 
-      // 过滤出仍然有效的已选平台（已登录的平台）
+      // 过滤出仍然有效的已选平台（已登录且未被隐藏）
       let selectedPlatforms: string[] = []
       if (savedSelections && savedSelections.length > 0) {
-        selectedPlatforms = savedSelections.filter(id => authenticatedIds.includes(id))
+        selectedPlatforms = savedSelections.filter(
+          id => authenticatedIds.includes(id) && !hiddenPlatforms.includes(id)
+        )
       }
 
-      // 如果正在同步或已完成，只更新平台列表，不改变状态和选择
+      // 同步中或终态时，只更新平台列表，不改变状态和选择
       if (preserveStatus) {
-        set({ platforms: allPlatforms })
+        set({ platforms: allPlatforms, hiddenPlatforms })
       } else {
-        set({ platforms: allPlatforms, status: 'idle', selectedPlatforms })
+        set({ platforms: allPlatforms, status: 'idle', selectedPlatforms, hiddenPlatforms })
       }
     } catch (error) {
       logger.error('Failed to load platforms:', error)
@@ -289,9 +297,10 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   },
 
   loadArticle: async () => {
-    // 如果已有恢复的文章（同步中/完成状态），不覆盖
+    // 如果已有恢复的文章（同步中/终态），不覆盖
     const { article: existingArticle, status } = get()
-    if (existingArticle && (status === 'syncing' || status === 'completed')) {
+    if (existingArticle && (status === 'syncing' || status === 'completed'
+      || status === 'failed' || status === 'cancelled')) {
       logger.debug('loadArticle - skipped, using recovered article')
       return
     }
@@ -355,9 +364,21 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     ).catch(() => {})
   },
 
+  setHiddenPlatforms: (ids) => {
+    // 更新隐藏集合，并把已被隐藏的平台从当前选择中裁掉（不写回 storage，
+    // 取消隐藏后下次加载仍可恢复选中）
+    const { selectedPlatforms } = get()
+    set({
+      hiddenPlatforms: ids,
+      selectedPlatforms: selectedPlatforms.filter(id => !ids.includes(id)),
+    })
+  },
+
   selectAll: () => {
-    const { platforms } = get()
-    const allIds = platforms.filter(p => p.isAuthenticated).map(p => p.id)
+    const { platforms, hiddenPlatforms } = get()
+    const allIds = platforms
+      .filter(p => p.isAuthenticated && !hiddenPlatforms.includes(p.id))
+      .map(p => p.id)
     set({ selectedPlatforms: allIds })
     // 保存到 storage
     saveSelectedPlatforms(allIds)

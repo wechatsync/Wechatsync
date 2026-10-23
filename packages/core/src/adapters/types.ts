@@ -79,6 +79,9 @@ export interface PreprocessConfig {
   removeEmptyDivs?: boolean
   /** 移除嵌套的空容器 */
   removeNestedEmptyContainers?: boolean
+
+  /** 通过 Markdown 往返标准化内容（HTML→Markdown→HTML，清理多余结构，适用于非微信来源） */
+  normalizeViaMarkdown?: boolean
 }
 
 /**
@@ -94,8 +97,10 @@ export const DEFAULT_PREPROCESS_CONFIG: PreprocessConfig = {
   processLazyImages: true,
   removeEmptyElements: true,
   removeDataAttributes: true,
+  removeEmptyImages: true,
   removeSrcset: true,
   removeSizes: true,
+  normalizeViaMarkdown: false,
 }
 
 /**

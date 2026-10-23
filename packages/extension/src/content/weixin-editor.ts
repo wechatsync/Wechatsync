@@ -92,10 +92,11 @@ async function openSyncDialog() {
   dialogContainer.appendChild(loadingEl)
   document.body.appendChild(dialogContainer)
 
-  // 2. Extract article + load platforms in parallel
-  const [article, platformResp] = await Promise.all([
+  // 2. Extract article + load platforms + hidden config in parallel
+  const [article, platformResp, hiddenResult] = await Promise.all([
     extractArticle(),
     chrome.runtime.sendMessage({ type: 'CHECK_ALL_AUTH' }).catch(() => ({ platforms: [] })),
+    chrome.storage.local.get('hiddenPlatforms').catch(() => ({ hiddenPlatforms: [] })),
   ])
 
   if (!article) {
@@ -116,7 +117,8 @@ async function openSyncDialog() {
     },
   }).catch(() => {})
 
-  const platforms = platformResp.platforms || []
+  const hiddenSet = new Set<string>(hiddenResult.hiddenPlatforms || [])
+  const platforms = (platformResp.platforms || []).filter((p: any) => !hiddenSet.has(p.id))
 
   // 3. Swap loading for iframe
   if (!dialogContainer) return

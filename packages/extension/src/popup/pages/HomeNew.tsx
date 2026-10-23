@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Settings, Plus, Clock, X, Download, Info } from 'lucide-react'
+import { Settings, User, Clock, X, Download, Info } from 'lucide-react'
 import { useSyncStore } from '../stores/sync'
 import { SettingsDrawer } from '../components/SettingsDrawer'
 import { SyncDialog } from '@/components/sync-dialog'
 import type { Platform as DialogPlatform } from '@/components/sync-dialog'
-import { cn } from '@/lib/utils'
 import { trackPageView, trackFeatureDiscovery } from '../../lib/analytics'
 import { createLogger } from '../../lib/logger'
 import { getCachedUpdateInfo, dismissUpdate, type UpdateCheckResult } from '../../lib/version-check'
@@ -24,6 +23,8 @@ export function HomeNew() {
 
     platformProgress,
     recovered,
+    hiddenPlatforms,
+    setHiddenPlatforms,
     loadPlatforms,
     loadArticle,
     recoverSyncState,
@@ -99,7 +100,7 @@ export function HomeNew() {
     if (tab?.id) {
       chrome.tabs.sendMessage(tab.id, {
         type: 'OPEN_EDITOR',
-        platforms: allPlatforms,
+        platforms: allPlatforms.filter(p => !hiddenPlatforms.includes(p.id)),
         selectedPlatforms,
       })
       window.close()
@@ -128,11 +129,11 @@ export function HomeNew() {
         </div>
         <nav className="flex items-center gap-0.5">
           <button
-            onClick={() => navigate('/add-cms')}
+            onClick={() => navigate('/accounts')}
             className="flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg hover:bg-muted transition-colors"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="text-[10px] text-muted-foreground leading-none">添加</span>
+            <User className="w-3.5 h-3.5" />
+            <span className="text-[10px] text-muted-foreground leading-none">账号</span>
           </button>
           <button
             onClick={() => navigate('/history')}
@@ -247,7 +248,7 @@ export function HomeNew() {
       {/* SyncDialog — the unified sync flow */}
       <SyncDialog
         article={article}
-        platforms={allPlatforms}
+        platforms={allPlatforms.filter(p => !hiddenPlatforms.includes(p.id))}
         status={status}
         selectedPlatforms={selectedPlatforms}
         results={results}
@@ -290,7 +291,13 @@ export function HomeNew() {
       )}
 
       {/* Settings drawer */}
-      <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsDrawer open={settingsOpen} onClose={() => {
+        setSettingsOpen(false)
+        // 刷新隐藏平台配置（用户可能修改了），并把新隐藏的平台从已选中裁掉
+        chrome.storage.local.get('hiddenPlatforms', (r) => {
+          setHiddenPlatforms(r.hiddenPlatforms || [])
+        })
+      }} />
 
       {/* Rate limit warning (non-blocking toast) */}
       {rateLimitWarning && (

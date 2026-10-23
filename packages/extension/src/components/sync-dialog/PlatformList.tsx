@@ -25,7 +25,8 @@ export function PlatformList({
 }: PlatformListProps) {
   const isIdle = status === 'idle' || status === 'loading'
   const isSyncing = status === 'syncing'
-  const isCompleted = status === 'completed'
+  // 完成/失败/取消都是终态，共用完成态的汇总头部和结果行渲染
+  const isFinished = status === 'completed' || status === 'failed' || status === 'cancelled'
 
   const authenticatedPlatforms = platforms.filter(p => p.isAuthenticated)
   const unauthenticatedPlatforms = platforms.filter(p => !p.isAuthenticated)
@@ -33,9 +34,24 @@ export function PlatformList({
   const successCount = results.filter(r => r.success).length
   const failedCount = results.filter(r => !r.success).length
 
-  // Idle: show all (authenticated first), syncing/completed: only selected
+  // 按阶段加权计算进度：只同步一个平台时，完成前也能看到在推进，而不是一直停在 0%
+  const stageWeight = (id: string) => {
+    if (results.some(r => r.platform === id)) return 1
+    const p = platformProgress.get(id)
+    if (!p) return 0
+    if (p.stage === 'uploading_images') {
+      const { current = 0, total = 0 } = p.imageProgress || {}
+      return 0.1 + (total > 0 ? 0.6 * (current / total) : 0)
+    }
+    return { starting: 0.1, saving: 0.85, completed: 1, failed: 1 }[p.stage]
+  }
+  const progressPercent = selectedPlatforms.length > 0
+    ? (selectedPlatforms.reduce((sum, id) => sum + stageWeight(id), 0) / selectedPlatforms.length) * 100
+    : 0
+
+  // Idle: only authenticated platforms; syncing/completed: only selected
   const visiblePlatforms = isIdle
-    ? [...authenticatedPlatforms, ...unauthenticatedPlatforms]
+    ? authenticatedPlatforms
     : selectedPlatforms
         .map(id => platforms.find(p => p.id === id))
         .filter(Boolean) as Platform[]
@@ -73,9 +89,11 @@ export function PlatformList({
             </span>
           </>
         )}
-        {isCompleted && (
+        {isFinished && (
           <>
-            <span className="text-sm font-medium">同步完成</span>
+            <span className="text-sm font-medium">
+              {status === 'completed' ? '同步完成' : status === 'failed' ? '同步失败' : '已取消'}
+            </span>
             <div className="flex items-center gap-2">
               {successCount > 0 && (
                 <span className="inline-flex items-center gap-0.5 text-xs text-green-600">
@@ -97,7 +115,7 @@ export function PlatformList({
         <div className="h-1 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(results.length / selectedPlatforms.length) * 100}%` }}
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
       )}
@@ -117,6 +135,7 @@ export function PlatformList({
               isIdle={isIdle}
               isWaiting={isSyncing && !result && !progress}
               isInProgress={isSyncing && !result && !!progress}
+              isSkipped={isFinished && !result}
               result={result || null}
               progress={progress || null}
               onToggle={() => onToggle(platform.id)}
@@ -129,7 +148,7 @@ export function PlatformList({
       {isIdle && platforms.length > 0 && authenticatedPlatforms.length === 0 && (
         <div className="text-center py-4">
           <p className="text-sm text-muted-foreground">还没有登录任何平台</p>
-          <p className="text-xs text-muted-foreground mt-1">点击平台名称前往登录</p>
+          <p className="text-xs text-muted-foreground mt-1">请先在浏览器中登录平台账号</p>
         </div>
       )}
     </div>
@@ -144,6 +163,7 @@ function PlatformRow({
   isIdle,
   isWaiting,
   isInProgress,
+  isSkipped,
   result,
   progress,
   onToggle,
@@ -153,6 +173,7 @@ function PlatformRow({
   isIdle: boolean
   isWaiting: boolean
   isInProgress: boolean
+  isSkipped: boolean
   result: SyncResult | null
   progress: PlatformProgress | null
   onToggle: () => void
@@ -185,7 +206,7 @@ function PlatformRow({
         isIdle={isIdle}
         isSelected={isSelected}
         isAuthenticated={platform.isAuthenticated}
-        isWaiting={isWaiting}
+        isWaiting={isWaiting || isSkipped}
         isInProgress={isInProgress}
         result={result}
       />
@@ -209,6 +230,7 @@ function PlatformRow({
         isIdle={isIdle}
         isWaiting={isWaiting}
         isInProgress={isInProgress}
+        isSkipped={isSkipped}
         result={result}
         progress={progress}
       />
@@ -273,6 +295,7 @@ function RowInfo({
   isIdle,
   isWaiting,
   isInProgress,
+  isSkipped,
   result,
   progress,
 }: {
@@ -280,6 +303,7 @@ function RowInfo({
   isIdle: boolean
   isWaiting: boolean
   isInProgress: boolean
+  isSkipped: boolean
   result: SyncResult | null
   progress: PlatformProgress | null
 }) {
@@ -349,6 +373,11 @@ function RowInfo({
         )}
       </div>
     )
+  }
+
+  // 终态但未执行（取消/失败时未跑到的平台）
+  if (isSkipped) {
+    return <span className="text-xs text-muted-foreground flex-shrink-0">未执行</span>
   }
 
   // Waiting

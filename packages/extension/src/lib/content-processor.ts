@@ -9,7 +9,7 @@
  * 5. Service Worker 只做图片上传 + 调用 API
  */
 
-import { htmlToMarkdownNative, SOURCE_LINK_REMOVE_DOMAINS, SOURCE_LINK_REDIRECT_RULES, type PreprocessConfig } from '@wechatsync/core'
+import { htmlToMarkdownNative, markdownToHtml, SOURCE_LINK_REMOVE_DOMAINS, SOURCE_LINK_REDIRECT_RULES, type PreprocessConfig } from '@wechatsync/core'
 import { createLogger } from './logger'
 
 const logger = createLogger('ContentProcessor')
@@ -102,6 +102,14 @@ export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig)
 
   if (config.removeSrcset || config.removeSizes) {
     removeImageAttributes(container, config)
+  }
+
+  // Markdown 往返标准化：HTML → Markdown → HTML
+  // 非微信来源的 HTML 可能包含平台特有结构、tracking pixels、data URI 等
+  // 通过 Markdown 往返清理为干净的标准 HTML
+  if (config.normalizeViaMarkdown) {
+    const md = htmlToMarkdownNative(container.innerHTML)
+    container.innerHTML = markdownToHtml(md)
   }
 
   if (config.convertSectionToDiv) {

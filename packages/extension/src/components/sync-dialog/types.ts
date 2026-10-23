@@ -34,7 +34,7 @@ export interface PlatformProgress {
   error?: string
 }
 
-export type DialogStatus = 'loading' | 'idle' | 'syncing' | 'completed'
+export type DialogStatus = 'loading' | 'idle' | 'syncing' | 'completed' | 'failed' | 'cancelled'
 
 export interface SyncDialogProps {
   // Data

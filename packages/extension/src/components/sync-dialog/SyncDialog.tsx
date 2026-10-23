@@ -3,6 +3,7 @@ import { ArticleCard } from './ArticleCard'
 import { PlatformList } from './PlatformList'
 import { PromoBanner } from './PromoBanner'
 import { SharePrompt } from './SharePrompt'
+import { TipBar } from './TipBar'
 import type { SyncDialogProps } from './types'
 
 /**
@@ -37,6 +38,7 @@ export function SyncDialog({
   const isIdle = status === 'idle' || status === 'loading'
   const isSyncing = status === 'syncing'
   const isCompleted = status === 'completed'
+  const isFinished = isCompleted || status === 'failed' || status === 'cancelled'
 
   const handleSelectAll = () => {
     if (selectedPlatforms.length === authenticatedPlatforms.length) {
@@ -56,7 +58,7 @@ export function SyncDialog({
         {/* Article card — compact during sync/complete */}
         <ArticleCard
           article={article}
-          compact={isSyncing || isCompleted}
+          compact={isSyncing || isFinished}
           onEdit={isIdle ? onEditArticle : undefined}
         />
 
@@ -88,16 +90,17 @@ export function SyncDialog({
         )}
 
         {/* No article hint */}
-        {!article && platforms.length > 0 && (
+        {!article && authenticatedPlatforms.length > 0 && (
           <div className="text-xs text-muted-foreground text-center py-1">
-            已登录 {authenticatedPlatforms.length} 个平台，共 {platforms.length} 个可用
+            已登录 {authenticatedPlatforms.length} 个平台
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="flex-shrink-0 border-t p-4">
-        {isCompleted ? (
+      <div className="flex-shrink-0 border-t p-4 space-y-3">
+        {(isSyncing || isFinished) && <TipBar />}
+        {isFinished ? (
           <div className="flex gap-2">
             {failedCount > 0 && (
               <button
