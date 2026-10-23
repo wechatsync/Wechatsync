@@ -59,6 +59,7 @@
 | 小红书 | xiaohongshu | 主流自媒体 | ✅ |
 | 掘金 | juejin | 技术社区 | ✅ |
 | CSDN | csdn | 技术社区 | ✅ |
+| 阿里云开发者社区 | aliyun | 技术社区 | ✅ 草稿同步 |
 | 简书 | jianshu | 通用 | ✅ |
 | 头条号 | toutiao | 通用 | ✅ |
 | 抖音图文 | douyin | 主流自媒体 | ✅ 🆕 |
