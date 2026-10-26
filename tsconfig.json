@@ -16,6 +16,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@wechatsync/core": ["packages/core/src"],
