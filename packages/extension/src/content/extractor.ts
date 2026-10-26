@@ -16,6 +16,8 @@ import { extractArticle as extractWithReader, ReaderResult } from '../lib/reader
 import { htmlToMarkdownNative, type PreprocessConfig } from '@wechatsync/core'
 import { createLogger } from '../lib/logger'
 import { preprocessContentDOM, preprocessForPlatform, backupAndSimplifyCodeBlocks, restoreCodeBlocks, type PreprocessResult } from '../lib/content-processor'
+import { htmlMayContainMermaid, htmlMayContainSvg } from '../lib/mermaid-detect'
+import { rasterizeSvgContentInContainer } from '../lib/svg-rasterizer'
 import { createSyncFab } from '../lib/fab'
 
 const logger = createLogger('Extractor')
@@ -29,6 +31,56 @@ interface ExtractedArticle {
   source: {
     url: string
     platform: string
+  }
+}
+
+/**
+ * 把提取到的内容里的矢量图转成 PNG
+ *
+ * 微信公众号正文不支持内联 SVG（微信会直接丢弃 svg 标签），
+ * CSDN 等平台渲染好的 Mermaid 流程图就是内联 SVG，
+ * 不转换的话同步到公众号就是一个空白缺口。
+ *
+ * 必须在 preprocessContentDOM 之前调用：它会删掉 <style>，
+ * 而 SVG 的样式（颜色、字号）都写在 SVG 自己的 <style> 里。
+ */
+async function rasterizeContentDiagrams(container: HTMLElement): Promise<void> {
+  try {
+    const summary = await rasterizeSvgContentInContainer(container)
+    if (summary.rendered > 0) {
+      logger.info(`已将 ${summary.rendered} 个矢量图转换为 PNG 图片`)
+    }
+    if (summary.failed > 0) {
+      logger.warn(`${summary.failed} 个矢量图转换失败：${summary.errors[0] || '未知原因'}`)
+    }
+  } catch (error) {
+    logger.warn('矢量图转换异常:', error)
+  }
+}
+
+/**
+ * 在提取文章之前，先把「真实页面 DOM」里的矢量图换成 PNG
+ *
+ * 各个 reader（Safari Reader / Readability / Defuddle）在提取时都会把内联 <svg>
+ * 当成装饰元素删掉，等提取完再转换就来不及了 —— 图会整个消失。
+ * 所以必须先在页面上就地替换成 <img>，提取完再把原始 SVG 放回去。
+ *
+ * @returns 还原函数
+ */
+async function rasterizePageDiagrams(): Promise<() => void> {
+  try {
+    // strictContent: 只处理有图表特征的 SVG，避免误伤页面上的装饰图标
+    const summary = await rasterizeSvgContentInContainer(document.body, { strictContent: true })
+    if (summary.rendered > 0) {
+      logger.info(`已将页面中的 ${summary.rendered} 个矢量图转换为 PNG 图片`)
+    }
+    if (summary.failed > 0) {
+      logger.warn(`${summary.failed} 个矢量图转换失败：${summary.errors[0] || '未知原因'}`)
+    }
+    return summary.restore || (() => {})
+  } catch (error) {
+    logger.warn('页面矢量图转换异常:', error)
+    return () => {}
   }
 }
 
@@ -49,15 +101,23 @@ async function extractArticle(): Promise<ExtractedArticle | null> {
     if (result) return result
   }
 
-  // 按域名匹配的站点特定提取
-  const siteConfig = findSiteConfig(window.location.hostname)
-  if (siteConfig) {
-    const result = extractWithSiteConfig(siteConfig)
-    if (result) return result
-  }
+  // 提取前先把页面里的矢量图换成 PNG：reader 会把内联 <svg> 整个删掉
+  const restoreDiagrams = await rasterizePageDiagrams()
 
-  // 通用提取 (使用 Safari Reader / Readability)
-  return extractGenericArticle()
+  try {
+    // 按域名匹配的站点特定提取
+    const siteConfig = findSiteConfig(window.location.hostname)
+    if (siteConfig) {
+      const result = await extractWithSiteConfig(siteConfig)
+      if (result) return result
+    }
+
+    // 通用提取 (使用 Safari Reader / Readability)
+    return await extractGenericArticle()
+  } finally {
+    // 把原始 SVG 放回页面，不影响用户继续阅读
+    restoreDiagrams()
+  }
 }
 
 /**
@@ -697,7 +757,7 @@ function findSiteConfig(hostname: string): SiteExtractConfig | undefined {
 /**
  * 基于站点配置提取文章
  */
-function extractWithSiteConfig(config: SiteExtractConfig): ExtractedArticle | null {
+async function extractWithSiteConfig(config: SiteExtractConfig): Promise<ExtractedArticle | null> {
   const contentEl = document.querySelector(config.contentSelector) as HTMLElement
   if (!contentEl) return null
 
@@ -744,6 +804,7 @@ function extractWithSiteConfig(config: SiteExtractConfig): ExtractedArticle | nu
       }
     }
 
+    await rasterizeContentDiagrams(clonedContent)
     preprocessContentDOM(clonedContent)
     const html = clonedContent.innerHTML
     const markdown = htmlToMarkdownNative(html)
@@ -772,25 +833,26 @@ function extractWithSiteConfig(config: SiteExtractConfig): ExtractedArticle | nu
  * 通用文章提取
  * 使用 Safari ReaderArticleFinder / Defuddle 并行竞争
  */
-function extractGenericArticle(): ExtractedArticle | null {
+async function extractGenericArticle(): Promise<ExtractedArticle | null> {
   // 使用统一的 Reader 提取器
   const result = extractWithReader()
 
   if (result) {
-    return readerResultToArticle(result)
+    return await readerResultToArticle(result)
   }
 
   // 如果 Reader 提取失败，尝试简单的选择器
-  return extractWithSelectors()
+  return await extractWithSelectors()
 }
 
 /**
  * 将 ReaderResult 转换为 ExtractedArticle
  */
-function readerResultToArticle(result: ReaderResult): ExtractedArticle {
+async function readerResultToArticle(result: ReaderResult): Promise<ExtractedArticle> {
   // 创建临时 DOM 进行预处理
   const tempDiv = document.createElement('div')
   tempDiv.innerHTML = result.content
+  await rasterizeContentDiagrams(tempDiv)
   preprocessContentDOM(tempDiv)
   const processedHtml = tempDiv.innerHTML
 
@@ -813,7 +875,7 @@ function readerResultToArticle(result: ReaderResult): ExtractedArticle {
 /**
  * 使用 CSS 选择器提取 (最后手段)
  */
-function extractWithSelectors(): ExtractedArticle | null {
+async function extractWithSelectors(): Promise<ExtractedArticle | null> {
   // 尝试常见的文章选择器
   const selectors = {
     title: [
@@ -856,6 +918,7 @@ function extractWithSelectors(): ExtractedArticle | null {
         // 恢复原始 DOM
         restoreCodeBlocks(codeBlockBackups)
 
+        await rasterizeContentDiagrams(clonedContent)
         preprocessContentDOM(clonedContent)
         html = clonedContent.innerHTML
         break
@@ -1127,10 +1190,25 @@ window.addEventListener('message', async (event) => {
 
       const configs: Record<string, PreprocessConfig> = configResponse?.configs || {}
 
-      // 为每个平台分别预处理
-      const platformContents = preprocessForMultiplePlatformsLocal(rawHtml, platforms, configs)
+      // 含 Mermaid 代码块时不能在 content script 里预处理：
+      // mermaid 库只打进了扩展页面，这里渲染不了。
+      // 交由 background 统一走「临时窗口渲染 Mermaid → 再按平台预处理」的链路。
+      const hasMermaid = htmlMayContainMermaid(rawHtml)
+      // 含矢量图时也需要扩展页面转成 PNG（微信不支持 SVG）
+      const hasSvg = htmlMayContainSvg(rawHtml)
+      if (hasMermaid) {
+        logger.info('检测到 Mermaid 代码块，交由后台在扩展页面中渲染为图片')
+      }
+      if (hasSvg) {
+        logger.info('检测到矢量图，交由后台在扩展页面中转换为 PNG 图片')
+      }
 
-      logger.debug('Preprocessed contents for platforms:', Object.keys(platformContents))
+      // 为每个平台分别预处理
+      const platformContents = hasMermaid || hasSvg
+        ? undefined
+        : preprocessForMultiplePlatformsLocal(rawHtml, platforms, configs)
+
+      logger.debug('Preprocessed contents for platforms:', Object.keys(platformContents || {}))
 
       chrome.runtime.sendMessage({
         type: 'START_SYNC_FROM_EDITOR',

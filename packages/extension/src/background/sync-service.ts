@@ -14,6 +14,7 @@ import { DEFAULT_PREPROCESS_CONFIG, markdownToHtml } from '@wechatsync/core'
 import * as wordpressAdapter from '../adapters/cms/wordpress'
 import * as metaweblogAdapter from '../adapters/cms/metaweblog'
 import { createLogger } from '../lib/logger'
+import { countInlineSvg, countMermaidCodeBlocks, htmlMayContainMermaid, htmlMayContainSvg } from '../lib/mermaid-detect'
 
 const logger = createLogger('SyncService')
 
@@ -260,6 +261,8 @@ export async function performSync(
   const sourcePlatform = article.source?.platform
   const { deepCleanEnabled = false } = await chrome.storage.local.get('deepCleanEnabled')
   let processedArticle: any = normalizedArticle
+  // 预处理/渲染过程中的问题要能被用户看到，不能静默降级
+  const warnings: string[] = []
 
   if (!article.platformContents) {
     const platformsToPreprocess = dslPlatformIds.filter((id: string) => id !== sourcePlatform)
@@ -279,12 +282,77 @@ export async function performSync(
       }
       const rawHtml = normalizedArticle.html || normalizedArticle.content || ''
       if (rawHtml) {
-        const preprocessResult = await sendPreprocessMessage(rawHtml, platformsToPreprocess, configs)
-        if (preprocessResult) {
-          processedArticle = { ...normalizedArticle, platformContents: preprocessResult }
-          logger.debug('Preprocessed for platforms:', Object.keys(preprocessResult))
+        // 含 Mermaid 代码块时必须在扩展页面里渲染成图片
+        // （mermaid 库没有打进常驻 content script，只有扩展页面才有）
+        const renderMermaid = htmlMayContainMermaid(rawHtml)
+        // 含矢量图时必须在扩展页面里转成 PNG（微信会丢弃 SVG）
+        const rasterizeSvg = htmlMayContainSvg(rawHtml)
+        if (renderMermaid) {
+          logger.info('检测到 Mermaid 代码块，将在扩展页面中渲染为图片')
+        }
+        if (rasterizeSvg) {
+          logger.info('检测到矢量图（SVG），将在扩展页面中转换为 PNG 图片')
+        }
+        const preprocessResult = await sendPreprocessMessage(rawHtml, platformsToPreprocess, configs, {
+          renderMermaid,
+          rasterizeSvg,
+        })
+        if (preprocessResult?.platformContents) {
+          processedArticle = { ...normalizedArticle, platformContents: preprocessResult.platformContents }
+          logger.debug('Preprocessed for platforms:', Object.keys(preprocessResult.platformContents))
+
+          const mermaidSummary = preprocessResult.mermaid
+          if (mermaidSummary) {
+            logger.info(
+              `图表转换统计: 成功 ${mermaidSummary.rendered} 个，失败 ${mermaidSummary.failed} 个`
+            )
+            if (mermaidSummary.failed > 0) {
+              warnings.push(
+                `${mermaidSummary.failed} 个图表转换失败：${mermaidSummary.errors[0] || '未知原因'}`
+              )
+            }
+          }
+
+          // 兜底：预处理之后仍然以代码块形式存在的 Mermaid，
+          // 说明这些流程图没能变成图片，必须让用户看到
+          let leftoverMermaid = 0
+          for (const id of platformsToPreprocess) {
+            const count = countMermaidCodeBlocks(preprocessResult.platformContents[id]?.html || '')
+            if (count > leftoverMermaid) leftoverMermaid = count
+          }
+          if (leftoverMermaid > 0) {
+            logger.warn('仍有 Mermaid 代码块未转换成图片:', leftoverMermaid)
+            warnings.push(`${leftoverMermaid} 个 Mermaid 图未能转换成图片（仍以代码块保留）`)
+          }
+
+          // 兜底：还有内联 SVG 的话，微信会把它们直接丢掉（正文出现空白缺口）
+          let leftoverSvg = 0
+          for (const id of platformsToPreprocess) {
+            const count = countInlineSvg(preprocessResult.platformContents[id]?.html || '')
+            if (count > leftoverSvg) leftoverSvg = count
+          }
+          if (leftoverSvg > 0) {
+            logger.warn('仍有矢量图未转换成图片:', leftoverSvg)
+            warnings.push(`${leftoverSvg} 个图形未能转换成图片（微信不支持 SVG 格式）`)
+          }
+
+          // 兜底：原文里的 Mermaid 代码块数量与渲染阶段处理的数量对不上，
+          // 说明有流程图连尝试都没尝试，直接消失了，必须告诉用户
+          const sourceMermaid = countMermaidCodeBlocks(rawHtml)
+          const handled = mermaidSummary ? mermaidSummary.rendered + mermaidSummary.failed : 0
+          if (sourceMermaid > handled) {
+            const missing = sourceMermaid - handled
+            logger.warn('有 Mermaid 代码块未被渲染处理:', missing)
+            warnings.push(`${missing} 个 Mermaid 图被跳过（未能识别为流程图）`)
+          }
         } else {
-          logger.warn('DOM preprocessing unavailable — please ensure at least one web page is open in Chrome')
+          const reason = preprocessResult?.error || '无法在扩展页面中完成 DOM 预处理'
+          logger.warn('DOM preprocessing unavailable:', reason)
+          warnings.push(
+            renderMermaid || rasterizeSvg
+              ? `DOM 预处理失败（${reason}），图表未能转换成图片`
+              : `DOM 预处理失败（${reason}），正文可能未按平台规则清理`
+          )
         }
       }
     }
@@ -298,6 +366,11 @@ export async function performSync(
         const resultWithName: SyncResult = {
           ...result,
           platformName: platformNameById.get(result.platform) || result.platform,
+        }
+        // 把预处理/渲染过程中的问题带到结果里，用户才能看到原因
+        if (warnings.length > 0) {
+          const combined = [resultWithName.message, ...warnings].filter(Boolean).join('；')
+          resultWithName.message = combined
         }
         syncState.results.push(resultWithName)
         allResults.push(resultWithName)
@@ -330,8 +403,12 @@ export async function performSync(
         },
       }
       const cmsPreprocessed = await sendPreprocessMessage(rawHtml, ['_cms'], cmsConfigs)
-      if (cmsPreprocessed?._cms) {
-        cmsArticle = { ...normalizedArticle, content: cmsPreprocessed._cms.html, html: cmsPreprocessed._cms.html }
+      if (cmsPreprocessed.platformContents?._cms) {
+        cmsArticle = {
+          ...normalizedArticle,
+          content: cmsPreprocessed.platformContents._cms.html,
+          html: cmsPreprocessed.platformContents._cms.html,
+        }
       }
     }
   }
@@ -446,14 +523,31 @@ export async function performSync(
   return { results: allResults, syncId }
 }
 
+/**
+ * 预处理页面的响应
+ */
+interface PreprocessResponse {
+  platformContents: Record<string, { html: string; markdown: string }> | null
+  mermaid?: { rendered: number; failed: number; errors: string[] }
+  error?: string
+}
+
 async function sendPreprocessMessage(
   rawHtml: string,
   platforms: string[],
-  configs: Record<string, unknown>
-): Promise<Record<string, { html: string; markdown: string }> | null> {
+  configs: Record<string, unknown>,
+  options: { renderMermaid?: boolean; rasterizeSvg?: boolean } = {}
+): Promise<PreprocessResponse> {
+  const { renderMermaid = false, rasterizeSvg = false } = options
   const message = {
     type: 'PREPROCESS_FOR_PLATFORMS',
-    payload: { rawHtml, platforms, configs },
+    payload: { rawHtml, platforms, configs, renderMermaid, rasterizeSvg },
+  }
+
+  // Mermaid 渲染依赖 mermaid 库 + DOM，只有扩展页面（preprocessor 页）具备，
+  // 因此直接走临时窗口，不经过常驻 content script
+  if (renderMermaid || rasterizeSvg) {
+    return await preprocessViaTemporaryTab(message)
   }
 
   try {
@@ -474,7 +568,9 @@ async function sendPreprocessMessage(
     for (const tabId of candidateTabIds) {
       try {
         const response = await chrome.tabs.sendMessage(tabId, message)
-        if (response?.platformContents) return response.platformContents
+        if (response?.platformContents) {
+          return { platformContents: response.platformContents, mermaid: response.mermaid }
+        }
       } catch {
         continue
       }
@@ -490,10 +586,14 @@ const PREPROCESSOR_URL = chrome.runtime.getURL('src/preprocessor/index.html')
 
 async function preprocessViaTemporaryTab(
   message: { type: string; payload: unknown }
-): Promise<Record<string, { html: string; markdown: string }> | null> {
+): Promise<PreprocessResponse> {
   let windowId: number | undefined
   let tabId: number | undefined
   try {
+    // 先挂监听再创建窗口：扩展页面加载很快，
+    // 先创建窗口再注册监听可能错过 complete 事件
+    const loaded = waitForPreprocessorTab(15000)
+
     const win = await chrome.windows.create({
       url: PREPROCESSOR_URL,
       type: 'popup',
@@ -505,36 +605,73 @@ async function preprocessViaTemporaryTab(
     })
     windowId = win.id
     tabId = win.tabs?.[0]?.id
-    if (!tabId) return null
+    if (!tabId) return { platformContents: null, error: '临时窗口没有创建出标签页' }
 
-    await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener)
-        reject(new Error('Tab load timeout'))
-      }, 5000)
-      const listener = (id: number, info: chrome.tabs.TabChangeInfo) => {
-        if (id === tabId && info.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener)
-          clearTimeout(timeout)
-          resolve()
-        }
-      }
-      chrome.tabs.onUpdated.addListener(listener)
-    })
+    await loaded
 
     const response = await chrome.tabs.sendMessage(tabId, message)
     if (response?.platformContents) {
       logger.debug('Preprocessed via temporary window')
-      return response.platformContents
+      return {
+        platformContents: response.platformContents,
+        mermaid: response.mermaid,
+        error: response.error,
+      }
     }
-    return null
+    return { platformContents: null, error: response?.error || '预处理页面没有返回结果' }
   } catch (error) {
-    logger.debug('Temporary window preprocess failed:', error)
-    return null
+    const reason = (error as Error).message
+    logger.warn('Temporary window preprocess failed:', error)
+    return { platformContents: null, error: reason }
   } finally {
     if (windowId) {
       chrome.windows.remove(windowId).catch(() => {})
     }
   }
+}
+
+/**
+ * 等待预处理页面加载完成
+ *
+ * 通过 URL 匹配标签页，避免依赖 windowId/tabId 的时序；
+ * 同时保留轮询兜底，防止 onUpdated 事件丢失。
+ */
+function waitForPreprocessorTab(timeoutMs = 15000): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false
+    const finish = (error?: Error) => {
+      if (settled) return
+      settled = true
+      chrome.tabs.onUpdated.removeListener(listener)
+      clearInterval(poller)
+      clearTimeout(timeout)
+      if (error) reject(error)
+      else resolve()
+    }
+
+    const listener = (
+      _id: number,
+      info: chrome.tabs.TabChangeInfo,
+      tab?: chrome.tabs.Tab
+    ) => {
+      if (info.status === 'complete' && tab?.url?.startsWith(PREPROCESSOR_URL)) {
+        finish()
+      }
+    }
+
+    const poller = setInterval(() => {
+      chrome.tabs.query({ url: PREPROCESSOR_URL })
+        .then((tabs) => {
+          if (tabs.some(tab => tab.status === 'complete')) finish()
+        })
+        .catch(() => {})
+    }, 200)
+
+    const timeout = setTimeout(() => {
+      finish(new Error(`扩展页面加载超时（${timeoutMs / 1000}s）`))
+    }, timeoutMs)
+
+    chrome.tabs.onUpdated.addListener(listener)
+  })
 }
 
