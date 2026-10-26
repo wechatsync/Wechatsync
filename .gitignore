@@ -32,6 +32,9 @@ package-lock.json
 yarn-error.log
 CLAUDE.md
 
+# 本地 npm/pnpm 配置（指向本机 pnpm store，不应提交）
+.npmrc
+
 # Private adapters (not open source)
 packages/core/src/adapters/platforms/xiaohongshu.ts
 packages/core/src/adapters/platforms/x.ts

@@ -314,10 +314,14 @@ function RowInfo({
         <span className="flex items-center gap-1 flex-shrink-0">
           {result.message && (
             <span className="relative group">
-              <span className="text-[10px] text-gray-400 truncate block" style={{ maxWidth: '140px' }}>
+              <span
+                className="text-[10px] text-amber-600 dark:text-amber-400 line-clamp-2 block"
+                style={{ maxWidth: '200px' }}
+                title={result.message}
+              >
                 {result.message}
               </span>
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[11px] text-white bg-gray-800 rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[11px] text-white bg-gray-800 rounded-md whitespace-pre-wrap max-w-[280px] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
                 {result.message}
               </span>
             </span>

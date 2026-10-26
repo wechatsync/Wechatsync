@@ -75,7 +75,11 @@ export function preprocessForPlatform(rawHtml: string, config: PreprocessConfig)
   }
 
   // 移除 script 和 noscript（总是执行），style 根据配置决定
-  removeElements(container, config.keepStyles ? ['script', 'noscript'] : ['script', 'style', 'noscript'])
+  if (config.keepStyles) {
+    removeElements(container, ['script', 'noscript'])
+  } else {
+    removeElementsKeepSvgStyles(container, ['script', 'style', 'noscript'])
+  }
 
   // 清理源平台链接（固定步骤，在 removeLinks 之前执行）
   cleanSourcePlatformLinks(container)
@@ -212,6 +216,20 @@ function removeComments(container: HTMLElement): void {
 function removeElements(container: HTMLElement, selectors: string[]): void {
   const selector = selectors.join(', ')
   container.querySelectorAll(selector).forEach((el) => el.remove())
+}
+
+/**
+ * 移除匹配选择器的元素，但保留 SVG 内部的 <style>
+ *
+ * SVG 的样式（颜色、字号、箭头）都写在 SVG 自己的 <style> 里，
+ * 删掉之后光栅化出来的图片会变成一堆没有颜色的黑框。
+ */
+function removeElementsKeepSvgStyles(container: HTMLElement, selectors: string[]): void {
+  const selector = selectors.join(', ')
+  container.querySelectorAll(selector).forEach((el) => {
+    if (el.tagName.toLowerCase() === 'style' && el.closest('svg')) return
+    el.remove()
+  })
 }
 
 /**
@@ -1013,7 +1031,7 @@ function escapeHtml(text: string): string {
 export function preprocessContentDOM(container: HTMLElement): void {
   // 执行默认的全部预处理（不包含平台特定处理）
   removeComments(container)
-  removeElements(container, ['iframe', 'script', 'style', 'noscript'])
+  removeElementsKeepSvgStyles(container, ['iframe', 'script', 'style', 'noscript'])
   removeElements(container, ['mpprofile', 'qqmusic', 'mpvoice', 'mpcps', 'mp-miniprogram', 'mp-common-product'])
   processSvgImages(container)
   processLazyImages(container)

@@ -174,6 +174,11 @@ function backupAndReplaceCodeBlocks(): ElementBackup[] {
   ].join(', ')
 
   document.querySelectorAll('pre').forEach((pre) => {
+    // 里面是渲染好的图表（<pre><code><svg>…</svg></code></pre>）时不能简化：
+    // innerText 只会取到 SVG 的文字，图形本身会被抹掉。
+    // 这类内容交给 SVG 光栅化处理。
+    if (pre.querySelector('svg')) return
+
     // 临时隐藏行号元素
     const gutterEls = pre.querySelectorAll(GUTTER_SELECTORS)
     gutterEls.forEach(el => (el as HTMLElement).style.display = 'none')
