@@ -79,6 +79,7 @@
 | 搜狐焦点 | sohufocus | 房产 | ✅ |
 | X (Twitter) | x | 海外 | ✅ |
 | 东方财富 | eastmoney | 财经 | ✅ |
+| 魔搭社区 | modelscope | 技术社区/AI | ✅ |
 | 什么值得买 | smzdm | 通用 | ✅ |
 | 网易号 | netease | 通用 | ✅ |
 | WordPress | wordpress | 建站/CMS | ✅ |
