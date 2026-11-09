@@ -106,7 +106,7 @@ export class CodefatherAdapter extends CodeAdapter {
       }, { onProgress: options?.onImageProgress })
 
       // 先打开非编辑页面，写缓存后再导航，避免 React 已挂载而不恢复缓存。
-      const tab = await tabs.create(`${SITE_ORIGIN}/`, true)
+      const tab = await tabs.create(`${SITE_ORIGIN}/`, false)
       await tabs.waitForLoad(tab.id)
       // 上传和页面加载可能耗时；在写缓存前再次保护期间新打开的编辑器。
       if ((await tabs.query(`${SITE_ORIGIN}/add/passage*`)).length > 0) {

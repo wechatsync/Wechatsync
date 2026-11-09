@@ -69,6 +69,7 @@ describe('编程导航适配器', () => {
     expect(cache.value).toEqual({ title: article.title, content: article.markdown, description: article.summary, tags: article.tags })
     expect(cache.expires).toBeGreaterThanOrEqual(before + 86400000)
     expect(cache.expires).toBeLessThanOrEqual(Date.now() + 86400000)
+    expect(browser.tabs.create).toHaveBeenCalledWith(`${SITE}/`, false)
     expect(browser.location.assign).toHaveBeenCalledWith(`${SITE}/add/passage`)
     expect(fetchMock.mock.calls.every(([url, options]) => url.endsWith('/api/user/get/login') && options.method === 'GET')).toBe(true)
   })
@@ -82,6 +83,7 @@ describe('编程导航适配器', () => {
     const result = await adapter.publish(article)
     expect(result, result.error).toMatchObject({ success: true, draftOnly: true })
     expect(JSON.parse(browser.storage.get('add_post')!).value.content).toBe(article.markdown)
+    expect(browser.tabs.create).toHaveBeenCalledWith(`${SITE}/`, false)
     expect(browser.location.assign).toHaveBeenCalledWith(`${SITE}/add/passage`)
   })
 
