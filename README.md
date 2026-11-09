@@ -58,7 +58,7 @@
 | 微博 | weibo | 主流自媒体 | ✅ |
 | 小红书 | xiaohongshu | 主流自媒体 | ✅ |
 | 掘金 | juejin | 技术社区 | ✅ |
-| 编程导航 | codefather | 技术社区 | ✅ 本机浏览器草稿，需人工发布（见下方说明） |
+| 编程导航 | codefather | 技术社区 | ✅ 本地草稿（24 小时），人工发布 |
 | CSDN | csdn | 技术社区 | ✅ |
 | 简书 | jianshu | 通用 | ✅ |
 | 头条号 | toutiao | 通用 | ✅ |
@@ -88,15 +88,6 @@
 | Hugo | zip-download | 建站/CMS | ✅ 通过 Markdown 下载 |
 
 - [提交新平台请求](https://airtable.com/shrLSJMnTC2BlmP29)
-
-### 编程导航使用说明
-
-- 先在安装扩展的同一浏览器登录 [编程导航](https://www.codefather.cn/)，处理网站原有草稿并关闭已打开的文章编辑器，再选择「编程导航（本地草稿）」同步。
-- 适配器将标题、Markdown 正文及已有摘要/标签写入网站 `localStorage.add_post`，然后打开 `/add/passage` 编辑器。请检查内容、手动选择封面并确认发布。
-- **这是本机浏览器草稿，不是服务端草稿**：沿用网站 24 小时缓存有效期，不跨设备同步，清除站点数据会丢失；未过期草稿、未知缓存格式、已打开的编辑器都会阻止同步，避免覆盖原内容。
-- 无论 `draftOnly` 为何值都不会自动发布，也不会返回虚构的服务端文章 ID。公开编辑器的 `/api/post/add`、`/api/post/edit` 是发布接口，不用于保存草稿。
-- 正文图片通过网站接口上传/转存，失败则保留原链接并在结果中提示检查。需要浏览器扩展运行时；扩展桥接的 CLI/MCP 可用，纯 Node 无浏览器执行不可用。
-- 核心回归可运行 `pnpm --filter @wechatsync/core exec vitest run --maxWorkers=1 --minWorkers=1 --no-file-parallelism`。配套 CI 检查类型与构建；手动烟测在匿名浏览器验证真实编辑器缓存恢复，并拦截网络写请求，**不代表真实账号登录及上传链路已验收**。真实账户流程仍需在已登录的扩展中验证。
 
 ## CLI 命令行工具
 
