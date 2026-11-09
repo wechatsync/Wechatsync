@@ -58,6 +58,7 @@
 | 微博 | weibo | 主流自媒体 | ✅ |
 | 小红书 | xiaohongshu | 主流自媒体 | ✅ |
 | 掘金 | juejin | 技术社区 | ✅ |
+| 编程导航 | codefather | 技术社区 | ✅ 本地草稿，24 小时有效，人工发布 |
 | CSDN | csdn | 技术社区 | ✅ |
 | 简书 | jianshu | 通用 | ✅ |
 | 头条号 | toutiao | 通用 | ✅ |
