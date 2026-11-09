@@ -64,6 +64,7 @@ describe('编程导航适配器', () => {
     expect(result).toMatchObject({ platform: 'codefather', success: true, draftOnly: true, postUrl: `${SITE}/add/passage` })
     expect(result.postId).toBeUndefined()
     expect(result.message).toContain('本地')
+    expect(result.message).not.toMatch(/[()（）]/)
     const cache = JSON.parse(browser.storage.get('add_post')!)
     expect(cache.value).toEqual({ title: article.title, content: article.markdown, description: article.summary, tags: article.tags })
     expect(cache.expires).toBeGreaterThanOrEqual(before + 86400000)
@@ -84,10 +85,21 @@ describe('编程导航适配器', () => {
     expect(browser.location.assign).toHaveBeenCalledWith(`${SITE}/add/passage`)
   })
 
+  it('正文已清空时允许同步，不受 expires 和其他字段影响', async () => {
+    const browser = browserRuntime()
+    browser.storage.set('add_post', JSON.stringify({ value: { title: '旧标题', content: '', extra: '其他字段' }, expires: Date.now() + 86400000 }))
+    const adapter = new CodefatherAdapter()
+    await adapter.init(browser.runtime)
+    fetchMock.mockResolvedValue(Response.json({ code: 0, data: { id: '123' } }))
+    const result = await adapter.publish(article)
+    expect(result, result.error).toMatchObject({ success: true, draftOnly: true })
+    expect(JSON.parse(browser.storage.get('add_post')!).value.content).toBe(article.markdown)
+  })
+
   it.each(['已有本地草稿', '存储空间不足'])('页面错误通过执行结果返回具体原因：%s', async expected => {
     const browser = browserRuntime()
     if (expected === '已有本地草稿') {
-      browser.storage.set('add_post', JSON.stringify({ value: { title: '不能覆盖' }, expires: null }))
+      browser.storage.set('add_post', JSON.stringify({ value: { title: '不能覆盖', content: '已有正文' }, expires: null }))
     } else {
       vi.spyOn(browser.storage, 'set').mockImplementation(() => { throw new Error(expected) })
     }
@@ -112,23 +124,11 @@ describe('编程导航适配器', () => {
   })
 
   it.each([
-    JSON.stringify({ value: { title: '未完成的旧稿', content: '不能丢' }, expires: Date.now() + 86400000 }),
-    JSON.stringify({ value: { title: '不过期的旧稿' }, expires: null }),
-    '{无法解析的旧草稿',
-    JSON.stringify({ unknown: true }),
-    JSON.stringify({ unknown: true, expires: 1 }),
-    JSON.stringify({ value: '非草稿对象', expires: 1 }),
-    JSON.stringify({ value: { unrelated: '未知格式' }, expires: 1 }),
-    JSON.stringify({ value: [], expires: 1 }),
-    JSON.stringify({ value: {}, expires: 1 }),
-    JSON.stringify({ value: { title: '旧稿', unrelated: true }, expires: 1 }),
-    JSON.stringify({ value: { title: '旧稿' }, expires: 1, unknown: true }),
-    ...['title', 'content', 'description', 'cover', 'thumbnailCover'].map(key =>
-      JSON.stringify({ value: { [key]: 123 }, expires: 1 })),
-    JSON.stringify({ value: { tags: '编程' }, expires: 1 }),
-    JSON.stringify({ value: { tags: [123] }, expires: 1 }),
-    JSON.stringify([{ value: { title: '旧稿' }, expires: 1 }]),
-  ])('拒绝覆盖现有或格式未知的本地草稿：%s', async raw => {
+    JSON.stringify({ value: { content: '不能丢' }, expires: Date.now() + 86400000 }),
+    JSON.stringify({ value: { content: '不能丢' }, expires: 1 }),
+    JSON.stringify({ value: { content: '不能丢' }, expires: null }),
+    JSON.stringify({ value: { content: '不能丢' } }),
+  ])('只要正文有内容就拒绝覆盖，与 expires 无关：%s', async raw => {
     const browser = browserRuntime()
     browser.storage.set('add_post', raw)
     const adapter = new CodefatherAdapter()
@@ -230,7 +230,7 @@ describe('编程导航适配器', () => {
     expect(browser.tabs.create).not.toHaveBeenCalled()
   })
 
-  it('可以替换明确过期的草稿，但保留其他站点缓存', async () => {
+  it('旧稿没有正文时允许同步，但保留其他站点缓存', async () => {
     const browser = browserRuntime()
     browser.storage.set('add_post', JSON.stringify({ value: { title: '过期' }, expires: Date.now() - 1000 }))
     browser.storage.set('edit-post-123', '已有文章的编辑缓存')

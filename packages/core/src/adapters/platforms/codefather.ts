@@ -32,7 +32,7 @@ export class CodefatherAdapter extends CodeAdapter {
         const response = await this.runtime.fetch(`${API_ORIGIN}/api/user/get/login`, {
           method: 'GET', credentials: 'include',
         })
-        if (!response.ok) throw new Error(`登录检测失败（HTTP ${response.status}）`)
+        if (!response.ok) throw new Error(`登录检测失败，HTTP ${response.status}`)
         const result = await response.json() as {
           code?: number
           message?: string
@@ -115,27 +115,9 @@ export class CodefatherAdapter extends CodeAdapter {
       const cached = await tabs.executeScript(tab.id, ({ origin, value }: { origin: string; value: Record<string, unknown> }) => {
         try {
           if (location.origin !== origin) throw new Error('编程导航页面域名不匹配')
-          // 空字符串与不存在都表示无草稿；其他未知或未过期内容仍保留。
           const previous = localStorage.getItem('add_post')
-          if (previous !== null && previous !== '') {
-            let replaceable = false
-            try {
-              const draft = JSON.parse(previous)
-              const fields = draft?.value
-              const stringFields = ['title', 'content', 'description', 'cover', 'thumbnailCover']
-              replaceable = draft !== null && typeof draft === 'object' && !Array.isArray(draft)
-                && Object.keys(draft).every(key => key === 'value' || key === 'expires')
-                && fields !== null && typeof fields === 'object' && !Array.isArray(fields)
-                && Object.keys(fields).length > 0
-                && Object.entries(fields).every(([key, field]) => key === 'tags'
-                  ? Array.isArray(field) && field.every(tag => typeof tag === 'string')
-                  : stringFields.includes(key) && typeof field === 'string')
-                && typeof draft.expires === 'number' && Number.isFinite(draft.expires)
-                && draft.expires > 0 && draft.expires < Date.now()
-            } catch { /* 不覆盖损坏或新版格式 */ }
-            if (!replaceable) {
-              throw new Error('编程导航已有本地草稿，请先在网站处理或清除后重试')
-            }
+          if (previous && JSON.parse(previous)?.value?.content?.trim()) {
+            throw new Error('编程导航已有本地草稿，请先在网站处理或清除后重试')
           }
           const raw = JSON.stringify({ value, expires: Date.now() + 86400000 })
           localStorage.setItem('add_post', raw)
@@ -158,7 +140,7 @@ export class CodefatherAdapter extends CodeAdapter {
       return this.createResult(true, {
         postUrl: editorUrl,
         draftOnly: true,
-        message: '已保存到当前浏览器的本地草稿（24 小时有效），请在编程导航编辑器人工确认并发布；不跨设备同步'
+        message: '已保存到当前浏览器的本地草稿，24 小时有效，请在编程导航编辑器人工确认并发布；不跨设备同步'
           + (imageFailures ? `；${imageFailures} 张图片转存失败，已保留原链接，请检查` : ''),
       })
     } catch (error) {
