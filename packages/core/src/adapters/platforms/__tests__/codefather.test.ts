@@ -37,12 +37,7 @@ function browserRuntime() {
 describe('编程导航适配器', () => {
   beforeEach(() => { vi.resetAllMocks() })
 
-  it('提供编程导航适配器', () => {
-    expect(CodefatherAdapter).toBeTypeOf('function')
-  })
-
   it('通过实际登录接口识别用户', async () => {
-    expect(CodefatherAdapter).toBeTypeOf('function')
     const adapter = new CodefatherAdapter()
     await adapter.init(runtime)
     fetchMock.mockResolvedValue(Response.json({
