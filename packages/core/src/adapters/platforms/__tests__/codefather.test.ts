@@ -26,9 +26,9 @@ function browserRuntime() {
     create: vi.fn().mockResolvedValue({ id: 123 }),
     waitForLoad: vi.fn().mockResolvedValue(undefined),
     executeScript: vi.fn(async (_id: number, fn: (...args: unknown[]) => unknown, args: unknown[]) => {
-      // 与 chrome.scripting 一样序列化函数，禁止偷用适配器闭包。
+      // 扩展运行时读取 InjectionResult.result，不把页面异常当作调用方异常。
       context.args = args
-      return runInContext(`(${fn.toString()})(...args)`, context)
+      try { return runInContext(`(${fn.toString()})(...args)`, context) } catch { return undefined }
     }),
   }
   return { runtime: { ...runtime, tabs } as unknown as RuntimeInterface, storage, tabs, location }
@@ -36,6 +36,10 @@ function browserRuntime() {
 
 describe('编程导航适配器', () => {
   beforeEach(() => { vi.resetAllMocks() })
+
+  it('平台显示名称保持为编程导航', () => {
+    expect(new CodefatherAdapter().meta.name).toBe('编程导航')
+  })
 
   it('通过实际登录接口识别用户', async () => {
     const adapter = new CodefatherAdapter()
@@ -66,6 +70,45 @@ describe('编程导航适配器', () => {
     expect(cache.expires).toBeLessThanOrEqual(Date.now() + 86400000)
     expect(browser.location.assign).toHaveBeenCalledWith(`${SITE}/add/passage`)
     expect(fetchMock.mock.calls.every(([url, options]) => url.endsWith('/api/user/get/login') && options.method === 'GET')).toBe(true)
+  })
+
+  it('add_post 被用户清成空字符串后仍可同步', async () => {
+    const browser = browserRuntime()
+    browser.storage.set('add_post', '')
+    const adapter = new CodefatherAdapter()
+    await adapter.init(browser.runtime)
+    fetchMock.mockResolvedValue(Response.json({ code: 0, data: { id: '123' } }))
+    const result = await adapter.publish(article)
+    expect(result, result.error).toMatchObject({ success: true, draftOnly: true })
+    expect(JSON.parse(browser.storage.get('add_post')!).value.content).toBe(article.markdown)
+    expect(browser.location.assign).toHaveBeenCalledWith(`${SITE}/add/passage`)
+  })
+
+  it.each(['已有本地草稿', '存储空间不足'])('页面错误通过执行结果返回具体原因：%s', async expected => {
+    const browser = browserRuntime()
+    if (expected === '已有本地草稿') {
+      browser.storage.set('add_post', JSON.stringify({ value: { title: '不能覆盖' }, expires: null }))
+    } else {
+      vi.spyOn(browser.storage, 'set').mockImplementation(() => { throw new Error(expected) })
+    }
+    const adapter = new CodefatherAdapter()
+    await adapter.init(browser.runtime)
+    fetchMock.mockResolvedValue(Response.json({ code: 0, data: { id: '123' } }))
+    const result = await adapter.publish(article)
+    expect(result.success).toBe(false)
+    expect(result.error).toContain(expected)
+    expect(browser.location.assign).not.toHaveBeenCalled()
+  })
+
+  it('页面脚本没有返回结果时明确提示，而非谎称写入校验失败', async () => {
+    const browser = browserRuntime()
+    browser.tabs.executeScript.mockResolvedValue(undefined)
+    const adapter = new CodefatherAdapter()
+    await adapter.init(browser.runtime)
+    fetchMock.mockResolvedValue(Response.json({ code: 0, data: { id: '123' } }))
+    const result = await adapter.publish(article)
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('页面脚本未返回结果')
   })
 
   it.each([

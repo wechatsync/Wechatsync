@@ -12,7 +12,7 @@ const SITE_ORIGIN = 'https://www.codefather.cn'
 export class CodefatherAdapter extends CodeAdapter {
   readonly meta: PlatformMeta = {
     id: 'codefather',
-    name: '编程导航（本地草稿）',
+    name: '编程导航',
     icon: `${SITE_ORIGIN}/favicon.ico`,
     homepage: `${SITE_ORIGIN}/add/passage`,
     capabilities: ['article', 'draft', 'image_upload'],
@@ -113,39 +113,46 @@ export class CodefatherAdapter extends CodeAdapter {
         throw new Error('请先保存并关闭编程导航已有编辑器，再同步本地草稿')
       }
       const cached = await tabs.executeScript(tab.id, ({ origin, value }: { origin: string; value: Record<string, unknown> }) => {
-        if (location.origin !== origin) throw new Error('编程导航页面域名不匹配')
-        // 仅替换已知结构且明确过期的缓存；损坏或新版格式一律保留。
-        const previous = localStorage.getItem('add_post')
-        if (previous !== null) {
-          let replaceable = false
-          try {
-            const draft = JSON.parse(previous)
-            const fields = draft?.value
-            const stringFields = ['title', 'content', 'description', 'cover', 'thumbnailCover']
-            replaceable = draft !== null && typeof draft === 'object' && !Array.isArray(draft)
-              && Object.keys(draft).every(key => key === 'value' || key === 'expires')
-              && fields !== null && typeof fields === 'object' && !Array.isArray(fields)
-              && Object.keys(fields).length > 0
-              && Object.entries(fields).every(([key, field]) => key === 'tags'
-                ? Array.isArray(field) && field.every(tag => typeof tag === 'string')
-                : stringFields.includes(key) && typeof field === 'string')
-              && typeof draft.expires === 'number' && Number.isFinite(draft.expires)
-              && draft.expires > 0 && draft.expires < Date.now()
-          } catch { /* 不覆盖损坏或新版格式 */ }
-          if (!replaceable) {
-            throw new Error('编程导航已有本地草稿，请先在网站处理或清除后重试')
+        try {
+          if (location.origin !== origin) throw new Error('编程导航页面域名不匹配')
+          // 空字符串与不存在都表示无草稿；其他未知或未过期内容仍保留。
+          const previous = localStorage.getItem('add_post')
+          if (previous !== null && previous !== '') {
+            let replaceable = false
+            try {
+              const draft = JSON.parse(previous)
+              const fields = draft?.value
+              const stringFields = ['title', 'content', 'description', 'cover', 'thumbnailCover']
+              replaceable = draft !== null && typeof draft === 'object' && !Array.isArray(draft)
+                && Object.keys(draft).every(key => key === 'value' || key === 'expires')
+                && fields !== null && typeof fields === 'object' && !Array.isArray(fields)
+                && Object.keys(fields).length > 0
+                && Object.entries(fields).every(([key, field]) => key === 'tags'
+                  ? Array.isArray(field) && field.every(tag => typeof tag === 'string')
+                  : stringFields.includes(key) && typeof field === 'string')
+                && typeof draft.expires === 'number' && Number.isFinite(draft.expires)
+                && draft.expires > 0 && draft.expires < Date.now()
+            } catch { /* 不覆盖损坏或新版格式 */ }
+            if (!replaceable) {
+              throw new Error('编程导航已有本地草稿，请先在网站处理或清除后重试')
+            }
           }
+          const raw = JSON.stringify({ value, expires: Date.now() + 86400000 })
+          localStorage.setItem('add_post', raw)
+          if (localStorage.getItem('add_post') !== raw) throw new Error('编程导航本地草稿写入校验失败')
+          return { success: true, error: '' }
+        } catch (error) {
+          // 不依赖页面异常跨 chrome.scripting 边界传播，显式返回原因。
+          return { success: false, error: error instanceof Error ? error.message : String(error) }
         }
-        const raw = JSON.stringify({ value, expires: Date.now() + 86400000 })
-        localStorage.setItem('add_post', raw)
-        return localStorage.getItem('add_post') === raw
       }, [{ origin: SITE_ORIGIN, value: {
         title: article.title,
         content,
         description: article.summary,
         tags: article.tags,
       } }])
-      if (!cached) throw new Error('编程导航本地草稿写入校验失败')
+      if (!cached) throw new Error('编程导航页面脚本未返回结果，请刷新后重试')
+      if (!cached.success) throw new Error(cached.error)
       const editorUrl = this.meta.homepage
       await tabs.executeScript(tab.id, (url: string) => { location.assign(url) }, [editorUrl])
       return this.createResult(true, {
