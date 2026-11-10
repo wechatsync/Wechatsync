@@ -164,6 +164,22 @@ export class WeixinAdapter extends CodeAdapter {
         content = this.processContent(content)
       }
 
+      // 上传封面图(如有),拿 fileid + cdn_url 用于绑定草稿封面
+      let coverFileId = ''
+      let coverCdnUrl = ''
+      if (article.cover) {
+        try {
+          logger.info('Uploading cover image...')
+          const coverRes = await this.uploadImageByUrl(article.cover)
+          coverCdnUrl = coverRes.url
+          coverFileId = String(coverRes.attrs?.fileid ?? '')
+          logger.debug('Cover uploaded:', { coverFileId, coverCdnUrl })
+        } catch (err) {
+          // 封面上传失败不阻断正文发布,记录警告后继续
+          logger.warn('Cover upload failed, skipping cover:', (err as Error).message)
+        }
+      }
+
       const formData = new URLSearchParams({
         token: this.weixinMeta!.token,
         lang: 'zh_CN',
@@ -182,17 +198,17 @@ export class WeixinAdapter extends CodeAdapter {
         title0: article.title,
         author0: '',
         writerid0: '0',
-        fileid0: '',
+        fileid0: coverFileId,
         digest0: '',
         auto_gen_digest0: '1',
         content0: content,
         sourceurl0: '',
         need_open_comment0: '1',
         only_fans_can_comment0: '0',
-        cdn_url0: '',
+        cdn_url0: coverCdnUrl,
         cdn_235_1_url0: '',
         cdn_1_1_url0: '',
-        cdn_url_back0: '',
+        cdn_url_back0: coverCdnUrl,
         crop_list0: '',
         music_id0: '',
         video_id0: '',
@@ -316,6 +332,8 @@ export class WeixinAdapter extends CodeAdapter {
 
     return {
       url: res.cdn_url,
+      // 保留 fileid(res.content),供封面绑定使用
+      attrs: res.content ? { fileid: res.content } : undefined,
     }
   }
 
