@@ -175,8 +175,10 @@ export class DoubanAdapter extends CodeAdapter {
 
       return this.createResult(true, {
         postId: res.id,
-        postUrl: res.url || `https://www.douban.com/topic/${res.id}/`,
+        // 私密发布代替草稿，直接打开编辑页让用户确认后再公开
+        postUrl: `https://www.douban.com/topic/${res.id}/edit`,
         draftOnly: options?.draftOnly ?? true,
+        message: '【默认私密】',
       })
     }).catch((error) => this.createResult(false, {
       error: (error as Error).message,
