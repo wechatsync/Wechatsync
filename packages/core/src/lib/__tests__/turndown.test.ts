@@ -2,7 +2,7 @@
  * Turndown HTML→Markdown 转换测试
  */
 import { describe, it, expect } from 'vitest'
-import { htmlToMarkdown } from '../turndown'
+import { createTurndownService, htmlToMarkdown } from '../turndown'
 
 describe('htmlToMarkdown', () => {
   describe('Table conversion', () => {
@@ -197,6 +197,19 @@ describe('htmlToMarkdown', () => {
   })
 
   describe('LaTeX formulas', () => {
+    it('preserves LaTeX commands and subscripts in dollar formulas', () => {
+      const html = '<p>行内 $p=\\frac{c_1}{v}$ 公式</p><p>$$E=mc^2$$</p>'
+      const markdown = createTurndownService().turndown(html)
+      expect(markdown).toContain('$p=\\frac{c_1}{v}$')
+      expect(markdown).toContain('$$E=mc^2$$')
+    })
+
+    it('still escapes Markdown syntax outside formulas', () => {
+      const html = '<p>普通 *强调* 与 $x_1$</p>'
+      const markdown = createTurndownService().turndown(html)
+      expect(markdown).toContain('普通 \\*强调\\* 与 $x_1$')
+    })
+
     it('should convert block formula script tag', () => {
       const html = '<script type="math/tex; mode=display">E = mc^2</script>'
       const markdown = htmlToMarkdown(html)

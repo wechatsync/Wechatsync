@@ -9,6 +9,7 @@
  */
 import Defuddle from 'defuddle'
 import { createLogger } from '../logger'
+import { detectCodeLang } from '../code-language'
 
 const logger = createLogger('Reader')
 
@@ -214,8 +215,10 @@ function backupAndReplaceCodeBlocks(): ElementBackup[] {
       originalHTML: pre.innerHTML,
     })
 
-    // 替换为纯文本
+    const language = detectCodeLang(pre)
+    // Reader 会清理 class，使用 data-lang 保留语言；恢复 innerHTML 时一并恢复原页面。
     pre.innerHTML = `<code>${escapeHtml(cleanedText)}</code>`
+    if (language) pre.querySelector('code')!.setAttribute('data-lang', language)
   })
 
   return backups
