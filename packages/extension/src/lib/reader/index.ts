@@ -156,6 +156,32 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
+function detectCodeLang(pre: Element): string {
+  const elements = [pre, pre.querySelector('code')].filter(Boolean) as Element[]
+
+  for (const el of elements) {
+    const attrLang =
+      el.getAttribute('data-lang') ||
+      el.getAttribute('data-language') ||
+      el.getAttribute('lang') ||
+      ''
+    if (attrLang) return attrLang.trim().toLowerCase()
+
+    const className = el.className || ''
+    const patterns = [
+      /(?:language|lang|highlight)-([a-zA-Z0-9+#._-]+)/,
+      /\bhljs\s+([a-zA-Z0-9+#._-]+)/,
+      /\b(javascript|typescript|python|java|cpp|c|csharp|go|rust|ruby|php|swift|kotlin|scala|sql|html|css|json|xml|yaml|markdown|bash|shell|powershell)\b/i,
+    ]
+    for (const pattern of patterns) {
+      const match = className.match(pattern)
+      if (match) return match[1].toLowerCase()
+    }
+  }
+
+  return ''
+}
+
 /**
  * 临时简化页面中的代码块，返回备份以便恢复
  * 使用真实 DOM 提取代码（保留换行）
@@ -214,8 +240,14 @@ function backupAndReplaceCodeBlocks(): ElementBackup[] {
       originalHTML: pre.innerHTML,
     })
 
-    // 替换为纯文本
+    const lang = detectCodeLang(pre)
+
+    // 替换为纯文本，同时保留语言给后续 HTML→Markdown 转换使用。
     pre.innerHTML = `<code>${escapeHtml(cleanedText)}</code>`
+    if (lang) {
+      pre.setAttribute('data-lang', lang)
+      pre.className = `language-${lang}`
+    }
   })
 
   return backups

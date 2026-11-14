@@ -683,6 +683,21 @@ const SITE_CONFIGS: SiteExtractConfig[] = [
     removeSelectors: ['.anchor', 'a[aria-hidden="true"]', '[data-testid]', '.octicon', '.zeroclipboard-container', '.btn-octicon'],
     unwrapHeadingSelectors: ['.markdown-heading'],
   },
+  {
+    domains: ['csdn.net'],
+    platform: 'csdn',
+    contentSelector: '#content_views, .markdown_views, .htmledit_views, article',
+    titleSelectors: ['.title-article', '#articleContentId', 'h1'],
+    removeSelectors: [
+      '.hide-preCode-box',
+      '.pre-numbering',
+      '.code-toolbar .toolbar',
+      '.blog-tags-box',
+      '.article-info-box',
+      '.recommend-box',
+      '.comment-box',
+    ],
+  },
   // 飞书/Lark 使用虚拟滚动，由 extractFeishuArticle() 通过 fetch + clientVars 解析提取
 ]
 
@@ -1107,7 +1122,8 @@ function preprocessForMultiplePlatformsLocal(
  */
 window.addEventListener('message', async (event) => {
   try {
-    const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data
+    const data = parseWindowMessage(event.data)
+    if (!data?.type) return
 
     if (data.type === 'CLOSE_EDITOR') {
       closeEditor()
@@ -1150,6 +1166,23 @@ window.addEventListener('message', async (event) => {
     logger.error('Error handling editor message:', e)
   }
 })
+
+function parseWindowMessage(data: unknown): any | null {
+  if (typeof data !== 'string') {
+    return data && typeof data === 'object' ? data : null
+  }
+
+  const trimmed = data.trim()
+  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) {
+    return null
+  }
+
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return null
+  }
+}
 
 /**
  * 监听 background 消息，转发同步进度到编辑器

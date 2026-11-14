@@ -244,6 +244,29 @@ function normalizeCellContent(content: string): string {
 }
 
 /**
+ * 从 pre/code 元素的属性中提取代码语言。
+ * 多平台页面会把语言放在 data-lang、class、data-language 或 CSDN 的 language-* class 中。
+ */
+function detectCodeLanguage(pre: Element): string {
+  const elements = [pre, pre.querySelector('code')].filter(Boolean) as Element[]
+
+  for (const el of elements) {
+    const attrLanguage =
+      el.getAttribute('data-lang') ||
+      el.getAttribute('data-language') ||
+      el.getAttribute('lang') ||
+      ''
+    if (attrLanguage) return attrLanguage
+
+    const className = el.className || ''
+    const lang = extractLangFromClass(className)
+    if (lang) return lang
+  }
+
+  return ''
+}
+
+/**
  * 表格单元格处理
  */
 function cell(content: string, node: Element): string {
@@ -397,36 +420,7 @@ function addExtensionRules(turndownService: TurndownService): void {
     replacement: function(_content, node) {
       const pre = node as HTMLPreElement
 
-      // 尝试获取语言（多种来源）
-      let language = ''
-      // 1. 从 pre 的 data-lang 属性获取
-      const dataLang = pre.getAttribute('data-lang')
-      if (dataLang) {
-        language = dataLang
-      }
-      // 2. 从 code 的 class 获取
-      if (!language) {
-        const code = pre.querySelector('code')
-        if (code) {
-          const className = code.className || ''
-          const langMatch = className.match(/language-(\w+)/)
-          if (langMatch) {
-            language = langMatch[1]
-          }
-        }
-      }
-      // 3. 从 pre 的 class 获取
-      if (!language) {
-        const preClassName = pre.className || ''
-        const preLangMatch = preClassName.match(/language-(\w+)/)
-        if (preLangMatch) {
-          language = preLangMatch[1]
-        }
-      }
-      // 4. 默认使用 bash
-      if (!language) {
-        language = 'bash'
-      }
+      let language = detectCodeLanguage(pre)
 
       // 处理微信等平台将每行代码放在单独 <code> 标签的情况
       const codeElements = pre.querySelectorAll('code')
@@ -454,7 +448,7 @@ function addExtensionRules(turndownService: TurndownService): void {
         return ''
       }
 
-      // 清理语言标识（只保留字母数字和常见字符）
+      // 清理语言标识（只保留字母数字和常见字符）。无语言时保持空 fence，避免误标成 bash。
       language = language.replace(/[^a-zA-Z0-9+#._-]/g, '').toLowerCase()
 
       // 检测内容中最长的连续反引号，使用更多反引号包裹

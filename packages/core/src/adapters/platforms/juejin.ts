@@ -222,6 +222,16 @@ export class JuejinAdapter extends CodeAdapter {
         }
       )
 
+      let coverImage = ''
+      if (article.cover) {
+        try {
+          const coverResult = await this.uploadImageByUrl(article.cover)
+          coverImage = coverResult.url
+        } catch (error) {
+          logger.warn('Failed to upload cover image:', article.cover, error)
+        }
+      }
+
       // 6. 创建草稿 (参数来自 DSL juejin.yaml + juejin.transform.ts prepareBody)
       const createResponse = await this.runtime.fetch(
         'https://api.juejin.cn/content_api/v1/article_draft/create',
@@ -233,9 +243,9 @@ export class JuejinAdapter extends CodeAdapter {
             'x-secsdk-csrf-token': csrfToken,
           },
           body: JSON.stringify({
-            brief_content: '',
+            brief_content: this.buildBriefContent(article),
             category_id: '0',
-            cover_image: '',
+            cover_image: coverImage,
             edit_type: 10,
             html_content: 'deprecated',
             link_url: '',
@@ -283,6 +293,12 @@ export class JuejinAdapter extends CodeAdapter {
     }).catch((error) => this.createResult(false, {
       error: (error as Error).message,
     }))
+  }
+
+  private buildBriefContent(article: Article): string {
+    const summary = article.summary?.replace(/\s+/g, ' ').trim()
+    if (!summary) return ''
+    return summary.length > 100 ? summary.slice(0, 100) : summary
   }
 
   /**
