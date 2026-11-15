@@ -512,6 +512,28 @@ function addExtensionRules(turndownService: TurndownService): void {
   })
 }
 
+/** Turndown 会转义文本中的反斜杠和下划线，但 LaTeX 公式需要保留原文。 */
+function preserveLatexFormulas(turndownService: TurndownService): void {
+  const escapeText = turndownService.escape.bind(turndownService)
+  // 行内公式沿用 pandoc 规则：开头 $ 后不能是空白，结尾 $ 前不能是空白、后不能紧跟数字，
+  // 避免把 "$5 ... $10" 这类金额当作公式而跳过 Markdown 转义。
+  const formulaPattern = /\$\$[\s\S]+?\$\$|\$(?![\s$])(?:\\.|[^$\\\r\n])*?(?<!\s)\$(?!\d)/g
+
+  turndownService.escape = (text: string): string => {
+    let result = ''
+    let cursor = 0
+
+    for (const match of text.matchAll(formulaPattern)) {
+      const start = match.index
+      if (start > 0 && text[start - 1] === '\\') continue
+      result += escapeText(text.slice(cursor, start)) + match[0]
+      cursor = start + match[0].length
+    }
+
+    return result + escapeText(text.slice(cursor))
+  }
+}
+
 /**
  * 创建配置好的 Turndown 实例
  */
@@ -530,6 +552,7 @@ export function createTurndownService(options: TurndownOptions = {}): TurndownSe
 
   // 添加扩展规则
   addExtensionRules(turndownService)
+  preserveLatexFormulas(turndownService)
 
   return turndownService
 }
@@ -846,20 +869,7 @@ export function htmlToMarkdownNative(html: string, options: TurndownOptions = {}
   }
 
   try {
-    const turndownService = new TurndownService({
-      headingStyle: options.headingStyle || 'atx',
-      hr: options.hr || '---',
-      bulletListMarker: options.bulletListMarker || '-',
-      codeBlockStyle: options.codeBlockStyle || 'fenced',
-      fence: options.fence || '```',
-      emDelimiter: options.emDelimiter || '*',
-      strongDelimiter: options.strongDelimiter || '**',
-      linkStyle: options.linkStyle || 'inlined',
-      linkReferenceStyle: options.linkReferenceStyle || 'full',
-    })
-
-    // 添加扩展规则
-    addExtensionRules(turndownService)
+    const turndownService = createTurndownService(options)
 
     // 使用原生 DOM 解析 HTML
     const container = document.createElement('div')

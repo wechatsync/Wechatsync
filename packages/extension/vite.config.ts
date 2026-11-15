@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { crx } from '@crxjs/vite-plugin'
 import yaml from '@modyfi/vite-plugin-yaml'
 import { resolve } from 'path'
+import { createRequire } from 'node:module'
 import { copyFileSync, mkdirSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import baseManifest from './manifest.json'
 
@@ -80,6 +81,16 @@ export default defineConfig(({ mode }) => {
   const isDev = mode === 'development'
   return {
     plugins: [
+      {
+        name: 'worker-markdown-entities',
+        enforce: 'pre',
+        resolveId(source, importer) {
+          // Markdown 解析也运行在 Service Worker；该依赖的 browser 入口依赖 document。
+          if (source === 'decode-named-character-reference' && importer) {
+            return createRequire(importer).resolve(source)
+          }
+        },
+      },
       react(),
       yaml(),
       crx({ manifest }),
