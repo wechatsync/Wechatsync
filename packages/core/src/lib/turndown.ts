@@ -515,7 +515,9 @@ function addExtensionRules(turndownService: TurndownService): void {
 /** Turndown 会转义文本中的反斜杠和下划线，但 LaTeX 公式需要保留原文。 */
 function preserveLatexFormulas(turndownService: TurndownService): void {
   const escapeText = turndownService.escape.bind(turndownService)
-  const formulaPattern = /\$\$[\s\S]+?\$\$|\$(?:\\.|[^$\\\r\n])+\$/g
+  // 行内公式沿用 pandoc 规则：开头 $ 后不能是空白，结尾 $ 前不能是空白、后不能紧跟数字，
+  // 避免把 "$5 ... $10" 这类金额当作公式而跳过 Markdown 转义。
+  const formulaPattern = /\$\$[\s\S]+?\$\$|\$(?![\s$])(?:\\.|[^$\\\r\n])*?(?<!\s)\$(?!\d)/g
 
   turndownService.escape = (text: string): string => {
     let result = ''

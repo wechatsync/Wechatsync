@@ -210,6 +210,16 @@ describe('htmlToMarkdown', () => {
       expect(markdown).toContain('普通 \\*强调\\* 与 $x_1$')
     })
 
+    it('does not treat dollar amounts as formulas', () => {
+      const service = createTurndownService()
+      expect(service.turndown('<p>售价 $5，原价 *不是强调* 现价 $10</p>')).toBe(
+        '售价 $5，原价 \\*不是强调\\* 现价 $10'
+      )
+      expect(service.turndown('<p>from $5 to [$10] each</p>')).toBe(
+        'from $5 to \\[$10\\] each'
+      )
+    })
+
     it('should convert block formula script tag', () => {
       const html = '<script type="math/tex; mode=display">E = mc^2</script>'
       const markdown = htmlToMarkdown(html)
