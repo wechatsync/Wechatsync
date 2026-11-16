@@ -197,23 +197,58 @@ export class ZhihuAdapter extends CodeAdapter {
     // 1. 转换表格格式 - 知乎 Draft.js 编辑器需要特定格式
     result = this.transformTables(result)
 
-    // 2. 图片格式 - 知乎需要 figure 包裹
+    // 2. LaTeX 公式 - 知乎编辑器使用 equation 图片
+    result = this.transformLatex(result)
+
+    // 3. 图片格式 - 知乎需要 figure 包裹
     result = result.replace(
       /<img([^>]+)src="([^"]+)"([^>]*)>/gi,
-      '<figure><img$1src="$2"$3></figure>'
+      (match, before, src, after) => {
+        if (src.startsWith('https://www.zhihu.com/equation?tex=')) return match
+        return `<figure><img${before}src="${src}"${after}></figure>`
+      }
     )
 
-    // 3. 代码块格式
+    // 4. 代码块格式
     result = result.replace(
       /<pre><code class="language-(\w+)">/gi,
       '<pre lang="$1"><code>'
     )
 
-    // 4. 移除微信样式属性 (但保留知乎的 data-draft-* 属性)
+    // 5. 移除微信样式属性 (但保留知乎的 data-draft-* 属性)
     result = result.replace(/\s*data-(?!draft)[a-z-]+="[^"]*"/gi, '')
     result = result.replace(/\s*style="[^"]*"/gi, '')
 
     return result
+  }
+
+  private transformLatex(content: string): string {
+    return content
+      .split(/(<pre[\s\S]*?<\/pre>)/gi)
+      .map((chunk) => {
+        if (/^<pre/i.test(chunk)) return chunk
+
+        return chunk
+          .replace(/\$\$([\s\S]+?)\$\$/g, (_match, latex) =>
+            this.zhihuEquationImage(latex, '2')
+          )
+          .replace(/\$([^$\n]+?)\$/g, (_match, latex) =>
+            this.zhihuEquationImage(latex, '1')
+          )
+      })
+      .join('')
+  }
+
+  private zhihuEquationImage(latex: string, eeimg: '1' | '2'): string {
+    const formula = latex.trim()
+    const encoded = encodeURIComponent(formula)
+    const alt = formula
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+
+    return `<img src="https://www.zhihu.com/equation?tex=${encoded}" alt="${alt}" class="ee_img tr_noresize" eeimg="${eeimg}">`
   }
 
   /**
