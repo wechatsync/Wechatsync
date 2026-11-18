@@ -9,6 +9,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -24,6 +25,7 @@ const HTTP_PORT = parseInt(process.env.SYNC_HTTP_PORT || '9528', 10)
 
 // 检查是否是 SSE 模式
 const isSSEMode = process.argv.includes('--sse')
+const isHttpMode = process.argv.includes('--http')
 
 // Extension WebSocket 桥接
 const bridge = new ExtensionBridge(WS_PORT)
@@ -266,6 +268,88 @@ async function startStdioMode() {
   console.error(`[MCP] Extension WebSocket: ws://localhost:${WS_PORT}`)
 }
 
+
+/**
+ * Streamable HTTP 模式启动（兼容 QwenPaw / MCP 新规范）
+ */
+async function startHttpMode() {
+  await bridge.start()
+  const app = express()
+  app.use(express.json())
+  // 多会话支持：每个 sessionId 独立的 Server(Protocol) + Transport
+  const sessions = new Map<string, { transport: StreamableHTTPServerTransport; server: ReturnType<typeof createServer> }>()
+
+  app.post('/mcp', async (req: Request, res: Response) => {
+    try {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined
+      if (sessionId && sessions.has(sessionId)) {
+        const s = sessions.get(sessionId)!
+        await s.transport.handleRequest(req, res, req.body)
+        return
+      }
+      const server = createServer()
+      let newSid: string | null = null
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => {
+          newSid = crypto.randomUUID()
+          return newSid
+        },
+      })
+      transport.onclose = () => {
+        if (newSid) sessions.delete(newSid)
+      }
+      await server.connect(transport)
+      await transport.handleRequest(req, res, req.body)
+      if (newSid) sessions.set(newSid, { transport, server })
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message })
+    }
+  })
+
+  app.get('/mcp', async (req: Request, res: Response) => {
+    try {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined
+      const s = sessionId ? sessions.get(sessionId) : undefined
+      if (!s) {
+        res.status(400).json({ error: 'No active session' })
+        return
+      }
+      await s.transport.handleRequest(req, res, req.body)
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message })
+    }
+  })
+
+  app.delete('/mcp', async (req: Request, res: Response) => {
+    try {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined
+      const s = sessionId ? sessions.get(sessionId) : undefined
+      if (!s) {
+        res.status(400).json({ error: 'No active session' })
+        return
+      }
+      await s.transport.handleRequest(req, res, req.body)
+      if (sessionId) sessions.delete(sessionId)
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message })
+    }
+  })
+
+  app.get('/health', (_req: Request, res: Response) => {
+    res.json({ status: 'ok', extensionConnected: bridge.isConnected() })
+  })
+
+  app.get('/', (_req: Request, res: Response) => {
+    res.json({ name: 'Sync Assistant MCP Server', version: '1.0.0', extensionConnected: bridge.isConnected() })
+  })
+
+  app.listen(HTTP_PORT, () => {
+    console.error('[MCP] Sync Assistant started (Streamable HTTP mode, multi-session)')
+    console.error(`[MCP] HTTP Server: http://localhost:${HTTP_PORT}/mcp`)
+    console.error(`[MCP] Extension WebSocket: ws://localhost:${WS_PORT}`)
+  })
+}
+
 /**
  * SSE 模式启动
  */
@@ -324,7 +408,12 @@ async function startSSEMode() {
 }
 
 // 启动
-if (isSSEMode) {
+if (isHttpMode) {
+  startHttpMode().catch((error) => {
+    console.error('[MCP] Failed to start:', error)
+    process.exit(1)
+  })
+} else if (isSSEMode) {
   startSSEMode().catch((error) => {
     console.error('[MCP] Failed to start:', error)
     process.exit(1)
