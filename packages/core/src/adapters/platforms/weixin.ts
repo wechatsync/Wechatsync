@@ -9,6 +9,19 @@ import juice from 'juice'
 
 const logger = createLogger('Weixin')
 
+/**
+ * MIME → 文件扩展名
+ * 微信素材上传要求文件名扩展名与实际内容类型一致
+ */
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/bmp': 'bmp',
+}
+
 interface WeixinMeta {
   token: string
   userName: string
@@ -42,6 +55,8 @@ blockquote { border-left: 4px solid #ddd; padding-left: 1em; margin: 1em 0; colo
 hr { border: none; border-top: 1px solid #ddd; margin: 1.5em 0; }
 i, cite, em, var, address { font-style: italic; }
 b, strong { font-weight: bolder; }
+/* 图片不撑破正文宽度（Mermaid 转出来的图是高分辨率位图，必须限宽） */
+img { max-width: 100%; }
 `
 
 export class WeixinAdapter extends CodeAdapter {
@@ -148,6 +163,9 @@ export class WeixinAdapter extends CodeAdapter {
         ? (article as any).rawHtml
         : (article.html || '')
 
+      // 图片上传失败要能被用户看到，不能静默丢图
+      const uploadErrors: string[] = []
+
       if (article.source?.platform === 'weixin') {
         logger.info('Source is WeChat, using raw HTML, skipping content processing')
       } else {
@@ -159,6 +177,9 @@ export class WeixinAdapter extends CodeAdapter {
           {
             skipPatterns: ['mmbiz.qpic.cn', 'mmbiz.qlogo.cn'],
             onProgress: options?.onImageProgress,
+            onUploadError: (_src, error) => {
+              uploadErrors.push(error.message)
+            },
           }
         )
         content = this.processContent(content)
@@ -258,10 +279,24 @@ export class WeixinAdapter extends CodeAdapter {
 
       const draftUrl = `https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&type=77&appmsgid=${res.appMsgId}&token=${this.weixinMeta!.token}&lang=zh_CN`
 
+      // 汇总告警：图片没传上去时正文里会留下 data URI，微信会直接丢弃
+      const warnings: string[] = []
+      if (uploadErrors.length > 0) {
+        warnings.push(`${uploadErrors.length} 张图片上传失败：${uploadErrors[0]}`)
+      }
+      const remainingDataImages = (content.match(/<img[^>]+src=["']data:/gi) || []).length
+      if (remainingDataImages > 0) {
+        warnings.push(`${remainingDataImages} 张图片仍以 base64 内联，微信会丢弃这些图片`)
+      }
+      if (warnings.length > 0) {
+        logger.warn(' Draft saved with warnings:', warnings)
+      }
+
       return this.createResult(true, {
         postId: res.appMsgId,
         postUrl: draftUrl,
         draftOnly: options?.draftOnly ?? true,
+        message: warnings.length > 0 ? warnings.join('；') : undefined,
       })
     }).catch((error) => this.createResult(false, {
       error: (error as Error).message,
@@ -281,9 +316,13 @@ export class WeixinAdapter extends CodeAdapter {
 
     const formData = new FormData()
     const timestamp = Date.now()
-    const fileName = `${timestamp}.jpg`
+    const mimeType = imageBlob.type || 'image/jpeg'
+    // 文件名扩展名必须和 MIME 一致，否则微信素材上传会失败
+    // （例如 Mermaid 渲染出来的 PNG 之前被当成 .jpg 上传）
+    const ext = MIME_TO_EXT[mimeType] || 'jpg'
+    const fileName = `${timestamp}.${ext}`
 
-    formData.append('type', imageBlob.type || 'image/jpeg')
+    formData.append('type', mimeType)
     formData.append('id', String(timestamp))
     formData.append('name', fileName)
     formData.append('lastModifiedDate', new Date().toString())
@@ -302,20 +341,39 @@ export class WeixinAdapter extends CodeAdapter {
       }
     )
 
-    const res = await response.json() as {
+    if (!response.ok) {
+      throw new Error(`图片上传失败: HTTP ${response.status} ${response.statusText}`)
+    }
+
+    let res: {
       cdn_url?: string
+      url?: string
       content?: string
-      base_resp?: { err_msg: string; ret: number }
+      err_msg?: string
+      ret?: number
+      base_resp?: { err_msg?: string; ret?: number }
+      data?: { cdn_url?: string; url?: string }
+    }
+    try {
+      res = await response.json()
+    } catch {
+      throw new Error('图片上传失败: 返回内容不是合法 JSON')
     }
 
     logger.debug(' Image upload response:', res)
 
-    if (res.base_resp?.err_msg !== 'ok' || !res.cdn_url) {
-      throw new Error('图片上传失败: ' + src)
+    // 微信不同接口/版本的返回结构不完全一致：
+    // 有的返回 base_resp.err_msg，有的返回顶层 err_msg/ret
+    const errMsg = res.base_resp?.err_msg ?? res.err_msg
+    const ret = res.base_resp?.ret ?? res.ret
+    const cdnUrl = res.cdn_url || res.url || res.content || res.data?.cdn_url || res.data?.url
+
+    if (!cdnUrl || (typeof ret === 'number' && ret !== 0) || (errMsg !== undefined && errMsg !== 'ok')) {
+      throw new Error(`图片上传失败: ${errMsg || (ret !== undefined ? `ret=${ret}` : '未知错误')}`)
     }
 
     return {
-      url: res.cdn_url,
+      url: cdnUrl,
     }
   }
 

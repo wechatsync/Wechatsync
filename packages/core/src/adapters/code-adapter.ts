@@ -46,6 +46,39 @@ export interface ImageProcessOptions {
   skipPatterns?: string[]
   /** 进度回调 */
   onProgress?: (current: number, total: number) => void
+  /** 上传失败回调（用于把失败原因暴露给用户，而不是静默跳过） */
+  onUploadError?: (src: string, error: Error) => void
+}
+
+/**
+ * 判断标签上是否已有某个属性
+ */
+function hasAttribute(tag: string, name: string): boolean {
+  return new RegExp(`\\s${name}\\s*=`, 'i').test(tag)
+}
+
+/**
+ * 替换 <img> 标签里的 src，保留其它属性
+ */
+function replaceImgSrc(
+  tag: string,
+  newUrl: string,
+  extraAttrs?: Record<string, string | number>
+): string {
+  let result = tag.replace(
+    /(\ssrc\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s>]+)/i,
+    (_match, prefix: string) => `${prefix}"${newUrl}"`
+  )
+
+  if (extraAttrs) {
+    for (const [key, value] of Object.entries(extraAttrs)) {
+      if (!hasAttribute(result, key)) {
+        result = result.replace(/^<img/i, `<img ${key}="${value}"`)
+      }
+    }
+  }
+
+  return result
 }
 
 /**
@@ -230,7 +263,7 @@ export abstract class CodeAdapter implements PlatformAdapter {
     uploadFn: (src: string) => Promise<ImageUploadResult>,
     options?: ImageProcessOptions
   ): Promise<string> {
-    const { skipPatterns = [], onProgress } = options || {}
+    const { skipPatterns = [], onProgress, onUploadError } = options || {}
 
     // 提取所有图片（HTML + Markdown）
     const matches: { full: string; src: string; alt?: string; type: 'html' | 'markdown' }[] = []
@@ -289,25 +322,24 @@ export abstract class CodeAdapter implements PlatformAdapter {
         // 根据格式构建替换内容
         let replacement: string
         if (type === 'html') {
-          // HTML 格式
-          replacement = `<img src="${uploadResult.url}"`
-          if (uploadResult.attrs) {
-            for (const [key, value] of Object.entries(uploadResult.attrs)) {
-              replacement += ` ${key}="${value}"`
-            }
-          }
-          replacement += ' />'
+          // HTML 格式：只换 src，保留原标签的其它属性
+          // （丢弃 style/alt 会让平台侧的排版规则失效）
+          replacement = replaceImgSrc(full, uploadResult.url, uploadResult.attrs)
         } else {
           // Markdown 格式
           replacement = `![${alt || ''}](${uploadResult.url})`
         }
 
         // 替换原内容
-        result = result.replace(full, replacement)
+        // 用 split/join 而不是 replace：replace 只替换第一处，
+        // 同一张图片出现多次时后面的仍然是旧地址
+        result = result.split(full).join(replacement)
 
         logger.debug(`Image uploaded: ${uploadResult.url}`)
       } catch (error) {
-        logger.error(`Failed to upload image: ${src}`, error)
+        const err = error instanceof Error ? error : new Error(String(error))
+        logger.error(`Failed to upload image: ${src}`, err)
+        onUploadError?.(src, err)
         // 继续处理其他图片
       }
 
