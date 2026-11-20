@@ -656,7 +656,15 @@ Readability.prototype = {
     this._cleanConditionally(articleContent, 'fieldset')
     this._clean(articleContent, 'object')
     this._clean(articleContent, 'embed')
-    this._clean(articleContent, 'h1')
+    // The article title is returned separately. Preserve subsequent body headings.
+    var firstHeading = articleContent.querySelector('h1, h2, h3, h4, h5, h6')
+    if (
+      firstHeading &&
+      firstHeading.tagName === 'H1' &&
+      this._getInnerText(firstHeading) === this._articleTitle
+    ) {
+      firstHeading.parentNode.removeChild(firstHeading)
+    }
     this._clean(articleContent, 'footer')
     this._clean(articleContent, 'link')
     this._clean(articleContent, 'aside')
