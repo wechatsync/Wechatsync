@@ -6,6 +6,7 @@ import type { Article, AuthResult, SyncResult, PlatformMeta } from '../../types'
 import type { PublishOptions } from '../types'
 import { createLogger } from '../../lib/logger'
 import juice from 'juice'
+import { parseHTML } from 'linkedom/worker'
 
 const logger = createLogger('Weixin')
 
@@ -329,15 +330,23 @@ export class WeixinAdapter extends CodeAdapter {
   private processLatex(content: string): string {
     const LATEX_API = 'https://latex.codecogs.com/png.latex'
 
+    const encodeFormula = (html: string): string | null => {
+      // 只还原 HTML 文本这一层的转义，避免把公式中的字面量当作标签解析。
+      const text = html.includes('&')
+        ? parseHTML(`<span>${html.replace(/</g, '&lt;')}</span>`).document.documentElement.textContent ?? ''
+        : html
+      return this.isLatexFormula(text) ? encodeURIComponent(text.trim()) : null
+    }
+
     content = content.replace(/\$\$([^$]+)\$\$/g, (match, latex) => {
-      if (!this.isLatexFormula(latex)) return match
-      const encoded = encodeURIComponent(latex.trim())
+      const encoded = encodeFormula(latex)
+      if (encoded === null) return match
       return `<p style="text-align: center;"><img src="${LATEX_API}?\\dpi{150}${encoded}" alt="formula" style="vertical-align: middle; max-width: 100%;"></p>`
     })
 
     content = content.replace(/\$([^$]+)\$/g, (match, latex) => {
-      if (!this.isLatexFormula(latex)) return match
-      const encoded = encodeURIComponent(latex.trim())
+      const encoded = encodeFormula(latex)
+      if (encoded === null) return match
       return `<img src="${LATEX_API}?\\dpi{120}${encoded}" alt="formula" style="vertical-align: middle;">`
     })
 
