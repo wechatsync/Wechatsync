@@ -5,9 +5,13 @@ import { CodeAdapter, type ImageUploadResult } from '../code-adapter'
 import type { Article, AuthResult, SyncResult, PlatformMeta } from '../../types'
 import type { PublishOptions } from '../types'
 import { createLogger } from '../../lib/logger'
+import { NodeFilter, parseHTML } from 'linkedom/worker'
 import md5Lib from 'js-md5'
 
 const logger = createLogger('Zhihu')
+const ZHIHU_EQUATION_URL = '//www.zhihu.com/equation?tex='
+// 行内定界符紧贴公式，并跳过转义的美元符号和价格中的 $数字。
+const LATEX_DELIMITERS = /(?<![\\$])(?:\$\$(?!\$)((?:\\[\s\S]|[^\\$])+?)\$\$(?!\$)|\$(?![\s$])((?:\\[^\r\n]|[^\\$\r\n])+?)(?<!\s)\$(?![$\d]))/g
 
 // js-md5 导出的是函数本身
 const jsMd5 = md5Lib as unknown as (message: string | ArrayBuffer | Uint8Array) => string
@@ -142,7 +146,7 @@ export class ZhihuAdapter extends CodeAdapter {
         content,
         (src) => this.uploadImageByUrl(src),
         {
-          skipPatterns: ['zhimg.com', 'pic1.zhimg.com', 'pic2.zhimg.com', 'pic3.zhimg.com', 'pic4.zhimg.com'],
+          skipPatterns: ['zhimg.com', ZHIHU_EQUATION_URL],
           onProgress: options?.onImageProgress,
         }
       )
@@ -197,10 +201,12 @@ export class ZhihuAdapter extends CodeAdapter {
     // 1. 转换表格格式 - 知乎 Draft.js 编辑器需要特定格式
     result = this.transformTables(result)
 
-    // 2. 图片格式 - 知乎需要 figure 包裹
+    // 2. 普通图片需要 figure，原生公式保留在正文中
     result = result.replace(
       /<img([^>]+)src="([^"]+)"([^>]*)>/gi,
-      '<figure><img$1src="$2"$3></figure>'
+      (image, _before, src: string) => src.replace(/^https?:/i, '').startsWith(ZHIHU_EQUATION_URL)
+        ? image
+        : '<figure>' + image + '</figure>'
     )
 
     // 3. 代码块格式
@@ -213,7 +219,52 @@ export class ZhihuAdapter extends CodeAdapter {
     result = result.replace(/\s*data-(?!draft)[a-z-]+="[^"]*"/gi, '')
     result = result.replace(/\s*style="[^"]*"/gi, '')
 
-    return result
+    return this.transformLatex(result)
+  }
+
+  private transformLatex(html: string): string {
+    if (!html.includes('$')) return html
+
+    const { document } = parseHTML('')
+    const container = document.createElement('div')
+    container.innerHTML = html
+    // linkedom 会把 HTML 实体解析成独立的文本节点。
+    container.normalize()
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+    const textNodes: Text[] = []
+
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeValue?.includes('$') &&
+          !node.parentElement?.closest('pre, code, kbd, samp, script, style, textarea')) {
+        textNodes.push(node as Text)
+      }
+    }
+
+    let changed = false
+    for (const node of textNodes) {
+      const text = node.data
+      const fragment = document.createDocumentFragment()
+      let cursor = 0
+      for (const formula of text.matchAll(LATEX_DELIMITERS)) {
+        const [match, blockLatex, inlineLatex] = formula
+        const latex = blockLatex ?? inlineLatex
+        if (!latex.trim()) continue
+
+        const offset = formula.index
+        const equation = document.createElement('img')
+        equation.setAttribute('eeimg', blockLatex === undefined ? '1' : '2')
+        equation.setAttribute('src', ZHIHU_EQUATION_URL + encodeURIComponent(latex))
+        equation.setAttribute('alt', latex)
+        fragment.append(text.slice(cursor, offset), equation)
+        cursor = offset + match.length
+      }
+      if (cursor) {
+        fragment.append(text.slice(cursor))
+        node.replaceWith(fragment)
+        changed = true
+      }
+    }
+    return changed ? container.innerHTML : html
   }
 
   /**
